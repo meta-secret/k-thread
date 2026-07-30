@@ -38,7 +38,7 @@ const emit = defineEmits<{
           <div class="flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200/90 dark:border-zinc-800 shadow-xs">
             <button
               type="button"
-              class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-zinc-900 dark:text-zinc-100 bg-orange-50 hover:bg-orange-500 hover:text-white border border-orange-200 transition-all duration-150 cursor-pointer shadow-2xs group"
+              class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-orange-700 dark:text-orange-300 bg-orange-500/10 hover:bg-orange-500 hover:text-white border border-orange-500/30 transition-all duration-150 cursor-pointer shadow-2xs group"
               title="Return to Vault Structure Graph"
               @click="emit('openStructure')"
             >
@@ -163,6 +163,11 @@ const emit = defineEmits<{
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 80% 45% at 50% 38%, rgba(255, 255, 255, 0.35), transparent 70%);
+}
+
+:deep(.dark) .horizon,
+.dark .horizon {
+  background: radial-gradient(ellipse 80% 45% at 50% 38%, rgba(249, 115, 22, 0.05), transparent 70%);
 }
 
 .stage-body {
