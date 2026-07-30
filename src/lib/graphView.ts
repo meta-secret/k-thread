@@ -128,16 +128,16 @@ export const folderHue = (folder: string): number => {
   return hash % 360
 }
 
-export const HUB_W = 268
-export const HUB_H = 76
-export const BRIDGE_W = 188
-export const BRIDGE_H = 52
-export const SUB_W = 92
+export const HUB_W = 148
+export const HUB_H = 36
+export const BRIDGE_W = 128
+export const BRIDGE_H = 32
+export const SUB_W = 104
 export const SUB_H = 28
 export const CHIP_W = BRIDGE_W
 export const CHIP_H = BRIDGE_H
-export const BUNDLE_STRANDS = 5
-export const FORK_STRANDS = 8
+export const BUNDLE_STRANDS = 1
+export const FORK_STRANDS = 1
 
 export const HudTier = {
   Hub: 'hub',
@@ -209,9 +209,9 @@ export const buildHudStage = (
   const subsRaw = restAfterHubs.filter((n) => !bridgeIds.has(n.id))
 
   const midY = height / 2
-  const hubX = Math.max(150, width * 0.17)
-  const bridgeX = Math.max(390, width * 0.4)
-  const subX0 = Math.max(560, width * 0.56)
+  const hubX = Math.max(120, width * 0.18)
+  const bridgeX = Math.max(320, width * 0.42)
+  const subX0 = Math.max(500, width * 0.62)
 
   const placeColumn = (
     list: readonly ViewNode[],
@@ -231,12 +231,12 @@ export const buildHudStage = (
     }))
   }
 
-  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, HUB_H + 28)
+  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, HUB_H + 40)
   const bridges = placeColumn(bridgesRaw, HudTier.Bridge, bridgeX, BRIDGE_H + 36)
 
   const cols = Math.max(2, Math.min(4, Math.ceil(Math.sqrt(Math.max(subsRaw.length, 1)))))
-  const colGap = 108
-  const rowGap = 44
+  const colGap = 120
+  const rowGap = 40
   const subs: HudNode[] = subsRaw.map((n, i) => {
     const col = i % cols
     const row = Math.floor(i / cols)
@@ -331,39 +331,21 @@ export const buildHudStage = (
   return { hubs, bridges, subs, wires, records }
 }
 
-/** Cubic bezier + parallel offset strands for fiber-bundle edges. */
+/** Orthogonal elbow path (graph / HUD style). */
+export const orthoPath = (from: Point, to: Point): string => {
+  const midX = from.x + (to.x - from.x) * 0.55
+  return `M${from.x},${from.y} H${midX} V${to.y} H${to.x}`
+}
+
+/** Kept for callers that still expect path arrays. */
 export const bundlePaths = (
   from: Point,
   to: Point,
-  strands: number = BUNDLE_STRANDS,
-  spread = 2.4,
+  _strands: number = BUNDLE_STRANDS,
+  _spread = 2.4,
 ): string[] => {
-  const dx = to.x - from.x
-  const dy = to.y - from.y
-  const len = Math.hypot(dx, dy)
-  if (len < 1) return []
-
-  const nx = -dy / len
-  const ny = dx / len
-  const bend = Math.min(140, len * 0.42)
-  const c1 = { x: from.x + bend, y: from.y + dy * 0.05 }
-  const c2 = { x: to.x - bend * 0.75, y: to.y - dy * 0.05 }
-  const paths: string[] = []
-
-  for (let i = 0; i < strands; i += 1) {
-    const t = strands === 1 ? 0 : (i / (strands - 1) - 0.5) * 2
-    const o = t * spread
-    const sx = from.x + nx * o
-    const sy = from.y + ny * o
-    const tx = to.x + nx * o
-    const ty = to.y + ny * o
-    const ax = c1.x + nx * o * 0.85
-    const ay = c1.y + ny * o * 0.85
-    const bx = c2.x + nx * o * 0.85
-    const by = c2.y + ny * o * 0.85
-    paths.push(`M${sx},${sy} C${ax},${ay} ${bx},${by} ${tx},${ty}`)
-  }
-  return paths
+  const path = orthoPath(from, to)
+  return path.length > 0 ? [path] : []
 }
 
 export const noteLinks = (

@@ -11,20 +11,19 @@ import {
   BRIDGE_W,
   buildHudStage,
   buildViewGraph,
-  bundlePaths,
-  folderOf,
-  FORK_STRANDS,
   GraphScope,
   HUB_H,
   HUB_W,
   HudTier,
   labelOf,
+  orthoPath,
   SUB_H,
   SUB_W,
   type GraphScope as GraphScopeT,
   type HudNode,
   type HudStage,
   type HudWire,
+  type Point,
 } from '@/lib/graphView'
 import { none, some, type DocId, type GraphIndex, type Option } from '@/types'
 
@@ -114,13 +113,6 @@ const isWireHot = (link: HudWire): boolean => {
 const clipLabel = (text: string, max: number): string =>
   text.length > max ? `${text.slice(0, max - 1)}…` : text
 
-const sideTag = (d: HudNode): string => {
-  const folder = folderOf(d.id)
-  const base = folder.length > 0 ? folder.split('/').pop() ?? folder : 'ROOT'
-  const clean = base.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)
-  return `${clean.length > 0 ? clean : 'NOTE'}.MD`
-}
-
 const bindHost = (el: Element | ComponentPublicInstance | null) => {
   if (!(el instanceof HTMLElement)) {
     hostEl.value = none
@@ -156,27 +148,40 @@ const updateWires = (wires: WireSel) => {
     if (!s || !t) return
     const from = portOf(s, 'out')
     const to = portOf(t, 'in')
-    const strands = d.fork ? FORK_STRANDS : 4
-    const spread = d.fork ? 3.6 : 2.2
-    const paths = bundlePaths(from, to, strands, spread)
+    const path = orthoPath(from, to)
     const g = select(this)
     g.selectAll<SVGPathElement, string>('path.glow')
-      .data(paths)
+      .data([path])
       .join('path')
       .attr('class', 'glow')
       .attr('fill', 'none')
-      .attr('stroke', '#121214')
-      .attr('stroke-width', d.fork ? 2.4 : 1.8)
+      .attr('stroke', '#c02323')
+      .attr('stroke-width', 4)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-linejoin', 'round')
       .attr('filter', 'url(#wire-glow)')
       .attr('d', (p) => p)
     g.selectAll<SVGPathElement, string>('path.strand')
-      .data(paths)
+      .data([path])
       .join('path')
       .attr('class', 'strand')
       .attr('fill', 'none')
-      .attr('stroke-width', d.fork ? 0.75 : 0.9)
-      .attr('stroke-dasharray', d.real ? null : '2 3')
+      .attr('stroke-width', 1.25)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-linejoin', 'round')
+      .attr('stroke-dasharray', d.real ? null : '3 4')
       .attr('d', (p) => p)
+    // Port anchors at endpoints
+    g.selectAll<SVGCircleElement, Point>('circle.port')
+      .data([from, to])
+      .join('circle')
+      .attr('class', 'port')
+      .attr('r', 3.2)
+      .attr('cx', (p) => p.x)
+      .attr('cy', (p) => p.y)
+      .attr('fill', '#c02323')
+      .attr('stroke', '#f4f4f6')
+      .attr('stroke-width', 1.2)
   })
 }
 
@@ -186,52 +191,51 @@ const paintFocus = () => {
     const hot = isWireHot(d)
     const dim = (hoveredId.value.length > 0 || props.activeId.length > 0) && !hot
     const g = select(this)
-    g.attr('opacity', dim ? 0.06 : hot ? 1 : d.fork ? 0.7 : 0.45)
+    g.attr('opacity', dim ? 0.08 : hot ? 1 : d.fork ? 0.55 : 0.38)
     g.selectAll<SVGPathElement, string>('path.strand').attr(
       'stroke',
-      hot
-        ? 'rgba(18,18,20,0.88)'
-        : d.missing
-          ? 'rgba(18,18,20,0.18)'
-          : d.real
-            ? 'rgba(18,18,20,0.42)'
-            : 'rgba(18,18,20,0.22)',
+      hot ? '#c02323' : d.missing ? 'rgba(18,18,20,0.2)' : 'rgba(18,18,20,0.45)',
     )
-    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? 0.22 : 0.06)
+    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? 0.28 : 0)
+    g.selectAll<SVGCircleElement, Point>('circle.port').attr('opacity', hot ? 1 : 0.7)
   })
 
   nodeSel.value.attr('opacity', (d) => (isDimmed(d.id) ? 0.22 : 1))
-  nodeSel.value.selectAll<SVGRectElement | SVGPathElement, HudNode>('.chip-body').attr('stroke', (d) => {
+  nodeSel.value.selectAll<SVGRectElement, HudNode>('.chip-body').attr('stroke', (d) => {
     if (d.id === props.activeId) return '#c02323'
     if (d.id === hoveredId.value) return '#121214'
     if (d.kind === 'missing') return '#9a9aa4'
-    if (d.tier === HudTier.Hub) return 'rgba(18,18,20,0.12)'
-    if (d.tier === HudTier.Bridge) return '#121214'
-    return 'rgba(18,18,20,0.22)'
+    if (d.tier === HudTier.Hub) return 'rgba(18,18,20,0.55)'
+    return 'rgba(18,18,20,0.28)'
   })
+  nodeSel.value
+    .selectAll<SVGCircleElement, HudNode>('circle.port-out')
+    .attr('fill', (d) => (d.id === props.activeId || d.id === hoveredId.value ? '#c02323' : '#121214'))
   nodeSel.value
     .selectAll<SVGRectElement, HudNode>('rect.chip-active')
     .attr('opacity', (d) => (d.id === props.activeId ? 1 : 0))
 }
 
-const drawHub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
+/** Compact pill node — graph vocabulary, not marketing cards. */
+const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
   const { w, h } = sizeOf(d)
   const x0 = -w / 2
   const y0 = -h / 2
-  const title = clipLabel(labelOf(d.id), 18)
-  const meta = `${d.code} / LINK ${d.degree}`
-  const tag = sideTag(d)
+  const r = h / 2
+  const isHub = d.tier === HudTier.Hub
+  const maxLen = isHub ? 14 : d.tier === HudTier.Bridge ? 12 : 11
+  const title = clipLabel(labelOf(d.id), maxLen)
 
   g.append('rect')
     .attr('class', 'chip-active')
-    .attr('x', x0 - 4)
-    .attr('y', y0 - 4)
-    .attr('width', w + 8)
-    .attr('height', h + 8)
-    .attr('rx', 2)
+    .attr('x', x0 - 5)
+    .attr('y', y0 - 5)
+    .attr('width', w + 10)
+    .attr('height', h + 10)
+    .attr('rx', r + 5)
     .attr('fill', 'none')
     .attr('stroke', '#c02323')
-    .attr('stroke-width', 1.4)
+    .attr('stroke-width', 1.2)
     .attr('opacity', 0)
 
   g.append('rect')
@@ -240,212 +244,61 @@ const drawHub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('y', y0)
     .attr('width', w)
     .attr('height', h)
-    .attr('fill', d.kind === 'missing' ? '#ececef' : '#f7f7f9')
-    .attr('stroke', 'rgba(18,18,20,0.12)')
-    .attr('stroke-width', 1.2)
-
-  g.append('line')
-    .attr('x1', x0 + 10)
-    .attr('x2', x0 + w - 10)
-    .attr('y1', y0 + 10)
-    .attr('y2', y0 + 10)
-    .attr('stroke', '#111')
-    .attr('stroke-width', 1.5)
-
-  g.append('circle')
-    .attr('cx', x0 + 10)
-    .attr('cy', y0 + 10)
-    .attr('r', 3.2)
-    .attr('fill', 'none')
-    .attr('stroke', '#111')
-    .attr('stroke-width', 1.3)
-
-  g.append('circle')
-    .attr('cx', x0 + w - 10)
-    .attr('cy', y0 + 10)
-    .attr('r', 3.4)
-    .attr('fill', '#c02323')
-
-  g.append('text')
-    .attr('x', x0 + 14)
-    .attr('y', y0 + 26)
-    .attr('fill', '#6b6b73')
-    .attr('font-size', 8)
-    .attr('letter-spacing', '0.08em')
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .text(meta)
-
-  g.append('text')
-    .attr('x', x0 + 14)
-    .attr('y', y0 + 52)
-    .attr('fill', '#111')
-    .attr('font-size', 17)
-    .attr('font-weight', 700)
-    .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
-    .text(title)
-
-  g.append('text')
-    .attr('x', x0 + w - 58)
-    .attr('y', y0 + h / 2 + 18)
-    .attr('fill', '#8a8a90')
-    .attr('font-size', 7)
-    .attr('letter-spacing', '0.14em')
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .attr('transform', `rotate(-90 ${x0 + w - 58} ${y0 + h / 2 + 18})`)
-    .text(tag)
-
-  g.append('line')
-    .attr('x1', x0 + w - 42)
-    .attr('x2', x0 + w - 42)
-    .attr('y1', y0 + 22)
-    .attr('y2', y0 + h - 10)
-    .attr('stroke', '#b8b4ac')
-    .attr('stroke-width', 1)
-    .attr('stroke-dasharray', '2 3')
-
-  g.append('circle')
-    .attr('cx', x0 + w - 22)
-    .attr('cy', y0 + h / 2 + 6)
-    .attr('r', 11)
-    .attr('fill', 'none')
-    .attr('stroke', '#9a968e')
-    .attr('stroke-width', 1.1)
-
-  g.append('path')
+    .attr('rx', r)
     .attr(
-      'd',
-      `M${x0 + w - 26},${y0 + h / 2 + 10} L${x0 + w - 18},${y0 + h / 2 + 2} M${x0 + w - 18},${y0 + h / 2 + 2} H${x0 + w - 24} M${x0 + w - 18},${y0 + h / 2 + 2} V${y0 + h / 2 + 8}`,
+      'fill',
+      d.kind === 'missing' ? '#ececef' : isHub ? '#fafafa' : '#f4f4f6',
     )
-    .attr('fill', 'none')
-    .attr('stroke', '#111')
-    .attr('stroke-width', 1.4)
-    .attr('stroke-linecap', 'square')
+    .attr('stroke', isHub ? 'rgba(18,18,20,0.55)' : 'rgba(18,18,20,0.28)')
+    .attr('stroke-width', isHub ? 1.4 : 1.1)
 
-  g.append('line')
-    .attr('x1', x0 + 10)
-    .attr('x2', x0 + w - 10)
-    .attr('y1', y0 + h - 1)
-    .attr('y2', y0 + h - 1)
-    .attr('stroke', '#c8c4bc')
-    .attr('stroke-width', 1)
-}
-
-const drawBridge = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
-  const { w, h } = sizeOf(d)
-  const x0 = -w / 2
-  const y0 = -h / 2
-  const title = clipLabel(labelOf(d.id).toUpperCase(), 14)
-  const r = h / 2
-
-  g.append('rect')
-    .attr('class', 'chip-active')
-    .attr('x', x0 - 4)
-    .attr('y', y0 - 4)
-    .attr('width', w + 8)
-    .attr('height', h + 8)
-    .attr('rx', r + 2)
-    .attr('fill', 'none')
-    .attr('stroke', '#c02323')
-    .attr('stroke-width', 1.4)
-    .attr('opacity', 0)
-
-  // Chamfered black CTA (meta-secret pill)
-  const path = [
-    `M${x0 + r},${y0}`,
-    `H${x0 + w - 18}`,
-    `L${x0 + w},${y0 + h * 0.35}`,
-    `V${y0 + h * 0.65}`,
-    `L${x0 + w - 18},${y0 + h}`,
-    `H${x0 + r}`,
-    `A${r},${r} 0 0 1 ${x0},${y0 + r}`,
-    `A${r},${r} 0 0 1 ${x0 + r},${y0}`,
-    'Z',
-  ].join(' ')
-
-  g.append('path')
-    .attr('class', 'chip-body')
-    .attr('d', path)
-    .attr('fill', d.kind === 'missing' ? '#2a2a30' : '#111114')
-    .attr('stroke', '#1a1a1a')
-    .attr('stroke-width', 1)
-
-  // Red pentagon badge
-  const px = x0 + 22
-  const py = 0
-  const pr = 11
-  const pent = Array.from({ length: 5 }, (_, i) => {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5
-    return `${px + Math.cos(a) * pr},${py + Math.sin(a) * pr}`
-  }).join(' ')
-  g.append('polygon').attr('points', pent).attr('fill', '#c02323')
-  g.append('text')
-    .attr('x', px)
-    .attr('y', py + 3)
-    .attr('text-anchor', 'middle')
-    .attr('fill', '#fff')
-    .attr('font-size', 7)
-    .attr('font-weight', 700)
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .text(String(d.degree))
-
-  g.append('text')
-    .attr('x', x0 + 42)
-    .attr('y', 4)
+  // In / out ports
+  g.append('circle')
+    .attr('class', 'port-in')
+    .attr('cx', x0)
+    .attr('cy', 0)
+    .attr('r', 3)
     .attr('fill', '#f4f4f6')
-    .attr('font-size', 11)
-    .attr('font-weight', 700)
-    .attr('letter-spacing', '0.06em')
-    .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
-    .text(`OPEN ${title}`)
-
-  g.append('path')
-    .attr(
-      'd',
-      `M${x0 + w - 22},${y0 + h / 2 + 4} L${x0 + w - 14},${y0 + h / 2 - 4} M${x0 + w - 14},${y0 + h / 2 - 4} H${x0 + w - 20} M${x0 + w - 14},${y0 + h / 2 - 4} V${y0 + h / 2 + 2}`,
-    )
-    .attr('fill', 'none')
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 1.3)
-    .attr('stroke-linecap', 'square')
-}
-
-const drawSub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
-  const { w, h } = sizeOf(d)
-  g.append('rect')
-    .attr('class', 'chip-active')
-    .attr('x', -w / 2 - 3)
-    .attr('y', -h / 2 - 3)
-    .attr('width', w + 6)
-    .attr('height', h + 6)
-    .attr('rx', 3)
-    .attr('fill', 'none')
     .attr('stroke', '#c02323')
     .attr('stroke-width', 1.2)
-    .attr('opacity', 0)
-  g.append('rect')
-    .attr('class', 'chip-body')
-    .attr('x', -w / 2)
-    .attr('y', -h / 2)
-    .attr('width', w)
-    .attr('height', h)
-    .attr('rx', 2)
-    .attr('fill', d.kind === 'missing' ? '#e8e8ec' : '#f4f4f6')
-    .attr('stroke', 'rgba(18,18,20,0.22)')
-    .attr('stroke-width', 1.1)
-  g.append('rect')
-    .attr('x', -w / 2 + 5)
-    .attr('y', -h / 2 + 5)
-    .attr('width', 2)
-    .attr('height', h - 10)
-    .attr('fill', d.id === props.activeId ? '#c02323' : '#9a9aa4')
-  g.append('text')
-    .attr('x', -w / 2 + 12)
-    .attr('y', 3)
+  g.append('circle')
+    .attr('class', 'port-out')
+    .attr('cx', x0 + w)
+    .attr('cy', 0)
+    .attr('r', 3)
     .attr('fill', '#121214')
-    .attr('font-size', 9)
-    .attr('font-weight', 600)
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .text(clipLabel(labelOf(d.id), 11))
+    .attr('stroke', '#f4f4f6')
+    .attr('stroke-width', 1.1)
+
+  if (isHub) {
+    g.append('text')
+      .attr('x', x0 + 14)
+      .attr('y', -5)
+      .attr('fill', '#8a8a96')
+      .attr('font-size', 7)
+      .attr('letter-spacing', '0.1em')
+      .attr('font-family', 'ui-monospace, Menlo, monospace')
+      .text(`${d.code} · ${d.degree}`)
+    g.append('text')
+      .attr('x', x0 + 14)
+      .attr('y', 9)
+      .attr('fill', '#121214')
+      .attr('font-size', 12)
+      .attr('font-weight', 650)
+      .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
+      .text(title)
+  } else {
+    g.append('text')
+      .attr('x', 0)
+      .attr('y', 4)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#121214')
+      .attr('font-size', d.tier === HudTier.Bridge ? 10 : 9)
+      .attr('font-weight', 600)
+      .attr('letter-spacing', '0.04em')
+      .attr('font-family', 'ui-monospace, Menlo, monospace')
+      .text(title.toUpperCase())
+  }
 }
 
 const rebuild = () => {
@@ -487,10 +340,9 @@ const rebuild = () => {
     .attr('y', '-50%')
     .attr('width', '200%')
     .attr('height', '200%')
-  glow.append('feGaussianBlur').attr('stdDeviation', '1.4').attr('result', 'blur')
+  glow.append('feGaussianBlur').attr('stdDeviation', '2.4').attr('result', 'blur')
   const merge = glow.append('feMerge')
   merge.append('feMergeNode').attr('in', 'blur')
-  merge.append('feMergeNode').attr('in', 'SourceGraphic')
 
   const haze = defs
     .append('radialGradient')
@@ -504,11 +356,37 @@ const rebuild = () => {
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', '#e4e4e8')
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#haze)')
 
+  // Subtle grid for graph readout
+  const grid = svg.append('g').attr('class', 'grid').attr('opacity', 0.22)
+  for (let x = 40; x < width; x += 40) {
+    grid
+      .append('line')
+      .attr('x1', x)
+      .attr('x2', x)
+      .attr('y1', 0)
+      .attr('y2', height)
+      .attr('stroke', '#121214')
+      .attr('stroke-width', 0.4)
+  }
+  for (let y = 40; y < height; y += 40) {
+    grid
+      .append('line')
+      .attr('x1', 0)
+      .attr('x2', width)
+      .attr('y1', y)
+      .attr('y2', y)
+      .attr('stroke', '#121214')
+      .attr('stroke-width', 0.4)
+  }
+
   const chrome = svg.append('g').attr('class', 'chrome')
   const mark = (x: number, y: number) => {
     chrome
-      .append('path')
-      .attr('d', `M${x - 3},${y} H${x + 3} M${x},${y - 3} V${y + 3}`)
+      .append('circle')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', 2.5)
+      .attr('fill', 'none')
       .attr('stroke', '#c02323')
       .attr('stroke-width', 1)
   }
@@ -529,9 +407,9 @@ const rebuild = () => {
       .attr('font-family', 'ui-monospace, Menlo, monospace')
       .text(text)
   }
-  if (built.hubs[0]) label(built.hubs[0].x, '01  LAUNCH')
-  if (built.bridges[0]) label(built.bridges[0].x, '02  BRIDGE')
-  if (built.subs[0]) label(built.subs[0].x, '03  FORK')
+  if (built.hubs[0]) label(built.hubs[0].x, '01  ROOT')
+  if (built.bridges[0]) label(built.bridges[0].x, '02  LINK')
+  if (built.subs[0]) label(built.subs[0].x, '03  NODE')
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -593,9 +471,7 @@ const rebuild = () => {
 
   nodesJoined.each(function (d) {
     const g = select(this) as Selection<SVGGElement, HudNode, null, undefined>
-    if (d.tier === HudTier.Hub) drawHub(g, d)
-    else if (d.tier === HudTier.Bridge) drawBridge(g, d)
-    else drawSub(g, d)
+    drawPill(g, d)
   })
 
   wireSel = some(wiresJoined as WireSel)
@@ -658,7 +534,7 @@ onBeforeUnmount(() => {
           <span>{{ hops }}</span>
         </label>
         <span class="sep" />
-        <span class="readout">{{ scopeLabel }} · 2→2→FORK</span>
+        <span class="readout">{{ scopeLabel }} · GRAPH</span>
       </div>
 
       <Input v-model="query" class="search" placeholder="FILTER…" autocomplete="off" />
@@ -677,7 +553,7 @@ onBeforeUnmount(() => {
       <span class="mono">HUB {{ stageStats.hubs }}</span>
       <span class="mono">BRG {{ stageStats.bridges }}</span>
       <span class="mono">SUB {{ stageStats.subs }}</span>
-      <span class="hint">2 LAUNCH → 2 BRIDGE → FORK · CLICK FOCUS · DBL OPEN</span>
+      <span class="hint">CLICK FOCUS · DBL OPEN · DRAG NODES</span>
     </div>
   </div>
 </template>
