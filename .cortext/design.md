@@ -27,19 +27,19 @@ We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v
 ```
 ┌─ header (brand · status · ordinal) ─────────────────┐
 │ ToolRail │ EditorStage (grid) │ Inspector           │
-│ forms +  │ BlockNote / empty  │ tags·links·preview  │
-│ tools    │ cube placeholder   │                     │
+│ View →   │ BlockNote / empty  │ tags·links·preview  │
+│ Create → │ (no surprise note) │                     │
+│ Manage   │                    │                     │
 └─ footer (k-thread · index) ── Files drawer overlay ─┘
 ```
 
-| Kube reference | k-thread |
+| Rail | Role |
 | --- | --- |
-| Forms strip | Note / Graph / Preview / Import / Files |
-| Tools list | New, Named, Folder, Rename, Delete |
-| Center stage | BlockNote on muted grid; empty = wireframe cube CTA |
-| Status under stage | title · folder · LNK count |
-| Right 2×2 | Tags / Backlinks / Links / Preview |
-| Footer | brand + note ordinal |
+| **View** | Files / Note / Graph / Preview — primary orientation |
+| **Create** | New note, Named, Folder — secondary |
+| **Manage** | Import, Rename, Delete — tertiary, bottom |
+
+On refresh: restore **last opened note** from `localStorage`, or show the empty stage — never pick a random vault entry.
 
 Folder tree is a **Files drawer**, not a permanent primary column. Graph mode is full-bleed on the same light shell.
 

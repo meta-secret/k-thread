@@ -128,8 +128,8 @@ export const folderHue = (folder: string): number => {
   return hash % 360
 }
 
-export const NODE_W = 148
-export const NODE_H = 40
+export const NODE_W = 168
+export const NODE_H = 48
 /** @deprecated use NODE_W — kept for older imports */
 export const HUB_W = NODE_W
 export const HUB_H = NODE_H
@@ -176,7 +176,10 @@ export type HudStage = {
 
 export type Point = { x: number; y: number }
 
-/** One node per note; columns = BFS distance from focus; edges = real links only. */
+/**
+ * One node per note. Top-down flowchart (GTD-style):
+ * BFS hop = row; notes fan horizontally within a row; arrows flow downward.
+ */
 export const buildHudStage = (
   nodes: readonly ViewNode[],
   edges: readonly ViewEdge[],
@@ -219,7 +222,6 @@ export const buildHudStage = (
     }
   }
 
-  // Orphans / disconnected → last column
   let maxLayer = 0
   for (const d of layerOf.values()) maxLayer = Math.max(maxLayer, d)
   const orphanLayer = maxLayer + (layerOf.size > 0 && layerOf.size < nodes.length ? 1 : 0)
@@ -228,32 +230,32 @@ export const buildHudStage = (
   }
   for (const d of layerOf.values()) maxLayer = Math.max(maxLayer, d)
 
-  const columns: ViewNode[][] = Array.from({ length: maxLayer + 1 }, () => [])
+  const rows: ViewNode[][] = Array.from({ length: maxLayer + 1 }, () => [])
   for (const n of nodes) {
     const layer = layerOf.get(n.id) ?? 0
-    columns[layer]?.push(n)
+    rows[layer]?.push(n)
   }
-  for (const col of columns) {
-    col.sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))
+  for (const row of rows) {
+    row.sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))
   }
 
-  const colGap = Math.max(160, Math.min(220, (width - 160) / Math.max(columns.length, 1)))
-  const rowGap = NODE_H + 28
-  const originX = Math.max(90, (width - colGap * Math.max(columns.length - 1, 0)) / 2)
-  const midY = height / 2
+  const rowGap = Math.max(96, Math.min(120, (height - 120) / Math.max(rows.length, 1)))
+  const colGap = NODE_W + 36
+  const originY = Math.max(72, (height - rowGap * Math.max(rows.length - 1, 0)) / 2 - 8)
+  const midX = width / 2
 
   const placed: HudNode[] = []
   let code = 1
-  columns.forEach((col, li) => {
-    const blockH = Math.max(0, (col.length - 1) * rowGap)
-    const startY = midY - blockH / 2
-    col.forEach((n, ri) => {
+  rows.forEach((row, li) => {
+    const blockW = Math.max(0, (row.length - 1) * colGap)
+    const startX = midX - blockW / 2
+    row.forEach((n, ri) => {
       placed.push({
         ...n,
         tier: n.id === rootId ? HudTier.Root : HudTier.Node,
         layer: li,
-        x: originX + li * colGap,
-        y: startY + ri * rowGap,
+        x: startX + ri * colGap,
+        y: originY + li * rowGap,
         code: String(code).padStart(2, '0'),
       })
       code += 1
@@ -270,9 +272,11 @@ export const buildHudStage = (
     const key = e.from < e.to ? `${e.from}|${e.to}` : `${e.to}|${e.from}`
     if (seen.has(key)) continue
     seen.add(key)
+    // Arrow parent (shallower hop) → child
+    const [from, to] = a.layer <= b.layer ? [a, b] : [b, a]
     wires.push({
-      from: e.from,
-      to: e.to,
+      from: from.id,
+      to: to.id,
       fork: false,
       real: true,
       missing: a.kind === 'missing' || b.kind === 'missing',
@@ -288,10 +292,15 @@ export const buildHudStage = (
   }
 }
 
-/** Sharp orthogonal elbow (fallback). */
+/** Orthogonal elbow — prefer vertical-first for top-down flowcharts. */
 export const orthoPath = (from: Point, to: Point): string => {
-  const midX = from.x + (to.x - from.x) * 0.55
-  return `M${from.x},${from.y} H${midX} V${to.y} H${to.x}`
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  if (Math.abs(dx) < 0.5) return `M${from.x},${from.y} V${to.y}`
+  if (Math.abs(dy) < 0.5) return `M${from.x},${from.y} H${to.x}`
+  // Drop, then across, then drop — fans cleanly from a parent to siblings
+  const midY = from.y + dy * 0.45
+  return `M${from.x},${from.y} V${midY} H${to.x} V${to.y}`
 }
 
 /**

@@ -2,6 +2,8 @@
 
 Anti-slop frontend skill from [tasteskill.dev](https://www.tasteskill.dev/) / [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill).
 
+**Prefer [Impeccable](./impeccable.md)** (global `~/.cursor/skills/impeccable`) for new design work.
+
 ## Installed
 
 | Path | Role |

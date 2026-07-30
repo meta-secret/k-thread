@@ -61,8 +61,8 @@ const emit = defineEmits<{
             <i class="seg" />
           </div>
         </div>
-        <p class="empty-gauge">Ready · 0°</p>
-        <p class="empty-copy">Create a note or open Files</p>
+        <p class="empty-gauge">No note open</p>
+        <p class="empty-copy">Open Files to pick a note, or create one</p>
         <button type="button" class="empty-cta" @click="emit('createUntitled')">
           <FilePlus2 class="size-3.5" />
           New note

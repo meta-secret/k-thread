@@ -17,6 +17,7 @@ import {
 } from '../types'
 import { buildIndex } from './graph'
 import { noteLinks } from './graphView'
+import { readLastActiveId, readLastView, writeLastActiveId, writeLastView } from './session'
 import { buildNoteTree, joinPath } from './tree'
 import {
   createFolderInOpfs,
@@ -127,13 +128,19 @@ const persist = () => {
 const focusNote = (id: DocId) => {
   ensureDoc(id)
   state.activeId = some(id)
+  writeLastActiveId(id)
   const parts = id.split('/')
   state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
 }
 
+const clearActive = () => {
+  state.activeId = none
+  writeLastActiveId('')
+}
+
 const setActive = (id: DocId) => {
   focusNote(id)
-  state.view = ViewMode.Note
+  setView(ViewMode.Note)
 }
 
 const setActiveFolder = (folder: string) => {
@@ -234,11 +241,8 @@ const deleteNote = async (id: DocId): Promise<Result<true, AppError>> => {
   const active = state.activeId
   if (active.tag === 'some' && active.value === id) {
     const [next] = state.docs
-    state.activeId = next ? some(next.id) : none
-    if (next) {
-      const parts = next.id.split('/')
-      state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
-    }
+    if (next) focusNote(next.id)
+    else clearActive()
   }
 
   if (state.docs.length === 0) {
@@ -361,10 +365,23 @@ const openLocalVault = async () => {
   state.docs = picked.value.docs
   state.folders = picked.value.folders
   markReady(`${picked.value.docs.length} notes loaded`)
-  const [first] = picked.value.docs
-  state.activeId = first ? some(first.id) : none
   state.activeFolder = ''
   state.view = ViewMode.Note
+  writeLastView(ViewMode.Note)
+  // Prefer remembered note; never surprise-open an arbitrary vault entry.
+  const remembered = readLastActiveId()
+  const match = remembered.length > 0 ? picked.value.docs.find((d) => d.id === remembered) : undefined
+  if (match) focusNote(match.id)
+  else clearActive()
+}
+
+const restoreActiveFromSession = (docs: readonly Doc[]) => {
+  const remembered = readLastActiveId()
+  if (remembered.length > 0 && docs.some((d) => d.id === remembered)) {
+    focusNote(remembered)
+    return
+  }
+  clearActive()
 }
 
 const hydrateFromOpfs = async () => {
@@ -383,13 +400,14 @@ const hydrateFromOpfs = async () => {
   }
   state.docs = loaded.value.docs
   state.folders = loaded.value.folders
+  state.view = readLastView()
   markReady(`${loaded.value.docs.length} notes restored`)
-  const [first] = loaded.value.docs
-  state.activeId = first ? some(first.id) : none
+  restoreActiveFromSession(loaded.value.docs)
 }
 
 const setView = (view: ViewModeT) => {
   state.view = view
+  writeLastView(view)
 }
 
 export const vaultStore = {

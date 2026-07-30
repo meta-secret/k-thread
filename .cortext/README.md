@@ -20,7 +20,8 @@ This folder is the project’s mental model: why it exists, how it is shaped, wh
 | [graph.md](./graph.md) | Light graph pills, rounded wires, local/global nav |
 | [deployment.md](./deployment.md) | Bun build, GitHub Actions, Pages |
 | [e2e.md](./e2e.md) | Playwright under `e2e/`; active UI/UX browser review |
-| [taste.md](./taste.md) | Taste Skill (`design-taste-frontend`) install |
+| [impeccable.md](./impeccable.md) | Impeccable design skill — **global** install only |
+| [taste.md](./taste.md) | Legacy Taste Skill (project-local); prefer Impeccable |
 
 ## Quick orientation
 

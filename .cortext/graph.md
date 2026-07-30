@@ -2,19 +2,19 @@
 
 ## Aesthetic
 
-**GTD-style flowchart** on a light field (not a HUD / not dark):
+**GTD-style flowchart** on a white field:
 
 ```
-Focus column → linked notes by BFS hop · one pastel pill per note · charcoal arrows
+Focus (top) → Hop 1 row → Hop 2 row · pastel pills · charcoal arrows down
 ```
 
-- Flat white canvas, generous space
-- Soft **pastel pills** (peach / gray / pink / mint / lavender / sky) by folder + hop
-- Thin **charcoal orthogonal** arrows with triangular heads
+- Flat white canvas, generous vertical rhythm
+- Soft **pastel pills** (peach focus; mint / lavender / sky / pink by folder)
+- Thin **charcoal orthogonal** arrows with triangular heads, parent → child
 - One note = one node; missing targets = dashed gray links
-- Staging from focus note via BFS (`buildHudStage`)
+- Layout: BFS hop = **row** (top-down), siblings fan horizontally
 
-Stay light. Avoid neon glow, black fields, and cyberpunk chrome.
+Stay light. Avoid neon glow, black fields, left→right “spine” wires through a column.
 
 ## Modules
 
@@ -25,18 +25,7 @@ Stay light. Avoid neon glow, black fields, and cyberpunk chrome.
 | `graphHudDraw.ts` | SVG defs, backdrop, pills, wires, focus paint |
 | `GraphView.vue` | D3 zoom/drag wiring + toolbar chrome |
 
-Keep each file ≤500 lines; split semantically (layout vs draw vs shell).
-
-## Edge extraction
-
-For each note body, extract `[[wikilinks]]`, resolve against known ids, emit unique `from → to` edges. Unresolved targets stay in `nodes` (muted pill; dashed strands).
-
-## View modes
-
-```ts
-GraphScope.Global  // full vault (after orphan/query filters)
-GraphScope.Local   // N-hop undirected closure around activeId
-```
+Keep each file ≤500 lines.
 
 ## Interaction
 

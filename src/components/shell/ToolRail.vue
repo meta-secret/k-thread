@@ -35,9 +35,10 @@ const emit = defineEmits<{
 
 <template>
   <aside class="rail">
-    <div class="forms">
-      <div class="forms-label">Forms</div>
-      <div class="forms-row">
+    <!-- Primary: where am I / what am I looking at -->
+    <div class="nav">
+      <div class="section-label">View</div>
+      <div class="nav-row">
         <button
           type="button"
           class="icon-btn"
@@ -50,7 +51,7 @@ const emit = defineEmits<{
         <button
           type="button"
           class="icon-btn"
-          :class="{ on: view === ViewMode.Note }"
+          :class="{ on: view === ViewMode.Note && !filesOpen }"
           title="Note"
           @click="emit('setView', ViewMode.Note)"
         >
@@ -75,15 +76,13 @@ const emit = defineEmits<{
         >
           <Eye class="size-4" :stroke-width="1.5" />
         </button>
-        <button type="button" class="icon-btn" title="Import vault" @click="emit('importVault')">
-          <FolderOpen class="size-4" :stroke-width="1.5" />
-        </button>
       </div>
     </div>
 
-    <div class="tools">
-      <div class="label">Tools</div>
-      <button type="button" class="tool" @click="emit('createUntitled')">
+    <!-- Secondary: create — compact, not the first thing in the eye path -->
+    <div class="create">
+      <div class="section-label">Create</div>
+      <button type="button" class="tool primary" @click="emit('createUntitled')">
         <FilePlus2 class="size-4" :stroke-width="1.5" />
         New note
       </button>
@@ -95,11 +94,20 @@ const emit = defineEmits<{
         <FolderPlus class="size-4" :stroke-width="1.5" />
         Folder…
       </button>
+    </div>
+
+    <!-- Tertiary: manage -->
+    <div class="manage">
+      <div class="section-label">Manage</div>
+      <button type="button" class="tool" @click="emit('importVault')">
+        <FolderOpen class="size-4" :stroke-width="1.5" />
+        Import
+      </button>
       <button type="button" class="tool" :disabled="!hasActive" @click="emit('rename')">
         <Pencil class="size-4" :stroke-width="1.5" />
         Rename
       </button>
-      <button type="button" class="tool" :disabled="!hasActive" @click="emit('delete')">
+      <button type="button" class="tool danger" :disabled="!hasActive" @click="emit('delete')">
         <Trash2 class="size-4" :stroke-width="1.5" />
         Delete
       </button>
@@ -111,33 +119,32 @@ const emit = defineEmits<{
 .rail {
   display: flex;
   flex-direction: column;
-  gap: 2.25rem;
+  gap: 1.75rem;
   min-height: 0;
   padding: 1.5rem 1.05rem 1.1rem 1.25rem;
   background: transparent;
   color: var(--kube-ink);
 }
 
-.forms-label,
-.label {
-  margin-bottom: 0.7rem;
+.section-label {
+  margin-bottom: 0.55rem;
   font-size: 0.6rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--kube-mute);
 }
 
-.forms-row {
+.nav-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2rem;
+  height: 2rem;
   border: 1px solid var(--kube-line-strong);
   background: transparent;
   color: inherit;
@@ -160,11 +167,17 @@ const emit = defineEmits<{
   color: #f4f4f6;
 }
 
-.tools {
+.create,
+.manage {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
+  gap: 0.1rem;
   min-width: 8.6rem;
+}
+
+.manage {
+  margin-top: auto;
+  opacity: 0.92;
 }
 
 .tool {
@@ -172,7 +185,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.65rem;
   width: 100%;
-  padding: 0.45rem 0.5rem;
+  padding: 0.42rem 0.5rem;
   border: none;
   background: transparent;
   color: inherit;
@@ -181,6 +194,10 @@ const emit = defineEmits<{
   text-align: left;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
+}
+
+.tool.primary {
+  font-weight: 550;
 }
 
 .tool:hover:not(:disabled) {
@@ -195,5 +212,10 @@ const emit = defineEmits<{
 .tool:active:not(:disabled) {
   background: var(--kube-ink);
   color: #f4f4f6;
+}
+
+.tool.danger:hover:not(:disabled) {
+  background: rgba(192, 35, 35, 0.08);
+  color: #9a1a1a;
 }
 </style>

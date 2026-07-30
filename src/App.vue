@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FilePlus2, FolderOpen } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
 import GraphView from '@/components/GraphView.vue'
@@ -44,6 +44,16 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
 })
+
+// Vault restored but nothing remembered → open Files so the user chooses (no random note).
+watch(
+  () => [ready.value, active.tag] as const,
+  ([isReady, tag]) => {
+    if (isReady && tag === 'none' && view.value === ViewMode.Note) {
+      filesOpen.value = true
+    }
+  },
+)
 
 const isMod = (event: KeyboardEvent): boolean => event.metaKey || event.ctrlKey
 
