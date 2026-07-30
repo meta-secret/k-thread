@@ -205,7 +205,7 @@ body > [data-floating-ui-portal] .bn-suggestion-menu {
 
 @keyframes strand-flow {
   from {
-    stroke-dashoffset: 48;
+    stroke-dashoffset: 36;
   }
   to {
     stroke-dashoffset: 0;
@@ -213,7 +213,13 @@ body > [data-floating-ui-portal] .bn-suggestion-menu {
 }
 
 .strand-pulse {
-  animation: strand-flow 1.8s linear infinite;
+  animation: strand-flow 1.2s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.wire:hover .strand-pulse {
+  animation-duration: 0.5s;
+  stroke: #f97316 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

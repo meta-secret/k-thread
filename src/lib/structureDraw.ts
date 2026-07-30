@@ -466,9 +466,10 @@ export const updateStructureWires = (
       .attr('class', 'strand-pulse')
       .attr('fill', 'none')
       .attr('stroke', paint.strandHot)
-      .attr('stroke-width', 2)
+      .attr('stroke-width', 2.2)
       .attr('stroke-dasharray', '8 16')
-      .attr('opacity', 0.6)
+      .attr('filter', 'url(#orange-glow)')
+      .attr('opacity', mode === 'dark' ? 0.95 : 0.85)
       .attr('d', (p) => p)
   })
 }
