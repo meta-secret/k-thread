@@ -241,6 +241,7 @@ export const placeStructureStage = (
 
   const childIds = new Set<string>()
   for (const e of graph.edges) {
+    if (e.kind !== StructureEdgeKind.Hierarchy) continue
     const parent = byId.get(e.from)
     const child = byId.get(e.to)
     if (!parent || !child) continue
@@ -258,10 +259,7 @@ export const placeStructureStage = (
     })
   }
 
-  const root = byId.get(graph.rootId) ?? [...byId.values()].find((n) => !childIds.has(n.id))
-  if (!root) {
-    return { nodes: [], edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0, contentW: 0, contentH: 0 } }
-  }
+  const roots = [...byId.values()].filter((n) => !childIds.has(n.id))
 
   // Calculate vertical height needed by each subtree
   const measureVertical = (node: TreeNode): number => {
@@ -275,7 +273,10 @@ export const placeStructureStage = (
     node.subtreeH = Math.max(WIDGET_H, sum)
     return node.subtreeH
   }
-  measureVertical(root)
+
+  for (const r of roots) {
+    measureVertical(r)
+  }
 
   // Place nodes horizontally left to right (depth = x column, top = y row)
   const placeHorizontal = (node: TreeNode, top: number, depth: number) => {
@@ -293,7 +294,14 @@ export const placeStructureStage = (
     const last = node.children[node.children.length - 1]
     node.y = first && last ? (first.y + last.y) / 2 : top + node.subtreeH / 2
   }
-  placeHorizontal(root, 0, 0)
+
+  let currentTop = 0
+  const minDepth = Math.min(...graph.nodes.map((n) => n.depth))
+  for (const r of roots) {
+    const startDepth = roots.length === graph.nodes.length ? 0 : r.depth - minDepth
+    placeHorizontal(r, currentTop, startDepth)
+    currentTop += r.subtreeH + ROW_GAP * 2
+  }
 
   const placed: PlacedStructureNode[] = [...byId.values()].map((n) => ({
     id: n.id,

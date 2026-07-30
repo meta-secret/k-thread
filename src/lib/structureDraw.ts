@@ -59,8 +59,14 @@ export const bezierPath = (
   from: { x: number; y: number },
   to: { x: number; y: number },
 ): string => {
-  const dx = Math.abs(to.x - from.x)
-  const cpOffset = Math.max(28, dx * 0.5)
+  if (to.x < from.x - 10) {
+    // Smooth arc for right-to-left backward links without overshooting loops
+    const dy = to.y - from.y
+    const curveH = Math.min(110, Math.max(50, Math.abs(dy) * 0.45)) * (dy >= 0 ? -1 : 1)
+    return `M ${from.x} ${from.y} C ${from.x + 45} ${from.y + curveH}, ${to.x - 45} ${to.y + curveH}, ${to.x} ${to.y}`
+  }
+  const dx = to.x - from.x
+  const cpOffset = Math.max(28, dx * 0.45)
   return `M ${from.x} ${from.y} C ${from.x + cpOffset} ${from.y}, ${to.x - cpOffset} ${to.y}, ${to.x} ${to.y}`
 }
 
