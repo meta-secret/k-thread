@@ -5,7 +5,8 @@ import {
   forceSimulation,
   forceLink,
   forceManyBody,
-  forceCenter,
+  forceX,
+  forceY,
   forceCollide,
   type SimulationNodeDatum,
 } from 'd3-force'
@@ -282,7 +283,8 @@ const placeForceLayout = (
         .strength(1.2),
     )
     .force('charge', forceManyBody().strength(-350))
-    .force('center', forceCenter(400, 300))
+    .force('x', forceX(400).strength(0.12))
+    .force('y', forceY(300).strength(0.12))
     .force('collide', forceCollide(WIDGET_W * 0.55))
     .stop()
 
