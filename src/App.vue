@@ -292,26 +292,6 @@ const openGraph = () => {
   animation: k-fade-up 420ms ease-out both;
 }
 
-.app.graph {
-  background: var(--hud-bg);
-  color: var(--hud-ink);
-}
-
-.app.graph .top,
-.app.graph .foot {
-  color: var(--hud-ink);
-}
-
-.app.graph .msg {
-  color: var(--hud-mute);
-}
-
-.app.graph .wordmark,
-.app.graph .ord,
-.app.graph .foot-brand {
-  color: var(--hud-ink);
-}
-
 .top {
   display: flex;
   flex-wrap: wrap;

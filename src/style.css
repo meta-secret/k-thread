@@ -58,12 +58,13 @@
   --kube-wash-mid: #d8d8dc;
   --kube-wash-bot: #c4c4ca;
   --kube-paper: rgba(255, 255, 255, 0.34);
-  --hud-bg: #050507;
-  --hud-panel: rgba(10, 10, 14, 0.94);
-  --hud-ink: #ececf1;
-  --hud-mute: #8a8a96;
-  --hud-line: rgba(255, 42, 42, 0.38);
-  --hud-accent: #e03131;
+  /* Graph shares kube light shell; accent stays signal-red */
+  --hud-bg: transparent;
+  --hud-panel: color-mix(in srgb, var(--kube-wash-top) 72%, white);
+  --hud-ink: var(--kube-ink);
+  --hud-mute: var(--kube-mute);
+  --hud-line: var(--kube-line);
+  --hud-accent: #c02323;
 
   --bg: var(--background);
   --bg-panel: var(--sidebar);

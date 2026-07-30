@@ -34,7 +34,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <aside class="rail" :class="{ graph: view === ViewMode.Graph }">
+  <aside class="rail">
     <div class="forms">
       <div class="forms-label">Forms</div>
       <div class="forms-row">
@@ -118,10 +118,6 @@ const emit = defineEmits<{
   color: var(--kube-ink);
 }
 
-.rail.graph {
-  color: var(--hud-ink);
-}
-
 .forms-label,
 .label {
   margin-bottom: 0.7rem;
@@ -129,11 +125,6 @@ const emit = defineEmits<{
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--kube-mute);
-}
-
-.rail.graph .forms-label,
-.rail.graph .label {
-  color: var(--hud-mute);
 }
 
 .forms-row {
@@ -157,10 +148,6 @@ const emit = defineEmits<{
     border-color 140ms ease;
 }
 
-.rail.graph .icon-btn {
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
 .icon-btn:disabled {
   opacity: 0.28;
   cursor: not-allowed;
@@ -171,13 +158,6 @@ const emit = defineEmits<{
   background: var(--kube-ink);
   border-color: var(--kube-ink);
   color: #f4f4f6;
-}
-
-.rail.graph .icon-btn.on,
-.rail.graph .icon-btn:hover:not(:disabled) {
-  background: var(--hud-accent);
-  border-color: var(--hud-accent);
-  color: #fff;
 }
 
 .tools {
@@ -207,10 +187,6 @@ const emit = defineEmits<{
   background: rgba(18, 18, 20, 0.06);
 }
 
-.rail.graph .tool:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-}
-
 .tool:disabled {
   opacity: 0.28;
   cursor: not-allowed;
@@ -219,10 +195,5 @@ const emit = defineEmits<{
 .tool:active:not(:disabled) {
   background: var(--kube-ink);
   color: #f4f4f6;
-}
-
-.rail.graph .tool:active:not(:disabled) {
-  background: var(--hud-accent);
-  color: #fff;
 }
 </style>

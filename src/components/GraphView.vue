@@ -165,8 +165,8 @@ const updateWires = (wires: WireSel) => {
       .join('path')
       .attr('class', 'glow')
       .attr('fill', 'none')
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', d.fork ? 2.8 : 2.2)
+      .attr('stroke', '#121214')
+      .attr('stroke-width', d.fork ? 2.4 : 1.8)
       .attr('filter', 'url(#wire-glow)')
       .attr('d', (p) => p)
     g.selectAll<SVGPathElement, string>('path.strand')
@@ -190,24 +190,24 @@ const paintFocus = () => {
     g.selectAll<SVGPathElement, string>('path.strand').attr(
       'stroke',
       hot
-        ? 'rgba(255,255,255,0.95)'
+        ? 'rgba(18,18,20,0.88)'
         : d.missing
-          ? 'rgba(180,180,190,0.3)'
+          ? 'rgba(18,18,20,0.18)'
           : d.real
-            ? 'rgba(220,220,230,0.65)'
-            : 'rgba(160,160,170,0.35)',
+            ? 'rgba(18,18,20,0.42)'
+            : 'rgba(18,18,20,0.22)',
     )
-    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? 0.5 : 0.14)
+    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? 0.22 : 0.06)
   })
 
-  nodeSel.value.attr('opacity', (d) => (isDimmed(d.id) ? 0.18 : 1))
+  nodeSel.value.attr('opacity', (d) => (isDimmed(d.id) ? 0.22 : 1))
   nodeSel.value.selectAll<SVGRectElement | SVGPathElement, HudNode>('.chip-body').attr('stroke', (d) => {
-    if (d.id === props.activeId) return '#e03131'
-    if (d.id === hoveredId.value) return d.tier === HudTier.Hub ? '#1a1a1a' : '#ffffff'
-    if (d.kind === 'missing') return '#666670'
-    if (d.tier === HudTier.Hub) return 'transparent'
-    if (d.tier === HudTier.Bridge) return '#1a1a1a'
-    return '#2e2e36'
+    if (d.id === props.activeId) return '#c02323'
+    if (d.id === hoveredId.value) return '#121214'
+    if (d.kind === 'missing') return '#9a9aa4'
+    if (d.tier === HudTier.Hub) return 'rgba(18,18,20,0.12)'
+    if (d.tier === HudTier.Bridge) return '#121214'
+    return 'rgba(18,18,20,0.22)'
   })
   nodeSel.value
     .selectAll<SVGRectElement, HudNode>('rect.chip-active')
@@ -230,7 +230,7 @@ const drawHub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('height', h + 8)
     .attr('rx', 2)
     .attr('fill', 'none')
-    .attr('stroke', '#e03131')
+    .attr('stroke', '#c02323')
     .attr('stroke-width', 1.4)
     .attr('opacity', 0)
 
@@ -240,9 +240,9 @@ const drawHub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('y', y0)
     .attr('width', w)
     .attr('height', h)
-    .attr('fill', d.kind === 'missing' ? '#e8e4dc' : '#f4f1ea')
-    .attr('stroke', 'transparent')
-    .attr('stroke-width', 1.5)
+    .attr('fill', d.kind === 'missing' ? '#ececef' : '#f7f7f9')
+    .attr('stroke', 'rgba(18,18,20,0.12)')
+    .attr('stroke-width', 1.2)
 
   g.append('line')
     .attr('x1', x0 + 10)
@@ -264,12 +264,12 @@ const drawHub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('cx', x0 + w - 10)
     .attr('cy', y0 + 10)
     .attr('r', 3.4)
-    .attr('fill', '#e03131')
+    .attr('fill', '#c02323')
 
   g.append('text')
     .attr('x', x0 + 14)
     .attr('y', y0 + 26)
-    .attr('fill', '#7a7a80')
+    .attr('fill', '#6b6b73')
     .attr('font-size', 8)
     .attr('letter-spacing', '0.08em')
     .attr('font-family', 'ui-monospace, Menlo, monospace')
@@ -345,7 +345,7 @@ const drawBridge = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudN
     .attr('height', h + 8)
     .attr('rx', r + 2)
     .attr('fill', 'none')
-    .attr('stroke', '#e03131')
+    .attr('stroke', '#c02323')
     .attr('stroke-width', 1.4)
     .attr('opacity', 0)
 
@@ -377,7 +377,7 @@ const drawBridge = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudN
     const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5
     return `${px + Math.cos(a) * pr},${py + Math.sin(a) * pr}`
   }).join(' ')
-  g.append('polygon').attr('points', pent).attr('fill', '#e03131')
+  g.append('polygon').attr('points', pent).attr('fill', '#c02323')
   g.append('text')
     .attr('x', px)
     .attr('y', py + 3)
@@ -419,7 +419,7 @@ const drawSub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('height', h + 6)
     .attr('rx', 3)
     .attr('fill', 'none')
-    .attr('stroke', '#e03131')
+    .attr('stroke', '#c02323')
     .attr('stroke-width', 1.2)
     .attr('opacity', 0)
   g.append('rect')
@@ -429,19 +429,19 @@ const drawSub = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode
     .attr('width', w)
     .attr('height', h)
     .attr('rx', 2)
-    .attr('fill', d.kind === 'missing' ? '#101016' : '#14141a')
-    .attr('stroke', '#2e2e36')
+    .attr('fill', d.kind === 'missing' ? '#e8e8ec' : '#f4f4f6')
+    .attr('stroke', 'rgba(18,18,20,0.22)')
     .attr('stroke-width', 1.1)
   g.append('rect')
     .attr('x', -w / 2 + 5)
     .attr('y', -h / 2 + 5)
     .attr('width', 2)
     .attr('height', h - 10)
-    .attr('fill', d.id === props.activeId ? '#e03131' : '#8a8a96')
+    .attr('fill', d.id === props.activeId ? '#c02323' : '#9a9aa4')
   g.append('text')
     .attr('x', -w / 2 + 12)
     .attr('y', 3)
-    .attr('fill', '#ececf2')
+    .attr('fill', '#121214')
     .attr('font-size', 9)
     .attr('font-weight', 600)
     .attr('font-family', 'ui-monospace, Menlo, monospace')
@@ -487,7 +487,7 @@ const rebuild = () => {
     .attr('y', '-50%')
     .attr('width', '200%')
     .attr('height', '200%')
-  glow.append('feGaussianBlur').attr('stdDeviation', '2.2').attr('result', 'blur')
+  glow.append('feGaussianBlur').attr('stdDeviation', '1.4').attr('result', 'blur')
   const merge = glow.append('feMerge')
   merge.append('feMergeNode').attr('in', 'blur')
   merge.append('feMergeNode').attr('in', 'SourceGraphic')
@@ -495,13 +495,13 @@ const rebuild = () => {
   const haze = defs
     .append('radialGradient')
     .attr('id', 'haze')
-    .attr('cx', '38%')
-    .attr('cy', '50%')
-    .attr('r', '68%')
-  haze.append('stop').attr('offset', '0%').attr('stop-color', '#101018').attr('stop-opacity', 0.35)
-  haze.append('stop').attr('offset', '100%').attr('stop-color', '#000').attr('stop-opacity', 0.85)
+    .attr('cx', '42%')
+    .attr('cy', '48%')
+    .attr('r', '72%')
+  haze.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55)
+  haze.append('stop').attr('offset', '100%').attr('stop-color', '#c4c4ca').attr('stop-opacity', 0.35)
 
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', '#050507')
+  svg.append('rect').attr('width', width).attr('height', height).attr('fill', '#e4e4e8')
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#haze)')
 
   const chrome = svg.append('g').attr('class', 'chrome')
@@ -509,7 +509,7 @@ const rebuild = () => {
     chrome
       .append('path')
       .attr('d', `M${x - 3},${y} H${x + 3} M${x},${y - 3} V${y + 3}`)
-      .attr('stroke', '#e03131')
+      .attr('stroke', '#c02323')
       .attr('stroke-width', 1)
   }
   mark(16, 16)
@@ -523,7 +523,7 @@ const rebuild = () => {
       .attr('x', x)
       .attr('y', 28)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#6a6a74')
+      .attr('fill', '#6b6b73')
       .attr('font-size', 9)
       .attr('letter-spacing', '0.18em')
       .attr('font-family', 'ui-monospace, Menlo, monospace')
@@ -690,18 +690,9 @@ onBeforeUnmount(() => {
   grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 0;
-  background: var(--hud-bg);
-  color: var(--hud-ink);
+  background: transparent;
+  color: var(--kube-ink);
   font-family: var(--font-mono);
-}
-
-.hud-shell::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 40% 45%, transparent 30%, rgba(0, 0, 0, 0.55) 100%);
-  z-index: 1;
 }
 
 .toolbar,
@@ -717,8 +708,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--hud-line);
-  background: var(--hud-panel);
+  border-bottom: 1px solid var(--kube-line);
+  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
 }
 
 .modes,
@@ -735,7 +726,7 @@ onBeforeUnmount(() => {
   gap: 0.4rem;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-  color: #8a8a96;
+  color: var(--kube-mute);
 }
 
 .hops input {
@@ -745,7 +736,7 @@ onBeforeUnmount(() => {
 .sep {
   width: 1px;
   height: 1rem;
-  background: rgba(255, 42, 42, 0.5);
+  background: color-mix(in srgb, var(--hud-accent) 55%, transparent);
   margin: 0 0.25rem;
 }
 
@@ -757,9 +748,9 @@ onBeforeUnmount(() => {
 
 .search {
   width: min(220px, 100%);
-  background: #101016;
-  border-color: #2a2a32;
-  color: #e8e8ee;
+  background: #f4f4f6;
+  border-color: var(--kube-line-strong);
+  color: var(--kube-ink);
   font-family: inherit;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -784,15 +775,15 @@ onBeforeUnmount(() => {
   gap: 1rem;
   align-items: center;
   padding: 0.4rem 0.9rem;
-  border-top: 1px solid var(--hud-line);
-  background: var(--hud-panel);
+  border-top: 1px solid var(--kube-line);
+  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
   font-size: 0.62rem;
   letter-spacing: 0.12em;
-  color: var(--hud-mute);
+  color: var(--kube-mute);
 }
 
 .footer .mono {
-  color: #c8c8d0;
+  color: var(--kube-ink);
 }
 
 .footer .hint {
