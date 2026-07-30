@@ -130,15 +130,209 @@ export const folderHue = (folder: string): number => {
 
 export const CHIP_W = 118
 export const CHIP_H = 36
+export const SUB_W = 96
+export const SUB_H = 28
 export const BUNDLE_STRANDS = 4
+export const FORK_STRANDS = 7
+
+export const HudTier = {
+  Hub: 'hub',
+  Bridge: 'bridge',
+  Sub: 'sub',
+} as const
+export type HudTier = (typeof HudTier)[keyof typeof HudTier]
+
+export type HudNode = ViewNode & {
+  tier: HudTier
+  x: number
+  y: number
+  code: string
+}
+
+export type HudWire = {
+  from: DocId
+  to: DocId
+  missing: boolean
+  fork: boolean
+  real: boolean
+}
+
+export type HudStage = {
+  hubs: HudNode[]
+  bridges: HudNode[]
+  subs: HudNode[]
+  wires: HudWire[]
+  records: { id: DocId; code: string; degree: number; rate: string }[]
+}
 
 export type Point = { x: number; y: number }
+
+const linked = (a: DocId, b: DocId, edgeSet: ReadonlySet<string>): boolean =>
+  edgeSet.has(`${a}|${b}`) || edgeSet.has(`${b}|${a}`)
+
+/** 3 hubs → 2 bridges → fork into remaining sub-components (left-to-right HUD). */
+export const buildHudStage = (
+  nodes: readonly ViewNode[],
+  edges: readonly ViewEdge[],
+  activeId: DocId | '',
+  width: number,
+  height: number,
+): HudStage => {
+  const edgeSet = new Set(edges.map((e) => `${e.from}|${e.to}`))
+  const byDegree = [...nodes].sort((a, b) => {
+    if (a.id === activeId) return -1
+    if (b.id === activeId) return 1
+    if (b.degree !== a.degree) return b.degree - a.degree
+    return a.id.localeCompare(b.id)
+  })
+
+  const hubsRaw = byDegree.slice(0, Math.min(3, byDegree.length))
+  const hubIds = new Set(hubsRaw.map((n) => n.id))
+  const restAfterHubs = byDegree.filter((n) => !hubIds.has(n.id))
+
+  const bridgeScore = (n: ViewNode): number => {
+    let score = n.degree
+    for (const h of hubIds) {
+      if (linked(n.id, h, edgeSet)) score += 10
+    }
+    return score
+  }
+
+  const bridgesRaw = [...restAfterHubs]
+    .sort((a, b) => bridgeScore(b) - bridgeScore(a) || a.id.localeCompare(b.id))
+    .slice(0, Math.min(2, restAfterHubs.length))
+  const bridgeIds = new Set(bridgesRaw.map((n) => n.id))
+  const subsRaw = restAfterHubs.filter((n) => !bridgeIds.has(n.id))
+
+  const midY = height / 2
+  const hubX = Math.max(210, width * 0.18)
+  const bridgeX = Math.max(380, width * 0.34)
+  const subX0 = Math.max(560, width * 0.52)
+
+  const placeColumn = (
+    list: readonly ViewNode[],
+    tier: HudTier,
+    x: number,
+    gap: number,
+  ): HudNode[] => {
+    if (list.length === 0) return []
+    const total = (list.length - 1) * gap
+    const start = midY - total / 2
+    return list.map((n, i) => ({
+      ...n,
+      tier,
+      x,
+      y: start + i * gap,
+      code: `CHR-${tier === HudTier.Hub ? '1' : tier === HudTier.Bridge ? '2' : '3'}.${String(i + 11)}`,
+    }))
+  }
+
+  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, 78)
+  const bridges = placeColumn(bridgesRaw, HudTier.Bridge, bridgeX, 96)
+
+  const cols = Math.max(2, Math.ceil(Math.sqrt(Math.max(subsRaw.length, 1))))
+  const colGap = 118
+  const rowGap = 52
+  const subs: HudNode[] = subsRaw.map((n, i) => {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const rows = Math.ceil(subsRaw.length / cols)
+    const blockH = (rows - 1) * rowGap
+    return {
+      ...n,
+      tier: HudTier.Sub,
+      x: subX0 + col * colGap,
+      y: midY - blockH / 2 + row * rowGap,
+      code: `SUB-${String(i + 1).padStart(2, '0')}`,
+    }
+  })
+
+  const byId = new Map<DocId, HudNode>()
+  for (const n of [...hubs, ...bridges, ...subs]) byId.set(n.id, n)
+
+  const wires: HudWire[] = []
+  const seen = new Set<string>()
+  const pushWire = (from: DocId, to: DocId, fork: boolean, real: boolean) => {
+    const key = from < to ? `${from}|${to}` : `${to}|${from}`
+    if (seen.has(key)) return
+    seen.add(key)
+    const a = byId.get(from)
+    const b = byId.get(to)
+    wires.push({
+      from,
+      to,
+      fork,
+      real,
+      missing: (a?.kind === 'missing' || b?.kind === 'missing') ?? false,
+    })
+  }
+
+  // Real edges across stages
+  for (const e of edges) {
+    const a = byId.get(e.from)
+    const b = byId.get(e.to)
+    if (!a || !b) continue
+    const tiers = new Set([a.tier, b.tier])
+    if (tiers.has(HudTier.Hub) && tiers.has(HudTier.Bridge)) {
+      pushWire(e.from, e.to, false, true)
+    } else if (tiers.has(HudTier.Bridge) && tiers.has(HudTier.Sub)) {
+      pushWire(e.from, e.to, true, true)
+    } else if (tiers.has(HudTier.Hub) && tiers.has(HudTier.Sub)) {
+      pushWire(e.from, e.to, true, true)
+    } else if (a.tier === b.tier && a.tier === HudTier.Hub) {
+      pushWire(e.from, e.to, false, true)
+    }
+  }
+
+  // Ensure 3→2 staging links (affinity) when sparse
+  for (const hub of hubs) {
+    let linkedBridge = bridges.find((b) => linked(hub.id, b.id, edgeSet))
+    if (!linkedBridge && bridges.length > 0) {
+      linkedBridge = bridges[hubs.indexOf(hub) % bridges.length]
+    }
+    if (linkedBridge) pushWire(hub.id, linkedBridge.id, false, linked(hub.id, linkedBridge.id, edgeSet))
+  }
+
+  // Fork: every sub attaches to a bridge (linked preferred, else round-robin)
+  bridges.forEach((bridge, bi) => {
+    const mine = subs.filter((s, si) => {
+      if (linked(bridge.id, s.id, edgeSet)) return true
+      const owners = bridges.filter((b) => linked(b.id, s.id, edgeSet))
+      if (owners.length > 0) return owners[0]?.id === bridge.id
+      return si % bridges.length === bi
+    })
+    for (const sub of mine) {
+      pushWire(bridge.id, sub.id, true, linked(bridge.id, sub.id, edgeSet))
+    }
+  })
+
+  // If no bridges, hubs fork directly to subs
+  if (bridges.length === 0) {
+    hubs.forEach((hub, hi) => {
+      for (const [si, sub] of subs.entries()) {
+        if (linked(hub.id, sub.id, edgeSet) || si % Math.max(hubs.length, 1) === hi) {
+          pushWire(hub.id, sub.id, true, linked(hub.id, sub.id, edgeSet))
+        }
+      }
+    })
+  }
+
+  const records = hubs.map((h, i) => ({
+    id: h.id,
+    code: h.code,
+    degree: h.degree,
+    rate: `${(40 + h.degree * 17 + i * 3).toFixed(1)}Kb/s`,
+  }))
+
+  return { hubs, bridges, subs, wires, records }
+}
 
 /** Cubic bezier + parallel offset strands for fiber-bundle edges. */
 export const bundlePaths = (
   from: Point,
   to: Point,
   strands: number = BUNDLE_STRANDS,
+  spread = 2.4,
 ): string[] => {
   const dx = to.x - from.x
   const dy = to.y - from.y
@@ -147,10 +341,9 @@ export const bundlePaths = (
 
   const nx = -dy / len
   const ny = dx / len
-  const bend = Math.min(90, len * 0.35)
-  const c1 = { x: from.x + bend, y: from.y }
-  const c2 = { x: to.x - bend, y: to.y }
-  const spread = 2.4
+  const bend = Math.min(140, len * 0.42)
+  const c1 = { x: from.x + bend, y: from.y + dy * 0.05 }
+  const c2 = { x: to.x - bend * 0.75, y: to.y - dy * 0.05 }
   const paths: string[] = []
 
   for (let i = 0; i < strands; i += 1) {
@@ -160,10 +353,10 @@ export const bundlePaths = (
     const sy = from.y + ny * o
     const tx = to.x + nx * o
     const ty = to.y + ny * o
-    const ax = c1.x + nx * o * 0.6
-    const ay = c1.y + ny * o * 0.6
-    const bx = c2.x + nx * o * 0.6
-    const by = c2.y + ny * o * 0.6
+    const ax = c1.x + nx * o * 0.85
+    const ay = c1.y + ny * o * 0.85
+    const bx = c2.x + nx * o * 0.85
+    const by = c2.y + ny * o * 0.85
     paths.push(`M${sx},${sy} C${ax},${ay} ${bx},${by} ${tx},${ty}`)
   }
   return paths

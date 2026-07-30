@@ -2,7 +2,6 @@
 import { FilePlus2 } from '@lucide/vue'
 import BlockNoteEditor from '@/components/BlockNoteEditor.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
-import { Button } from '@/components/ui/button'
 import type { DocId } from '@/types'
 
 defineProps<{
@@ -27,9 +26,14 @@ const emit = defineEmits<{
 
 <template>
   <section class="stage">
-    <div class="stage-frame">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="floor" />
+      <div class="horizon" />
+    </div>
+
+    <div class="stage-body">
       <template v-if="hasActive">
-        <div class="editor-wrap" :class="{ split: showPreview }">
+        <div class="sheet" :class="{ split: showPreview }">
           <div class="pane">
             <BlockNoteEditor
               :doc-key="docKey"
@@ -45,66 +49,127 @@ const emit = defineEmits<{
           </div>
         </div>
       </template>
+
       <div v-else class="empty">
-        <div class="wireframe" aria-hidden="true">
-          <div class="cube" />
-          <div class="ring" />
+        <div class="hero" aria-hidden="true">
+          <div class="cube">
+            <span class="face front" />
+            <span class="face top" />
+            <span class="face side" />
+          </div>
+          <div class="orbit">
+            <i class="seg" />
+          </div>
         </div>
-        <p class="empty-title">No note on stage</p>
-        <p class="empty-copy">Create a note or open Files to begin.</p>
-        <Button class="empty-btn" @click="emit('createUntitled')">
-          <FilePlus2 class="size-4" />
+        <p class="empty-gauge">Ready · 0°</p>
+        <p class="empty-copy">Create a note or open Files</p>
+        <button type="button" class="empty-cta" @click="emit('createUntitled')">
+          <FilePlus2 class="size-3.5" />
           New note
-        </Button>
+        </button>
       </div>
     </div>
 
-    <div v-if="hasActive" class="status">
-      <span class="title">{{ title }}</span>
-      <span class="dot">·</span>
-      <span>{{ folder.length > 0 ? folder : 'root' }}</span>
-      <span class="dot">·</span>
-      <span>LNK {{ linkCount }}</span>
+    <div v-if="hasActive" class="gauge">
+      <div class="orbit small" aria-hidden="true">
+        <i class="seg" />
+      </div>
+      <p class="gauge-text">
+        <span class="title">{{ title }}</span>
+        <span class="sep">—</span>
+        <span>{{ folder.length > 0 ? folder : 'root' }}</span>
+        <span class="sep">·</span>
+        <span>LNK {{ linkCount }}</span>
+      </p>
     </div>
   </section>
 </template>
 
 <style scoped>
 .stage {
+  --kube-ink: #141414;
+  --kube-mute: #6a6a6a;
+  position: relative;
   display: grid;
   grid-template-rows: 1fr auto;
   min-height: 0;
   min-width: 0;
-  background:
-    linear-gradient(to bottom, #cfcfcf 0%, #bdbdbd 55%, #b0b0b0 100%);
-}
-
-.stage-frame {
-  position: relative;
-  min-height: 0;
-  margin: 0.75rem;
-  border: 1px solid #8e8e8e;
-  background:
-    linear-gradient(#0000 24px, rgba(0, 0, 0, 0.04) 25px) 0 0 / 100% 25px,
-    linear-gradient(90deg, #0000 24px, rgba(0, 0, 0, 0.04) 25px) 0 0 / 25px 100%,
-    #d8d8d8;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  background: transparent;
+  color: var(--kube-ink);
 }
 
-.editor-wrap {
+.atmosphere {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.floor {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -8%;
+  height: 62%;
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, 0.1), transparent 55%),
+    repeating-linear-gradient(
+      to right,
+      rgba(20, 20, 20, 0.07) 0,
+      rgba(20, 20, 20, 0.07) 1px,
+      transparent 1px,
+      transparent 72px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(20, 20, 20, 0.05) 0,
+      rgba(20, 20, 20, 0.05) 1px,
+      transparent 1px,
+      transparent 72px
+    );
+  transform: perspective(700px) rotateX(62deg);
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 88%);
+}
+
+.horizon {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 45% at 50% 38%, rgba(255, 255, 255, 0.35), transparent 70%);
+}
+
+.stage-body {
+  position: relative;
+  z-index: 1;
   display: grid;
+  min-height: 0;
+  place-items: stretch center;
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.sheet {
+  width: min(720px, 100%);
   height: 100%;
   min-height: 0;
+  display: grid;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.45) inset;
 }
 
-.editor-wrap.split {
+.sheet.split {
+  width: min(1040px, 100%);
   grid-template-columns: 1fr;
   grid-template-rows: 1fr 1fr;
 }
 
-@media (min-width: 1024px) {
-  .editor-wrap.split {
+@media (min-width: 1100px) {
+  .sheet.split {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr;
   }
@@ -113,91 +178,168 @@ const emit = defineEmits<{
 .pane {
   min-height: 0;
   overflow: hidden;
-  background: #f4f4f4;
+  background: transparent;
 }
 
 .pane.preview {
-  border-top: 1px solid #b0b0b0;
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1100px) {
   .pane.preview {
     border-top: none;
-    border-left: 1px solid #b0b0b0;
+    border-left: 1px solid rgba(20, 20, 20, 0.08);
   }
 }
 
-.empty {
-  display: grid;
-  place-content: center;
-  gap: 0.65rem;
-  height: 100%;
-  text-align: center;
-  color: #222;
+.pane :deep(.blocknote-host) {
+  background: transparent;
 }
 
-.wireframe {
+.pane :deep(.bn-container),
+.pane :deep(.bn-editor) {
+  background: transparent !important;
+}
+
+.pane :deep(.mantine-Paper-root),
+.pane :deep(.bn-mantine) {
+  background: transparent !important;
+}
+
+.empty {
+  align-self: center;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  text-align: center;
+}
+
+.hero {
   position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 0.5rem;
+  width: 160px;
+  height: 150px;
+  margin-bottom: 0.25rem;
+  perspective: 600px;
 }
 
 .cube {
   position: absolute;
-  inset: 22px;
-  border: 1.5px solid #111;
-  transform: rotateX(60deg) rotateZ(45deg);
-  box-shadow: 0 18px 24px rgba(0, 0, 0, 0.18);
+  left: 50%;
+  top: 28px;
+  width: 72px;
+  height: 72px;
+  transform: translateX(-50%) rotateX(58deg) rotateZ(45deg);
+  transform-style: preserve-3d;
 }
 
-.ring {
+.face {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 8px;
-  height: 36px;
-  border: 1.5px solid #111;
-  border-radius: 50%;
-  opacity: 0.7;
+  inset: 0;
+  border: 1.5px solid var(--kube-ink);
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.empty-title {
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+.face.top {
+  transform: rotateX(90deg) translateZ(36px);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.face.side {
+  transform: rotateY(90deg) translateZ(36px);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.face.front {
+  transform: translateZ(36px);
+  box-shadow: 0 28px 36px rgba(0, 0, 0, 0.12);
+}
+
+.orbit {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 10px;
+  height: 42px;
+  border: 1.5px solid rgba(20, 20, 20, 0.85);
+  border-radius: 50%;
+  transform: rotateX(68deg);
+}
+
+.orbit .seg {
+  position: absolute;
+  left: 12%;
+  top: -1.5px;
+  width: 22%;
+  height: 3px;
+  background: var(--kube-ink);
+  border-radius: 2px;
+}
+
+.orbit.small {
+  position: relative;
+  width: 88px;
+  height: 22px;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin: 0 auto 0.15rem;
+  border-width: 1px;
+  opacity: 0.85;
+}
+
+.orbit.small .seg {
+  width: 28%;
+  height: 2px;
+  top: -1px;
+}
+
+.empty-gauge,
+.gauge-text {
+  margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kube-ink);
 }
 
 .empty-copy {
+  margin: 0;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--kube-mute);
+  letter-spacing: 0.04em;
 }
 
-.empty-btn {
-  justify-self: center;
-  background: #111;
-  color: #f2f2f2;
-}
-
-.status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.empty-cta {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.45rem 0.75rem 0.7rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  color: #333;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: none;
+  background: var(--kube-ink);
+  color: #f4f4f4;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
 }
 
-.status .title {
-  font-weight: 700;
-  color: #111;
+.gauge {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 1rem 1rem;
 }
 
-.status .dot {
-  opacity: 0.5;
+.gauge-text .title {
+  font-weight: 600;
+}
+
+.gauge-text .sep {
+  margin: 0 0.4rem;
+  opacity: 0.45;
 }
 </style>

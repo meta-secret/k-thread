@@ -35,6 +35,10 @@ const crumbs = computed(() => {
 
 <template>
   <aside class="inspector">
+    <div class="head">
+      <span class="label">Context</span>
+    </div>
+
     <div class="grid2">
       <button
         type="button"
@@ -65,12 +69,23 @@ const crumbs = computed(() => {
       </button>
     </div>
 
-    <button type="button" class="graph-jump" @click="emit('openGraph')">Open graph focus</button>
+    <div class="sliders">
+      <div class="slider-row">
+        <span>Density</span>
+        <div class="track"><i :style="{ width: `${Math.min(100, (backlinks.length + outlinks.length) * 12)}%` }" /></div>
+      </div>
+      <div class="slider-row">
+        <span>Links</span>
+        <div class="track"><i :style="{ width: `${Math.min(100, outlinks.length * 14)}%` }" /></div>
+      </div>
+    </div>
+
+    <button type="button" class="graph-jump" @click="emit('openGraph')">Graph focus</button>
 
     <div class="body">
       <template v-if="panel === Panel.Tags">
         <div class="section-label">Tags</div>
-        <p v-if="tags.length === 0" class="empty">No tags in this note</p>
+        <p v-if="tags.length === 0" class="empty">No tags</p>
         <ul v-else class="list">
           <li v-for="tag in tags" :key="tag">#{{ tag }}</li>
         </ul>
@@ -101,9 +116,8 @@ const crumbs = computed(() => {
       </template>
 
       <div class="section-label path-label">Path</div>
-      <p v-if="activeId.length === 0" class="empty">No note selected</p>
+      <p v-if="activeId.length === 0" class="empty">No note</p>
       <div v-else class="crumbs">
-        <span v-if="folder.length === 0" class="crumb muted">root</span>
         <span v-for="(part, i) in crumbs" :key="`${part}-${i}`" class="crumb">
           <span v-if="i > 0" class="slash">/</span>{{ part }}
         </span>
@@ -116,49 +130,92 @@ const crumbs = computed(() => {
 .inspector {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   min-height: 0;
-  min-width: 12rem;
-  padding: 0.85rem 0.75rem;
-  border-left: 1px solid #c8c8c8;
-  background: #d6d6d6;
-  color: #111;
+  width: min(15rem, 34vw);
+  padding: 1.4rem 1.25rem 1rem 0.75rem;
+  background: transparent;
+  color: #141414;
+}
+
+.head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.label,
+.section-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a7a7a;
 }
 
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 .cell {
   display: grid;
   place-items: center;
-  min-height: 2.4rem;
-  border: 1px solid #222;
+  min-height: 2.55rem;
+  border: 1px solid rgba(20, 20, 20, 0.55);
   background: transparent;
-  font-size: 0.7rem;
-  letter-spacing: 0.06em;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
 }
 
 .cell.on {
-  background: #111;
+  background: #141414;
+  border-color: #141414;
   color: #f2f2f2;
+}
+
+.sliders {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.15rem 0;
+}
+
+.slider-row {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a5a5a;
+}
+
+.track {
+  position: relative;
+  height: 2px;
+  background: rgba(20, 20, 20, 0.15);
+}
+
+.track i {
+  display: block;
+  height: 100%;
+  background: #141414;
+  min-width: 8%;
 }
 
 .graph-jump {
   width: 100%;
-  padding: 0.45rem 0.5rem;
-  border: 1px solid #222;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid rgba(20, 20, 20, 0.55);
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
 .graph-jump:hover {
-  background: #111;
+  background: #141414;
   color: #f2f2f2;
 }
 
@@ -169,20 +226,16 @@ const crumbs = computed(() => {
 }
 
 .section-label {
-  margin: 0.4rem 0 0.35rem;
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #555;
+  margin: 0.55rem 0 0.4rem;
 }
 
 .path-label {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
 .empty {
   font-size: 0.8rem;
-  color: #666;
+  color: #7a7a7a;
 }
 
 .list {
@@ -192,17 +245,17 @@ const crumbs = computed(() => {
 }
 
 .list li {
-  margin: 0.15rem 0;
-  font-size: 0.82rem;
+  margin: 0.2rem 0;
+  font-size: 0.84rem;
 }
 
 .link {
   border: none;
   background: none;
-  padding: 0.15rem 0;
-  color: #111;
+  padding: 0.1rem 0;
+  color: #141414;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
   cursor: pointer;
   font: inherit;
 }
@@ -210,17 +263,14 @@ const crumbs = computed(() => {
 .crumbs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem;
-  font-size: 0.8rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.crumb.muted {
-  color: #666;
+  gap: 0.1rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 .slash {
   margin-right: 0.15rem;
-  color: #888;
+  color: #999;
 }
 </style>

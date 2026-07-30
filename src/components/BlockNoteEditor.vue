@@ -79,19 +79,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div :ref="bindHost" class="blocknote-host h-full min-h-0 overflow-auto bg-card" />
+  <div :ref="bindHost" class="blocknote-host h-full min-h-0 overflow-auto" />
 </template>
 
 <style>
+.blocknote-host {
+  background: transparent;
+}
+
 .blocknote-host .bn-container,
 .blocknote-host .bn-editor {
   height: 100%;
   min-height: 100%;
+  background: transparent !important;
 }
 
 .blocknote-host .bn-editor {
-  padding-inline: 1.25rem;
-  padding-block: 1rem;
+  padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+  padding-block: 1.5rem 2rem;
+  color: #141414;
 }
 
 .blocknote-host .obsidian-wikilink {

@@ -36,46 +36,49 @@ const emit = defineEmits<{
 <template>
   <aside class="rail">
     <div class="forms">
-      <button
-        type="button"
-        class="icon-btn"
-        :class="{ on: filesOpen }"
-        title="Files"
-        @click="emit('toggleFiles')"
-      >
-        <PanelLeft class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="icon-btn"
-        :class="{ on: view === ViewMode.Note }"
-        title="Note"
-        @click="emit('setView', ViewMode.Note)"
-      >
-        <StickyNote class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="icon-btn"
-        :class="{ on: view === ViewMode.Graph }"
-        title="Graph"
-        @click="emit('setView', ViewMode.Graph)"
-      >
-        <Network class="size-4" />
-      </button>
-      <button
-        type="button"
-        class="icon-btn"
-        :class="{ on: showPreview }"
-        title="Preview"
-        :disabled="view !== ViewMode.Note"
-        @click="emit('togglePreview')"
-      >
-        <Eye class="size-4" />
-      </button>
-      <button type="button" class="icon-btn" title="Import vault" @click="emit('importVault')">
-        <FolderOpen class="size-4" />
-      </button>
+      <div class="forms-label">Forms</div>
+      <div class="forms-row">
+        <button
+          type="button"
+          class="icon-btn"
+          :class="{ on: filesOpen }"
+          title="Files"
+          @click="emit('toggleFiles')"
+        >
+          <PanelLeft class="size-4" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          :class="{ on: view === ViewMode.Note }"
+          title="Note"
+          @click="emit('setView', ViewMode.Note)"
+        >
+          <StickyNote class="size-4" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          :class="{ on: view === ViewMode.Graph }"
+          title="Graph"
+          @click="emit('setView', ViewMode.Graph)"
+        >
+          <Network class="size-4" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          :class="{ on: showPreview }"
+          title="Preview"
+          :disabled="view !== ViewMode.Note"
+          @click="emit('togglePreview')"
+        >
+          <Eye class="size-4" />
+        </button>
+        <button type="button" class="icon-btn" title="Import vault" @click="emit('importVault')">
+          <FolderOpen class="size-4" />
+        </button>
+      </div>
     </div>
 
     <div class="tools">
@@ -108,81 +111,88 @@ const emit = defineEmits<{
 .rail {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 2rem;
   min-height: 0;
-  padding: 0.85rem 0.65rem;
-  border-right: 1px solid #c8c8c8;
-  background: #d6d6d6;
-  color: #111;
+  padding: 1.4rem 1rem 1rem 1.15rem;
+  background: transparent;
+  color: #141414;
 }
 
-.forms {
+.forms-label,
+.label {
+  margin-bottom: 0.65rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a7a7a;
+}
+
+.forms-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.55rem;
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid #222;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid rgba(20, 20, 20, 0.55);
   background: transparent;
-  color: #111;
+  color: #141414;
   cursor: pointer;
 }
 
 .icon-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.28;
   cursor: not-allowed;
 }
 
 .icon-btn.on {
-  background: #111;
+  background: #141414;
+  border-color: #141414;
   color: #f2f2f2;
 }
 
 .tools {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  min-width: 7.5rem;
-}
-
-.label {
-  margin-bottom: 0.35rem;
-  font-size: 0.65rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #555;
+  gap: 0.15rem;
+  min-width: 8.5rem;
 }
 
 .tool {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   width: 100%;
-  padding: 0.4rem 0.45rem;
+  padding: 0.42rem 0.5rem;
   border: none;
   background: transparent;
-  color: #111;
-  font-size: 0.8rem;
+  color: #141414;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
   text-align: left;
   cursor: pointer;
 }
 
 .tool:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(20, 20, 20, 0.05);
 }
 
 .tool:disabled {
-  opacity: 0.35;
+  opacity: 0.28;
   cursor: not-allowed;
 }
 
+.tool:focus-visible {
+  outline: 1px solid #141414;
+}
+
+/* solid black active block — pressed / keyboard */
 .tool:active:not(:disabled) {
-  background: #111;
+  background: #141414;
   color: #f2f2f2;
 }
 </style>

@@ -6,6 +6,7 @@ import GraphView from '@/components/GraphView.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
 import RenameNoteDialog from '@/components/RenameNoteDialog.vue'
+import BrandMark from '@/components/BrandMark.vue'
 import EditorStage from '@/components/shell/EditorStage.vue'
 import Inspector from '@/components/shell/Inspector.vue'
 import ToolRail from '@/components/shell/ToolRail.vue'
@@ -124,8 +125,8 @@ const openGraph = () => {
     <div class="app">
       <header class="top">
         <div class="brand">
-          <div class="mark">k</div>
-          <span>k-thread</span>
+          <BrandMark :size="28" />
+          <span class="wordmark">k-thread</span>
         </div>
         <p class="msg">
           {{ message }}
@@ -235,7 +236,10 @@ const openGraph = () => {
       </main>
 
       <footer v-if="ready" class="foot">
-        <span class="logo-box">k-thread</span>
+        <div class="foot-brand">
+          <BrandMark :size="18" />
+          <span>k-thread</span>
+        </div>
         <span class="mono">{{ String(noteOrdinal.index).padStart(3, '0') }}</span>
       </footer>
 
@@ -260,36 +264,31 @@ const openGraph = () => {
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100vh;
-  background: #cfcfcf;
-  color: #111;
+  background: linear-gradient(180deg, #ececec 0%, #d5d5d5 48%, #c4c4c4 100%);
+  color: #141414;
 }
 
 .top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0.85rem;
-  border-bottom: 1px solid #b0b0b0;
-  background: #d8d8d8;
+  gap: 0.85rem;
+  padding: 0.85rem 1.25rem 0.55rem;
+  background: transparent;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  gap: 0.65rem;
 }
 
-.mark {
-  display: grid;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  background: #111;
-  color: #f2f2f2;
-  font-size: 0.85rem;
+.wordmark {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .msg {
@@ -298,18 +297,20 @@ const openGraph = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8rem;
-  color: #555;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6a6a6a;
 }
 
 .ord {
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  color: #333;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: #141414;
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 .workspace {
@@ -326,7 +327,7 @@ const openGraph = () => {
 
 .note-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(12rem, 16rem);
+  grid-template-columns: 1fr auto;
   height: 100%;
   min-height: 0;
 }
@@ -340,21 +341,28 @@ const openGraph = () => {
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(20, 20, 20, 0.18);
+  backdrop-filter: blur(2px);
 }
 
 .files-drawer {
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 0.75rem;
+  left: 0.75rem;
+  bottom: 0.75rem;
   z-index: 30;
   width: min(280px, 90vw);
-  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  background: rgba(236, 236, 236, 0.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
 }
 
 .files-drawer :deep(aside) {
   height: 100%;
+  border: none;
+  background: transparent;
 }
 
 .landing {
@@ -363,19 +371,20 @@ const openGraph = () => {
   gap: 1rem;
   padding: 2rem 1.5rem;
   text-align: center;
-  background: #d6d6d6;
 }
 
 .landing h1 {
   font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .landing p {
   max-width: 32rem;
   margin: 0 auto;
-  color: #555;
+  color: #5a5a5a;
+  letter-spacing: 0.02em;
 }
 
 .landing-actions {
@@ -394,18 +403,18 @@ const openGraph = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 0.85rem;
-  border-top: 1px solid #b0b0b0;
-  background: #d0d0d0;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  padding: 0.55rem 1.25rem 0.85rem;
+  background: transparent;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.logo-box {
-  display: inline-block;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid #222;
-  text-transform: lowercase;
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
 @media (max-width: 900px) {

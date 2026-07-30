@@ -2,15 +2,19 @@
 
 ## Aesthetic
 
-The graph is a **cyberpunk HUD**, not a plain force-dot plot and not an n8n card board:
+The graph is a **cyberpunk HUD** with a **staged left→right flow** (not a soup of equal force nodes):
 
-- Near-black field, vignette, sparse red `+` ticks
-- **Chip/slab nodes** (rounded rect + notch + ports)
-- **Bundled glowing wires** — each edge is several parallel cubic beziers with SVG blur
-- Neon **red** for active/status; white/gray for fiber strands
-- Monospaced readouts: `NOD`, `EDG`, `GLOBAL` / `LOCAL·depth`
+```
+left rail records (≤3) → hub chips (≤3) → bridge chips (≤2) → FORK bundles → sub-component field
+```
 
-Note mode uses a separate **kube** shell (gray/black/white). Do not merge the two palettes.
+- Near-black field, vignette, sparse red `+` ticks, CHR-style rail readouts
+- **Chip/slab nodes** with pins; smaller chips for subs
+- **Bundled glowing wires**; forks use denser strand counts
+- Neon **red** status; white/gray fiber strands
+- Staging from degree + active note (`buildHudStage`)
+
+Note mode uses a separate **kube** shell. Do not merge the two palettes.
 
 ## Index vs view
 
