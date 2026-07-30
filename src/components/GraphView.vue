@@ -188,7 +188,7 @@ const paintFocus = () => {
 
   nodeSel.value.attr('opacity', (d) => (isDimmed(d.id) ? 0.16 : 1))
   nodeSel.value.selectAll<SVGRectElement, HudNode>('rect.chip-body').attr('stroke', (d) => {
-    if (d.id === props.activeId) return '#ff2a2a'
+    if (d.id === props.activeId) return '#e03131'
     if (d.id === hoveredId.value) return '#ffffff'
     if (d.kind === 'missing') return '#555560'
     return d.tier === HudTier.Sub ? '#2e2e36' : '#3a3a44'
@@ -264,7 +264,7 @@ const rebuild = () => {
     chrome
       .append('path')
       .attr('d', `M${x - 3},${y} H${x + 3} M${x},${y - 3} V${y + 3}`)
-      .attr('stroke', '#ff2a2a')
+      .attr('stroke', '#e03131')
       .attr('stroke-width', 1)
   }
   mark(16, 16)
@@ -280,7 +280,7 @@ const rebuild = () => {
     .attr('x2', 0)
     .attr('y1', height * 0.18)
     .attr('y2', height * 0.82)
-    .attr('stroke', '#ff2a2a')
+    .attr('stroke', '#e03131')
     .attr('stroke-width', 2)
   built.records.forEach((rec, i) => {
     const y = height * 0.28 + i * 54
@@ -301,7 +301,7 @@ const rebuild = () => {
       .attr('x1', 0)
       .attr('x2', 150)
       .attr('y1', 22)
-      .attr('stroke', '#ff2a2a')
+      .attr('stroke', '#e03131')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '2 3')
       .attr('opacity', 0.7)
@@ -392,7 +392,7 @@ const rebuild = () => {
       .attr('height', h + 6)
       .attr('rx', 4)
       .attr('fill', 'none')
-      .attr('stroke', '#ff2a2a')
+      .attr('stroke', '#e03131')
       .attr('stroke-width', 1.2)
       .attr('opacity', 0)
     g.append('rect')
@@ -423,7 +423,7 @@ const rebuild = () => {
       .attr('y', -h / 2 + 5)
       .attr('width', 2.5)
       .attr('height', h - 10)
-      .attr('fill', d.id === props.activeId ? '#ff2a2a' : '#bdbdc8')
+      .attr('fill', d.id === props.activeId ? '#e03131' : '#bdbdc8')
     g.append('text')
       .attr('x', -w / 2 + 12)
       .attr('y', d.tier === HudTier.Sub ? 3 : -2)
@@ -538,15 +538,15 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .hud-shell {
-  --hud-red: #ff2a2a;
+  --hud-red: var(--hud-accent);
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 0;
-  background: #050507;
-  color: #e8e8ee;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--hud-bg);
+  color: var(--hud-ink);
+  font-family: var(--font-mono);
 }
 
 .hud-shell::after {
@@ -570,9 +570,9 @@ onBeforeUnmount(() => {
   gap: 0.55rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.55rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 42, 42, 0.35);
-  background: rgba(8, 8, 12, 0.92);
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid var(--hud-line);
+  background: var(--hud-panel);
 }
 
 .modes,
@@ -637,12 +637,12 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
-  padding: 0.4rem 0.85rem;
-  border-top: 1px solid rgba(255, 42, 42, 0.28);
-  background: rgba(8, 8, 12, 0.92);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  color: #8a8a96;
+  padding: 0.4rem 0.9rem;
+  border-top: 1px solid var(--hud-line);
+  background: var(--hud-panel);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--hud-mute);
 }
 
 .footer .mono {

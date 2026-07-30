@@ -4,10 +4,12 @@
 
 | Mode | Look | Role |
 | --- | --- | --- |
-| **Note** | Kube / END IS UI — cool gray, black active blocks, stage + rails | Writing surface |
-| **Graph** | Cyberpunk HUD — black field, chip nodes, bundled white wires, neon red | Link navigation |
+| **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
+| **Graph** | Dark-tech HUD — black field, chip nodes, bundled wires, singular red (`--hud-accent`) | Link navigation |
 
 Do not paint the editor like the HUD, or the graph like a folder tree.
+
+**Taste pass (design-taste-frontend):** IBM Plex Sans/Mono locked; no purple/teal AI defaults; one red accent for HUD only; landing is brand-first (mark + wordmark + one line + CTAs); shared tokens in `src/style.css` (`--kube-*`, `--hud-*`).
 
 ## Product feel
 

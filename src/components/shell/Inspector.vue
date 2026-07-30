@@ -31,6 +31,11 @@ const crumbs = computed(() => {
   if (props.activeId.length === 0) return [] as string[]
   return props.activeId.split('/')
 })
+
+const density = computed(() =>
+  Math.min(100, Math.max(8, (props.backlinks.length + props.outlinks.length) * 12)),
+)
+const linkDensity = computed(() => Math.min(100, Math.max(8, props.outlinks.length * 14)))
 </script>
 
 <template>
@@ -72,11 +77,11 @@ const crumbs = computed(() => {
     <div class="sliders">
       <div class="slider-row">
         <span>Density</span>
-        <div class="track"><i :style="{ width: `${Math.min(100, (backlinks.length + outlinks.length) * 12)}%` }" /></div>
+        <div class="track"><i :style="{ width: `${density}%` }" /></div>
       </div>
       <div class="slider-row">
         <span>Links</span>
-        <div class="track"><i :style="{ width: `${Math.min(100, outlinks.length * 14)}%` }" /></div>
+        <div class="track"><i :style="{ width: `${linkDensity}%` }" /></div>
       </div>
     </div>
 
@@ -130,12 +135,12 @@ const crumbs = computed(() => {
 .inspector {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.05rem;
   min-height: 0;
   width: min(15rem, 34vw);
-  padding: 1.4rem 1.25rem 1rem 0.75rem;
+  padding: 1.5rem 1.35rem 1.1rem 0.85rem;
   background: transparent;
-  color: #141414;
+  color: var(--kube-ink);
 }
 
 .head {
@@ -145,10 +150,10 @@ const crumbs = computed(() => {
 
 .label,
 .section-label {
-  font-size: 0.62rem;
-  letter-spacing: 0.2em;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #7a7a7a;
+  color: var(--kube-mute);
 }
 
 .grid2 {
@@ -161,62 +166,68 @@ const crumbs = computed(() => {
   display: grid;
   place-items: center;
   min-height: 2.55rem;
-  border: 1px solid rgba(20, 20, 20, 0.55);
+  border: 1px solid var(--kube-line-strong);
   background: transparent;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
 }
 
-.cell.on {
-  background: #141414;
-  border-color: #141414;
-  color: #f2f2f2;
+.cell.on,
+.cell:hover {
+  background: var(--kube-ink);
+  border-color: var(--kube-ink);
+  color: #f4f4f6;
 }
 
 .sliders {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.15rem 0;
+  gap: 0.7rem;
+  padding: 0.1rem 0;
 }
 
 .slider-row {
   display: grid;
-  gap: 0.3rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
+  gap: 0.35rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #5a5a5a;
+  color: var(--kube-mute);
 }
 
 .track {
   position: relative;
   height: 2px;
-  background: rgba(20, 20, 20, 0.15);
+  background: rgba(18, 18, 20, 0.12);
 }
 
 .track i {
   display: block;
   height: 100%;
-  background: #141414;
-  min-width: 8%;
+  background: var(--kube-ink);
 }
 
 .graph-jump {
   width: 100%;
-  padding: 0.5rem 0.55rem;
-  border: 1px solid rgba(20, 20, 20, 0.55);
+  padding: 0.55rem 0.55rem;
+  border: 1px solid var(--kube-line-strong);
   background: transparent;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
 }
 
 .graph-jump:hover {
-  background: #141414;
-  color: #f2f2f2;
+  background: var(--kube-ink);
+  color: #f4f4f6;
 }
 
 .body {
@@ -235,7 +246,7 @@ const crumbs = computed(() => {
 
 .empty {
   font-size: 0.8rem;
-  color: #7a7a7a;
+  color: var(--kube-mute);
 }
 
 .list {
@@ -245,7 +256,7 @@ const crumbs = computed(() => {
 }
 
 .list li {
-  margin: 0.2rem 0;
+  margin: 0.22rem 0;
   font-size: 0.84rem;
 }
 
@@ -253,7 +264,7 @@ const crumbs = computed(() => {
   border: none;
   background: none;
   padding: 0.1rem 0;
-  color: #141414;
+  color: var(--kube-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -264,9 +275,9 @@ const crumbs = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.1rem;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   letter-spacing: 0.04em;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
 }
 
 .slash {

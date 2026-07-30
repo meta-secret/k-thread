@@ -87,8 +87,6 @@ const emit = defineEmits<{
 
 <style scoped>
 .stage {
-  --kube-ink: #141414;
-  --kube-mute: #6a6a6a;
   position: relative;
   display: grid;
   grid-template-rows: 1fr auto;
@@ -131,6 +129,7 @@ const emit = defineEmits<{
   transform: perspective(700px) rotateX(62deg);
   transform-origin: center bottom;
   mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 88%);
+  animation: k-floor-in 700ms ease-out both;
 }
 
 .horizon {

@@ -109,6 +109,7 @@ const linkCount = computed(
   () => activeLinks.value.out.length + activeLinks.value.back.length,
 )
 const ready = computed(() => status.value === VaultStatus.Ready)
+const isGraph = computed(() => view.value === ViewMode.Graph)
 
 const onSelectFromFiles = (id: DocId) => {
   vaultStore.setActive(id)
@@ -122,7 +123,7 @@ const openGraph = () => {
 
 <template>
   <TooltipProvider>
-    <div class="app">
+    <div class="app" :class="{ graph: isGraph, ready }">
       <header class="top">
         <div class="brand">
           <BrandMark :size="28" />
@@ -215,24 +216,26 @@ const openGraph = () => {
       </main>
 
       <main v-else class="landing">
-        <h1>Your notes, locally</h1>
-        <p>
-          Create hierarchical notes like Obsidian. Folders are real OPFS directories. Editing uses
-          BlockNote; storage stays markdown for vault interop.
-        </p>
-        <div class="landing-actions">
-          <Button size="lg" @click="vaultStore.createUntitled()">
-            <FilePlus2 class="size-4" />
-            Create a note
-          </Button>
-          <Button size="lg" variant="outline" @click="openNamed('')">Name a note…</Button>
-          <Button size="lg" variant="outline" @click="openFolderDialog('')">New folder…</Button>
-          <Button size="lg" variant="ghost" @click="vaultStore.openLocalVault">
-            <FolderOpen class="size-4" />
-            Import vault
-          </Button>
+        <div class="landing-atmosphere" aria-hidden="true" />
+        <div class="landing-inner">
+          <BrandMark :size="56" />
+          <h1 class="landing-brand">k-thread</h1>
+          <p class="landing-lead">Local notes. Real folders. Wikilinks that hold.</p>
+          <div class="landing-actions">
+            <Button size="lg" class="cta-primary" @click="vaultStore.createUntitled()">
+              <FilePlus2 class="size-4" />
+              Create a note
+            </Button>
+            <Button size="lg" variant="outline" class="cta-ghost" @click="openNamed('')">
+              Name a note
+            </Button>
+            <Button size="lg" variant="ghost" class="cta-ghost" @click="vaultStore.openLocalVault">
+              <FolderOpen class="size-4" />
+              Import vault
+            </Button>
+          </div>
+          <p v-if="status === VaultStatus.Failed" class="fail">{{ message }}</p>
         </div>
-        <p v-if="status === VaultStatus.Failed" class="fail">{{ message }}</p>
       </main>
 
       <footer v-if="ready" class="foot">
@@ -263,9 +266,36 @@ const openGraph = () => {
 .app {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  height: 100vh;
-  background: linear-gradient(180deg, #ececec 0%, #d5d5d5 48%, #c4c4c4 100%);
-  color: #141414;
+  min-height: 100dvh;
+  height: 100dvh;
+  background: linear-gradient(
+    180deg,
+    var(--kube-wash-top) 0%,
+    var(--kube-wash-mid) 52%,
+    var(--kube-wash-bot) 100%
+  );
+  color: var(--kube-ink);
+  animation: k-fade-up 420ms ease-out both;
+}
+
+.app.graph {
+  background: var(--hud-bg);
+  color: var(--hud-ink);
+}
+
+.app.graph .top,
+.app.graph .foot {
+  color: var(--hud-ink);
+}
+
+.app.graph .msg {
+  color: var(--hud-mute);
+}
+
+.app.graph .wordmark,
+.app.graph .ord,
+.app.graph .foot-brand {
+  color: var(--hud-ink);
 }
 
 .top {
@@ -273,21 +303,20 @@ const openGraph = () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.85rem;
-  padding: 0.85rem 1.25rem 0.55rem;
+  padding: 0.9rem 1.35rem 0.5rem;
   background: transparent;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.7rem;
 }
 
 .wordmark {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
 }
 
@@ -297,20 +326,19 @@ const openGraph = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6a6a6a;
+  color: var(--kube-mute);
 }
 
 .ord {
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  color: #141414;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
 }
 
 .mono {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
 }
 
 .workspace {
@@ -335,28 +363,29 @@ const openGraph = () => {
 .graph-layout {
   height: 100%;
   min-height: 0;
+  animation: k-fade-up 380ms ease-out both;
 }
 
 .files-scrim {
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: rgba(20, 20, 20, 0.18);
-  backdrop-filter: blur(2px);
+  background: rgba(18, 18, 20, 0.2);
+  backdrop-filter: blur(3px);
 }
 
 .files-drawer {
   position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  bottom: 0.75rem;
+  top: 0.85rem;
+  left: 0.85rem;
+  bottom: 0.85rem;
   z-index: 30;
   width: min(280px, 90vw);
   overflow: hidden;
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  background: rgba(236, 236, 236, 0.92);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--kube-line-strong);
+  background: color-mix(in srgb, var(--kube-wash-top) 88%, white);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.14);
+  animation: k-fade-up 220ms ease-out both;
 }
 
 .files-drawer :deep(aside) {
@@ -366,36 +395,81 @@ const openGraph = () => {
 }
 
 .landing {
+  position: relative;
   display: grid;
-  place-content: center;
-  gap: 1rem;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
   padding: 2rem 1.5rem;
+}
+
+.landing-atmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 28%, rgba(255, 255, 255, 0.55), transparent 70%),
+    repeating-linear-gradient(
+      to right,
+      rgba(18, 18, 20, 0.05) 0,
+      rgba(18, 18, 20, 0.05) 1px,
+      transparent 1px,
+      transparent 80px
+    );
+  mask-image: linear-gradient(to bottom, black 35%, transparent 92%);
+  animation: k-floor-in 700ms ease-out both;
+}
+
+.landing-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
   text-align: center;
+  animation: k-fade-up 480ms ease-out both;
 }
 
-.landing h1 {
-  font-size: clamp(2rem, 5vw, 3rem);
+.landing-brand {
+  margin: 0.2rem 0 0;
+  font-size: clamp(2.4rem, 7vw, 4.2rem);
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  line-height: 1.05;
 }
 
-.landing p {
-  max-width: 32rem;
-  margin: 0 auto;
-  color: #5a5a5a;
+.landing-lead {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 1rem;
+  line-height: 1.5;
   letter-spacing: 0.02em;
+  color: var(--kube-mute);
 }
 
 .landing-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.55rem;
   justify-content: center;
+  margin-top: 0.55rem;
+}
+
+.cta-primary {
+  background: var(--kube-ink);
+  color: #f4f4f6;
+  border-radius: 0;
+  letter-spacing: 0.06em;
+}
+
+.cta-ghost {
+  border-radius: 0;
+  border-color: var(--kube-line-strong);
+  letter-spacing: 0.06em;
 }
 
 .fail {
-  color: #b00020;
+  color: var(--destructive);
   font-size: 0.85rem;
 }
 
@@ -403,18 +477,17 @@ const openGraph = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.55rem 1.25rem 0.85rem;
+  padding: 0.55rem 1.35rem 0.95rem;
   background: transparent;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .foot-brand {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  gap: 0.5rem;
 }
 
 @media (max-width: 900px) {

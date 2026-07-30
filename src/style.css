@@ -1,6 +1,3 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
-
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import "shadcn-vue/tailwind.css";
@@ -8,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Geist Variable', sans-serif;
-  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -50,8 +47,24 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  /* Legacy aliases for graph / preview panes */
+  --radius: 0.25rem;
+
+  /* Dual aesthetic tokens */
+  --kube-ink: #121214;
+  --kube-mute: #6b6b73;
+  --kube-line: rgba(18, 18, 20, 0.18);
+  --kube-line-strong: rgba(18, 18, 20, 0.55);
+  --kube-wash-top: #efeff1;
+  --kube-wash-mid: #d8d8dc;
+  --kube-wash-bot: #c4c4ca;
+  --kube-paper: rgba(255, 255, 255, 0.34);
+  --hud-bg: #050507;
+  --hud-panel: rgba(10, 10, 14, 0.94);
+  --hud-ink: #ececf1;
+  --hud-mute: #8a8a96;
+  --hud-line: rgba(255, 42, 42, 0.38);
+  --hud-accent: #e03131;
+
   --bg: var(--background);
   --bg-panel: var(--sidebar);
   --bg-editor: var(--card);
@@ -60,39 +73,39 @@
   --ink-muted: var(--muted-foreground);
   --line: var(--border);
   --line-strong: var(--ring);
-  --accent-2: oklch(0.45 0.08 250);
+  --accent-2: var(--kube-mute);
   --warn: var(--destructive);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: var(--kube-wash-top);
+  --foreground: var(--kube-ink);
+  --card: #f4f4f6;
+  --card-foreground: var(--kube-ink);
+  --popover: #f7f7f9;
+  --popover-foreground: var(--kube-ink);
+  --primary: var(--kube-ink);
+  --primary-foreground: #f4f4f6;
+  --secondary: #e4e4e8;
+  --secondary-foreground: var(--kube-ink);
+  --muted: #e8e8ec;
+  --muted-foreground: var(--kube-mute);
+  --accent: #e4e4e8;
+  --accent-foreground: var(--kube-ink);
+  --destructive: #c02323;
+  --border: var(--kube-line);
+  --input: #dcdce2;
+  --ring: var(--kube-ink);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #e9e9ed;
+  --sidebar-foreground: var(--kube-ink);
+  --sidebar-primary: var(--kube-ink);
+  --sidebar-primary-foreground: #f4f4f6;
+  --sidebar-accent: #dddde3;
+  --sidebar-accent-foreground: var(--kube-ink);
+  --sidebar-border: var(--kube-line);
+  --sidebar-ring: var(--kube-ink);
 }
 
 @layer base {
@@ -137,19 +150,39 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.922 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@keyframes k-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  body {
-    @apply bg-background text-foreground;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes k-floor-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

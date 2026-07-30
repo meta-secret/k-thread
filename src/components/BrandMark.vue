@@ -32,9 +32,9 @@ withDefaults(
       stroke-linecap="square"
     />
     <circle cx="9" cy="16" r="2.4" fill="#0a0a0c" stroke="#f4f4f6" stroke-width="1.6" />
-    <circle cx="23" cy="7" r="2.2" fill="#ff2a2a" />
+    <circle cx="23" cy="7" r="2.2" fill="#e03131" />
     <circle cx="23" cy="25" r="2.2" fill="#f4f4f6" />
-    <path d="M27 3h3M28.5 1.5v3" stroke="#ff2a2a" stroke-width="1.2" />
+    <path d="M27 3h3M28.5 1.5v3" stroke="#e03131" stroke-width="1.2" />
   </svg>
 </template>
 
@@ -42,6 +42,6 @@ withDefaults(
 .brand-mark {
   display: block;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px #111;
+  outline: 1px solid rgba(18, 18, 20, 0.85);
 }
 </style>

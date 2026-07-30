@@ -34,7 +34,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <aside class="rail">
+  <aside class="rail" :class="{ graph: view === ViewMode.Graph }">
     <div class="forms">
       <div class="forms-label">Forms</div>
       <div class="forms-row">
@@ -45,7 +45,7 @@ const emit = defineEmits<{
           title="Files"
           @click="emit('toggleFiles')"
         >
-          <PanelLeft class="size-4" />
+          <PanelLeft class="size-4" :stroke-width="1.5" />
         </button>
         <button
           type="button"
@@ -54,7 +54,7 @@ const emit = defineEmits<{
           title="Note"
           @click="emit('setView', ViewMode.Note)"
         >
-          <StickyNote class="size-4" />
+          <StickyNote class="size-4" :stroke-width="1.5" />
         </button>
         <button
           type="button"
@@ -63,7 +63,7 @@ const emit = defineEmits<{
           title="Graph"
           @click="emit('setView', ViewMode.Graph)"
         >
-          <Network class="size-4" />
+          <Network class="size-4" :stroke-width="1.5" />
         </button>
         <button
           type="button"
@@ -73,10 +73,10 @@ const emit = defineEmits<{
           :disabled="view !== ViewMode.Note"
           @click="emit('togglePreview')"
         >
-          <Eye class="size-4" />
+          <Eye class="size-4" :stroke-width="1.5" />
         </button>
         <button type="button" class="icon-btn" title="Import vault" @click="emit('importVault')">
-          <FolderOpen class="size-4" />
+          <FolderOpen class="size-4" :stroke-width="1.5" />
         </button>
       </div>
     </div>
@@ -84,23 +84,23 @@ const emit = defineEmits<{
     <div class="tools">
       <div class="label">Tools</div>
       <button type="button" class="tool" @click="emit('createUntitled')">
-        <FilePlus2 class="size-4" />
+        <FilePlus2 class="size-4" :stroke-width="1.5" />
         New note
       </button>
       <button type="button" class="tool" @click="emit('createNamed')">
-        <FileText class="size-4" />
+        <FileText class="size-4" :stroke-width="1.5" />
         Named…
       </button>
       <button type="button" class="tool" @click="emit('createFolder')">
-        <FolderPlus class="size-4" />
+        <FolderPlus class="size-4" :stroke-width="1.5" />
         Folder…
       </button>
       <button type="button" class="tool" :disabled="!hasActive" @click="emit('rename')">
-        <Pencil class="size-4" />
+        <Pencil class="size-4" :stroke-width="1.5" />
         Rename
       </button>
       <button type="button" class="tool" :disabled="!hasActive" @click="emit('delete')">
-        <Trash2 class="size-4" />
+        <Trash2 class="size-4" :stroke-width="1.5" />
         Delete
       </button>
     </div>
@@ -111,37 +111,54 @@ const emit = defineEmits<{
 .rail {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 2.25rem;
   min-height: 0;
-  padding: 1.4rem 1rem 1rem 1.15rem;
+  padding: 1.5rem 1.05rem 1.1rem 1.25rem;
   background: transparent;
-  color: #141414;
+  color: var(--kube-ink);
+}
+
+.rail.graph {
+  color: var(--hud-ink);
 }
 
 .forms-label,
 .label {
-  margin-bottom: 0.65rem;
-  font-size: 0.62rem;
-  letter-spacing: 0.2em;
+  margin-bottom: 0.7rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #7a7a7a;
+  color: var(--kube-mute);
+}
+
+.rail.graph .forms-label,
+.rail.graph .label {
+  color: var(--hud-mute);
 }
 
 .forms-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.5rem;
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border: 1px solid rgba(20, 20, 20, 0.55);
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid var(--kube-line-strong);
   background: transparent;
-  color: #141414;
+  color: inherit;
   cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+}
+
+.rail.graph .icon-btn {
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .icon-btn:disabled {
@@ -149,17 +166,25 @@ const emit = defineEmits<{
   cursor: not-allowed;
 }
 
-.icon-btn.on {
-  background: #141414;
-  border-color: #141414;
-  color: #f2f2f2;
+.icon-btn.on,
+.icon-btn:hover:not(:disabled) {
+  background: var(--kube-ink);
+  border-color: var(--kube-ink);
+  color: #f4f4f6;
+}
+
+.rail.graph .icon-btn.on,
+.rail.graph .icon-btn:hover:not(:disabled) {
+  background: var(--hud-accent);
+  border-color: var(--hud-accent);
+  color: #fff;
 }
 
 .tools {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-width: 8.5rem;
+  gap: 0.12rem;
+  min-width: 8.6rem;
 }
 
 .tool {
@@ -167,18 +192,23 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.65rem;
   width: 100%;
-  padding: 0.42rem 0.5rem;
+  padding: 0.45rem 0.5rem;
   border: none;
   background: transparent;
-  color: #141414;
+  color: inherit;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   text-align: left;
   cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
 }
 
 .tool:hover:not(:disabled) {
-  background: rgba(20, 20, 20, 0.05);
+  background: rgba(18, 18, 20, 0.06);
+}
+
+.rail.graph .tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .tool:disabled {
@@ -186,13 +216,13 @@ const emit = defineEmits<{
   cursor: not-allowed;
 }
 
-.tool:focus-visible {
-  outline: 1px solid #141414;
+.tool:active:not(:disabled) {
+  background: var(--kube-ink);
+  color: #f4f4f6;
 }
 
-/* solid black active block — pressed / keyboard */
-.tool:active:not(:disabled) {
-  background: #141414;
-  color: #f2f2f2;
+.rail.graph .tool:active:not(:disabled) {
+  background: var(--hud-accent);
+  color: #fff;
 }
 </style>
