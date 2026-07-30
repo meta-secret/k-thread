@@ -49,3 +49,7 @@ Pushes to `main` → https://meta-secret.github.io/k-thread/
 ## Cortex
 
 Design notes (vision, architecture, stack, type safety, deploy): [`.cortext/`](./.cortext/README.md)
+
+## Taste Skill
+
+Anti-slop frontend skill for agents: [`design-taste-frontend`](./.cursor/skills/design-taste-frontend/SKILL.md) ([tasteskill.dev](https://www.tasteskill.dev/)). See [`.cortext/taste.md`](./.cortext/taste.md).
