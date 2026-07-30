@@ -34,10 +34,10 @@ export type StructureGraph = {
 
 export const ROOT_ID = '__vault__'
 
-export const WIDGET_W = 236
-export const WIDGET_H = 76
-const COL_GAP = 28
-const ROW_GAP = 48
+export const WIDGET_W = 196
+export const WIDGET_H = 54
+const COL_GAP = 54
+const ROW_GAP = 18
 
 const parentFolder = (folderPath: string): string => {
   if (!folderPath.includes('/')) return ''
@@ -119,7 +119,7 @@ export const buildStructureGraph = (
     id: ROOT_ID,
     kind: StructureKind.Root,
     title: 'Vault',
-    meta: `${docs.length} notes · project home`,
+    meta: `${docs.length} notes`,
     depth: 0,
     index: ++counter,
     noteId: '',
@@ -169,7 +169,7 @@ export const buildStructureGraph = (
       id,
       kind: StructureKind.Note,
       title: labelOf(doc.id),
-      meta: folder.length > 0 ? folder : 'Open to edit',
+      meta: folder.length > 0 ? folder : 'Root note',
       depth,
       index: ++counter,
       noteId: doc.id,
@@ -188,12 +188,12 @@ export type PlacedStructureNode = StructureNode & { x: number; y: number }
 
 type TreeNode = StructureNode & {
   children: TreeNode[]
-  subtreeW: number
+  subtreeH: number
   x: number
   y: number
 }
 
-/** Parent-aligned tidy tree — children sit under their parent (funnel, not flat rows). */
+/** Left-to-Right Horizontal Tree Placement — Root on left, branching out to the right. */
 export const placeStructureStage = (
   graph: StructureGraph,
   _width: number,
@@ -205,7 +205,7 @@ export const placeStructureStage = (
 
   const byId = new Map<string, TreeNode>()
   for (const n of graph.nodes) {
-    byId.set(n.id, { ...n, children: [], subtreeW: WIDGET_W, x: 0, y: 0 })
+    byId.set(n.id, { ...n, children: [], subtreeH: WIDGET_H, x: 0, y: 0 })
   }
 
   const childIds = new Set<string>()
@@ -232,35 +232,37 @@ export const placeStructureStage = (
     return { nodes: [], edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0, contentW: 0, contentH: 0 } }
   }
 
-  const measure = (node: TreeNode): number => {
+  // Calculate vertical height needed by each subtree
+  const measureVertical = (node: TreeNode): number => {
     if (node.children.length === 0) {
-      node.subtreeW = WIDGET_W
-      return node.subtreeW
+      node.subtreeH = WIDGET_H
+      return node.subtreeH
     }
     let sum = 0
-    for (const c of node.children) sum += measure(c)
-    sum += COL_GAP * (node.children.length - 1)
-    node.subtreeW = Math.max(WIDGET_W, sum)
-    return node.subtreeW
+    for (const c of node.children) sum += measureVertical(c)
+    sum += ROW_GAP * (node.children.length - 1)
+    node.subtreeH = Math.max(WIDGET_H, sum)
+    return node.subtreeH
   }
-  measure(root)
+  measureVertical(root)
 
-  const place = (node: TreeNode, left: number, depth: number) => {
-    node.y = depth * (WIDGET_H + ROW_GAP)
+  // Place nodes horizontally left to right (depth = x column, top = y row)
+  const placeHorizontal = (node: TreeNode, top: number, depth: number) => {
+    node.x = depth * (WIDGET_W + COL_GAP)
     if (node.children.length === 0) {
-      node.x = left + node.subtreeW / 2
+      node.y = top + node.subtreeH / 2
       return
     }
-    let cursor = left
+    let cursor = top
     for (const c of node.children) {
-      place(c, cursor, depth + 1)
-      cursor += c.subtreeW + COL_GAP
+      placeHorizontal(c, cursor, depth + 1)
+      cursor += c.subtreeH + ROW_GAP
     }
     const first = node.children[0]
     const last = node.children[node.children.length - 1]
-    node.x = first && last ? (first.x + last.x) / 2 : left + node.subtreeW / 2
+    node.y = first && last ? (first.y + last.y) / 2 : top + node.subtreeH / 2
   }
-  place(root, 0, 0)
+  placeHorizontal(root, 0, 0)
 
   const placed: PlacedStructureNode[] = [...byId.values()].map((n) => ({
     id: n.id,
@@ -315,10 +317,11 @@ export const placeStructureStage = (
   }
 }
 
+/** Output port on Right edge, Input port on Left edge for Left-to-Right flow. */
 export const structurePort = (
   n: PlacedStructureNode,
   side: 'in' | 'out',
 ): { x: number; y: number } => ({
-  x: n.x,
-  y: n.y + (side === 'out' ? WIDGET_H / 2 : -WIDGET_H / 2),
+  x: n.x + (side === 'out' ? WIDGET_W / 2 : -WIDGET_W / 2),
+  y: n.y,
 })

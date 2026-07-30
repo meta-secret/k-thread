@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
             </span>
           </h2>
           <p class="m-0 text-xs font-mono tracking-wide" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
-            Parent-aligned workflow · {{ stats.nodes }} nodes · {{ stats.links }} connections
+            Horizontal left-to-right tree · {{ stats.nodes }} nodes · {{ stats.links }} connections
           </p>
         </div>
       </div>

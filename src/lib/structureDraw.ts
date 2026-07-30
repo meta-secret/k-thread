@@ -53,14 +53,14 @@ export const getPaint = (mode: ThemeMode) => ThemePaints[mode]
 export type StructWireSel = Selection<SVGGElement, StructureEdge, SVGGElement, unknown>
 export type StructNodeSel = Selection<SVGGElement, PlacedStructureNode, SVGGElement, unknown>
 
-/** Generate cubic bezier curve path for smooth workflow strands. */
+/** Generate horizontal cubic bezier curve path for smooth left-to-right workflow strands. */
 export const bezierPath = (
   from: { x: number; y: number },
   to: { x: number; y: number },
 ): string => {
-  const dy = Math.abs(to.y - from.y)
-  const cpOffset = Math.max(36, dy * 0.45)
-  return `M ${from.x} ${from.y} C ${from.x} ${from.y + cpOffset}, ${to.x} ${to.y - cpOffset}, ${to.x} ${to.y}`
+  const dx = Math.abs(to.x - from.x)
+  const cpOffset = Math.max(28, dx * 0.5)
+  return `M ${from.x} ${from.y} C ${from.x + cpOffset} ${from.y}, ${to.x - cpOffset} ${to.y}, ${to.x} ${to.y}`
 }
 
 export const attachStructureDefs = (svg: Selection<SVGSVGElement, unknown, null, undefined>) => {
