@@ -288,10 +288,47 @@ export const buildHudStage = (
   }
 }
 
-/** Orthogonal elbow path (graph / HUD style). */
+/** Sharp orthogonal elbow (fallback). */
 export const orthoPath = (from: Point, to: Point): string => {
   const midX = from.x + (to.x - from.x) * 0.55
   return `M${from.x},${from.y} H${midX} V${to.y} H${to.x}`
+}
+
+/**
+ * Manhattan path with filleted corners — music-player HUD flow aesthetic.
+ * One continuous neon strand between note ports (no mid-edge action nodes).
+ */
+export const roundedOrthoPath = (from: Point, to: Point, radius = 16): string => {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  if (Math.abs(dy) < 0.5) {
+    return `M${from.x},${from.y} H${to.x}`
+  }
+  if (Math.abs(dx) < 0.5) {
+    return `M${from.x},${from.y} V${to.y}`
+  }
+
+  const midX = from.x + dx * 0.55
+  const yDir = dy > 0 ? 1 : -1
+  const xInto = midX >= from.x ? 1 : -1
+  const xOut = to.x >= midX ? 1 : -1
+  const r = Math.min(
+    radius,
+    Math.abs(midX - from.x) * 0.9,
+    Math.abs(to.x - midX) * 0.9,
+    Math.abs(dy) / 2,
+  )
+
+  if (r < 2) return orthoPath(from, to)
+
+  return [
+    `M${from.x},${from.y}`,
+    `H${midX - r * xInto}`,
+    `Q${midX},${from.y} ${midX},${from.y + r * yDir}`,
+    `V${to.y - r * yDir}`,
+    `Q${midX},${to.y} ${midX + r * xOut},${to.y}`,
+    `H${to.x}`,
+  ].join(' ')
 }
 
 /** Kept for callers that still expect path arrays. */
@@ -301,7 +338,7 @@ export const bundlePaths = (
   _strands: number = BUNDLE_STRANDS,
   _spread = 2.4,
 ): string[] => {
-  const path = orthoPath(from, to)
+  const path = roundedOrthoPath(from, to)
   return path.length > 0 ? [path] : []
 }
 

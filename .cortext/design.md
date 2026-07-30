@@ -5,7 +5,7 @@
 | Mode | Look | Role |
 | --- | --- | --- |
 | **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
-| **Graph** | Dark-tech HUD — black field, chip nodes, bundled wires, singular red (`--hud-accent`) | Link navigation |
+| **Graph** | Dark neon HUD — black field, wireframe pills, rounded red wires, glowing ports (`--hud-accent`) | Link navigation |
 
 Do not paint the editor like the HUD, or the graph like a folder tree.
 

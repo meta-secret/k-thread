@@ -7,19 +7,23 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicI
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  attachHudDefs,
+  drawHudBackdrop,
+  drawLayerLabels,
+  drawPill,
+  paintFocus,
+  updateWires,
+  type NodeSel,
+  type WireSel,
+} from '@/lib/graphHudDraw'
+import {
   buildHudStage,
   buildViewGraph,
   GraphScope,
-  HudTier,
-  labelOf,
-  NODE_H,
-  NODE_W,
-  orthoPath,
   type GraphScope as GraphScopeT,
   type HudNode,
   type HudStage,
   type HudWire,
-  type Point,
 } from '@/lib/graphView'
 import { none, some, type DocId, type GraphIndex, type Option } from '@/types'
 
@@ -33,9 +37,6 @@ const emit = defineEmits<{
   select: [id: DocId]
   open: [id: DocId]
 }>()
-
-type WireSel = Selection<SVGGElement, HudWire, SVGGElement, unknown>
-type NodeSel = Selection<SVGGElement, HudNode, SVGGElement, unknown>
 
 const scope = ref<GraphScopeT>(GraphScope.Global)
 const hops = ref(1)
@@ -79,13 +80,6 @@ const scopeLabel = computed(() =>
   scope.value === GraphScope.Local ? `LOCAL·${hops.value}` : 'GLOBAL',
 )
 
-const sizeOf = (_d: HudNode): { w: number; h: number } => ({ w: NODE_W, h: NODE_H })
-
-const portOf = (d: HudNode, side: 'in' | 'out'): { x: number; y: number } => {
-  const { w } = sizeOf(d)
-  return { x: d.x + (side === 'out' ? w / 2 : -w / 2), y: d.y }
-}
-
 const isDimmed = (id: DocId): boolean => {
   const hover = hoveredId.value
   if (hover.length === 0) return false
@@ -101,9 +95,6 @@ const isWireHot = (link: HudWire): boolean => {
   }
   return false
 }
-
-const clipLabel = (text: string, max: number): string =>
-  text.length > max ? `${text.slice(0, max - 1)}…` : text
 
 const bindHost = (el: Element | ComponentPublicInstance | null) => {
   if (!(el instanceof HTMLElement)) {
@@ -130,147 +121,14 @@ const nodeMap = (): Map<DocId, HudNode> => {
   return map
 }
 
-const updateWires = (wires: WireSel) => {
-  const nodes = nodeMap()
-  wires.each(function (d) {
-    const s = nodes.get(d.from)
-    const t = nodes.get(d.to)
-    if (!s || !t) return
-    const from = portOf(s, 'out')
-    const to = portOf(t, 'in')
-    const path = orthoPath(from, to)
-    const g = select(this)
-    g.selectAll<SVGPathElement, string>('path.glow')
-      .data([path])
-      .join('path')
-      .attr('class', 'glow')
-      .attr('fill', 'none')
-      .attr('stroke', '#c02323')
-      .attr('stroke-width', 4)
-      .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
-      .attr('filter', 'url(#wire-glow)')
-      .attr('d', (p) => p)
-    g.selectAll<SVGPathElement, string>('path.strand')
-      .data([path])
-      .join('path')
-      .attr('class', 'strand')
-      .attr('fill', 'none')
-      .attr('stroke-width', 1.25)
-      .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
-      .attr('stroke-dasharray', d.real ? null : '3 4')
-      .attr('d', (p) => p)
-    // Port anchors at endpoints
-    g.selectAll<SVGCircleElement, Point>('circle.port')
-      .data([from, to])
-      .join('circle')
-      .attr('class', 'port')
-      .attr('r', 3.2)
-      .attr('cx', (p) => p.x)
-      .attr('cy', (p) => p.y)
-      .attr('fill', '#c02323')
-      .attr('stroke', '#f4f4f6')
-      .attr('stroke-width', 1.2)
-  })
-}
-
-const paintFocus = () => {
+const refreshFocus = () => {
   if (wireSel.tag === 'none' || nodeSel.tag === 'none') return
-  wireSel.value.each(function (d) {
-    const hot = isWireHot(d)
-    const dim = (hoveredId.value.length > 0 || props.activeId.length > 0) && !hot
-    const g = select(this)
-    g.attr('opacity', dim ? 0.08 : hot ? 1 : d.fork ? 0.55 : 0.38)
-    g.selectAll<SVGPathElement, string>('path.strand').attr(
-      'stroke',
-      hot ? '#c02323' : d.missing ? 'rgba(18,18,20,0.2)' : 'rgba(18,18,20,0.45)',
-    )
-    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? 0.28 : 0)
-    g.selectAll<SVGCircleElement, Point>('circle.port').attr('opacity', hot ? 1 : 0.7)
+  paintFocus(wireSel.value, nodeSel.value, {
+    activeId: props.activeId,
+    hoveredId: hoveredId.value,
+    isDimmed,
+    isWireHot,
   })
-
-  nodeSel.value.attr('opacity', (d) => (isDimmed(d.id) ? 0.22 : 1))
-  nodeSel.value.selectAll<SVGRectElement, HudNode>('.chip-body').attr('stroke', (d) => {
-    if (d.id === props.activeId) return '#c02323'
-    if (d.id === hoveredId.value) return '#121214'
-    if (d.kind === 'missing') return '#9a9aa4'
-    if (d.tier === HudTier.Root) return 'rgba(18,18,20,0.55)'
-    return 'rgba(18,18,20,0.28)'
-  })
-  nodeSel.value
-    .selectAll<SVGCircleElement, HudNode>('circle.port-out')
-    .attr('fill', (d) => (d.id === props.activeId || d.id === hoveredId.value ? '#c02323' : '#121214'))
-  nodeSel.value
-    .selectAll<SVGRectElement, HudNode>('rect.chip-active')
-    .attr('opacity', (d) => (d.id === props.activeId ? 1 : 0))
-}
-
-/** One pill = one note. */
-const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
-  const { w, h } = sizeOf(d)
-  const x0 = -w / 2
-  const y0 = -h / 2
-  const r = h / 2
-  const isRoot = d.tier === HudTier.Root
-  const title = clipLabel(labelOf(d.id), 14)
-
-  g.append('rect')
-    .attr('class', 'chip-active')
-    .attr('x', x0 - 5)
-    .attr('y', y0 - 5)
-    .attr('width', w + 10)
-    .attr('height', h + 10)
-    .attr('rx', r + 5)
-    .attr('fill', 'none')
-    .attr('stroke', '#c02323')
-    .attr('stroke-width', 1.2)
-    .attr('opacity', 0)
-
-  g.append('rect')
-    .attr('class', 'chip-body')
-    .attr('x', x0)
-    .attr('y', y0)
-    .attr('width', w)
-    .attr('height', h)
-    .attr('rx', r)
-    .attr('fill', d.kind === 'missing' ? '#ececef' : isRoot ? '#fafafa' : '#f4f4f6')
-    .attr('stroke', isRoot ? 'rgba(18,18,20,0.55)' : 'rgba(18,18,20,0.28)')
-    .attr('stroke-width', isRoot ? 1.4 : 1.1)
-
-  g.append('circle')
-    .attr('class', 'port-in')
-    .attr('cx', x0)
-    .attr('cy', 0)
-    .attr('r', 3)
-    .attr('fill', '#f4f4f6')
-    .attr('stroke', '#c02323')
-    .attr('stroke-width', 1.2)
-  g.append('circle')
-    .attr('class', 'port-out')
-    .attr('cx', x0 + w)
-    .attr('cy', 0)
-    .attr('r', 3)
-    .attr('fill', '#121214')
-    .attr('stroke', '#f4f4f6')
-    .attr('stroke-width', 1.1)
-
-  g.append('text')
-    .attr('x', x0 + 12)
-    .attr('y', -4)
-    .attr('fill', '#8a8a96')
-    .attr('font-size', 7)
-    .attr('letter-spacing', '0.08em')
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .text(`${d.code} · L${d.layer} · ${d.degree}`)
-  g.append('text')
-    .attr('x', x0 + 12)
-    .attr('y', 10)
-    .attr('fill', '#121214')
-    .attr('font-size', 12)
-    .attr('font-weight', 650)
-    .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
-    .text(title)
 }
 
 const rebuild = () => {
@@ -288,10 +146,7 @@ const rebuild = () => {
     }
   }
   stage = some(built)
-  stageStats.value = {
-    nodes: built.nodes.length,
-    links: built.wires.length,
-  }
+  stageStats.value = { nodes: built.nodes.length, links: built.wires.length }
 
   el.replaceChildren()
 
@@ -303,84 +158,9 @@ const rebuild = () => {
     .attr('class', 'hud-svg')
   svgRoot = some(svg)
 
-  const defs = svg.append('defs')
-  const glow = defs
-    .append('filter')
-    .attr('id', 'wire-glow')
-    .attr('x', '-50%')
-    .attr('y', '-50%')
-    .attr('width', '200%')
-    .attr('height', '200%')
-  glow.append('feGaussianBlur').attr('stdDeviation', '2.4').attr('result', 'blur')
-  const merge = glow.append('feMerge')
-  merge.append('feMergeNode').attr('in', 'blur')
-
-  const haze = defs
-    .append('radialGradient')
-    .attr('id', 'haze')
-    .attr('cx', '42%')
-    .attr('cy', '48%')
-    .attr('r', '72%')
-  haze.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55)
-  haze.append('stop').attr('offset', '100%').attr('stop-color', '#c4c4ca').attr('stop-opacity', 0.35)
-
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', '#e4e4e8')
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#haze)')
-
-  // Subtle grid for graph readout
-  const grid = svg.append('g').attr('class', 'grid').attr('opacity', 0.22)
-  for (let x = 40; x < width; x += 40) {
-    grid
-      .append('line')
-      .attr('x1', x)
-      .attr('x2', x)
-      .attr('y1', 0)
-      .attr('y2', height)
-      .attr('stroke', '#121214')
-      .attr('stroke-width', 0.4)
-  }
-  for (let y = 40; y < height; y += 40) {
-    grid
-      .append('line')
-      .attr('x1', 0)
-      .attr('x2', width)
-      .attr('y1', y)
-      .attr('y2', y)
-      .attr('stroke', '#121214')
-      .attr('stroke-width', 0.4)
-  }
-
-  const chrome = svg.append('g').attr('class', 'chrome')
-  const mark = (x: number, y: number) => {
-    chrome
-      .append('circle')
-      .attr('cx', x)
-      .attr('cy', y)
-      .attr('r', 2.5)
-      .attr('fill', 'none')
-      .attr('stroke', '#c02323')
-      .attr('stroke-width', 1)
-  }
-  mark(16, 16)
-  mark(width - 16, 16)
-  mark(16, height - 16)
-  mark(width - 16, height - 16)
-
-  const layers = [...new Set(built.nodes.map((n) => n.layer))].sort((a, b) => a - b)
-  for (const layer of layers) {
-    const sample = built.nodes.find((n) => n.layer === layer)
-    if (!sample) continue
-    chrome
-      .append('text')
-      .attr('x', sample.x)
-      .attr('y', 28)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#6b6b73')
-      .attr('font-size', 9)
-      .attr('letter-spacing', '0.18em')
-      .attr('font-family', 'ui-monospace, Menlo, monospace')
-      .text(layer === 0 ? 'FOCUS' : `L${layer}`)
-  }
+  attachHudDefs(svg)
+  const chrome = drawHudBackdrop(svg, width, height)
+  drawLayerLabels(chrome, built.nodes)
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -391,8 +171,6 @@ const rebuild = () => {
   svg.call(zb)
   svg.on('dblclick.zoom', null)
   zoomBehavior = some(zb)
-
-  const allNodes = built.nodes
 
   const wiresJoined = root
     .append('g')
@@ -410,14 +188,14 @@ const rebuild = () => {
       if (nodeSel.tag === 'some') {
         nodeSel.value.attr('transform', (n) => `translate(${n.x},${n.y})`)
       }
-      updateWires(wiresJoined as WireSel)
+      updateWires(wiresJoined as WireSel, nodeMap())
     })
 
   const nodesJoined = root
     .append('g')
     .attr('class', 'nodes')
     .selectAll<SVGGElement, HudNode>('g.chip')
-    .data(allNodes, (d: HudNode) => d.id)
+    .data(built.nodes, (d: HudNode) => d.id)
     .join('g')
     .attr('class', 'chip')
     .attr('transform', (d) => `translate(${d.x},${d.y})`)
@@ -425,11 +203,11 @@ const rebuild = () => {
     .call(dragBehavior)
     .on('mouseenter', (_e, d) => {
       hoveredId.value = d.id
-      paintFocus()
+      refreshFocus()
     })
     .on('mouseleave', () => {
       hoveredId.value = ''
-      paintFocus()
+      refreshFocus()
     })
     .on('click', (event, d) => {
       event.stopPropagation()
@@ -441,14 +219,13 @@ const rebuild = () => {
     })
 
   nodesJoined.each(function (d) {
-    const g = select(this) as Selection<SVGGElement, HudNode, null, undefined>
-    drawPill(g, d)
+    drawPill(select(this) as Selection<SVGGElement, HudNode, null, undefined>, d)
   })
 
   wireSel = some(wiresJoined as WireSel)
   nodeSel = some(nodesJoined as NodeSel)
-  updateWires(wiresJoined as WireSel)
-  paintFocus()
+  updateWires(wiresJoined as WireSel, nodeMap())
+  refreshFocus()
 }
 
 watch(
@@ -536,9 +313,11 @@ onBeforeUnmount(() => {
   grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 0;
-  background: transparent;
-  color: var(--kube-ink);
+  overflow: hidden;
+  background: var(--hud-bg);
+  color: var(--hud-ink);
   font-family: var(--font-mono);
+  border: 1px solid var(--hud-line);
 }
 
 .toolbar,
@@ -554,8 +333,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--kube-line);
-  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
+  border-bottom: 1px solid var(--hud-line);
+  background: color-mix(in srgb, var(--hud-panel) 88%, black);
 }
 
 .modes,
@@ -572,31 +351,33 @@ onBeforeUnmount(() => {
   gap: 0.4rem;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-  color: var(--kube-mute);
+  color: var(--hud-mute);
 }
 
 .hops input {
   width: 70px;
+  accent-color: var(--hud-red);
 }
 
 .sep {
   width: 1px;
   height: 1rem;
-  background: color-mix(in srgb, var(--hud-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--hud-accent) 70%, transparent);
   margin: 0 0.25rem;
 }
 
 .readout {
   font-size: 0.65rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   color: var(--hud-red);
+  text-shadow: 0 0 12px var(--hud-glow);
 }
 
 .search {
   width: min(220px, 100%);
-  background: #f4f4f6;
-  border-color: var(--kube-line-strong);
-  color: var(--kube-ink);
+  background: #0a0a0c;
+  border-color: var(--hud-line-strong);
+  color: var(--hud-ink);
   font-family: inherit;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -605,6 +386,25 @@ onBeforeUnmount(() => {
 .hud-btn {
   font-family: inherit;
   letter-spacing: 0.04em;
+  color: var(--hud-ink);
+}
+
+.hud-shell :deep(.hud-btn) {
+  border-color: var(--hud-line-strong);
+  background: transparent;
+  color: var(--hud-ink);
+}
+
+.hud-shell :deep(.hud-btn:hover) {
+  background: rgba(255, 42, 58, 0.12);
+  color: var(--hud-ink);
+}
+
+.hud-shell :deep(button[data-slot='button'].bg-secondary),
+.hud-shell :deep(.hud-btn.bg-secondary) {
+  background: rgba(255, 42, 58, 0.18);
+  color: var(--hud-ink);
+  border-color: color-mix(in srgb, var(--hud-accent) 55%, transparent);
 }
 
 .canvas {
@@ -613,6 +413,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   width: 100%;
   height: 100%;
+  background: var(--hud-bg);
 }
 
 .footer {
@@ -621,20 +422,20 @@ onBeforeUnmount(() => {
   gap: 1rem;
   align-items: center;
   padding: 0.4rem 0.9rem;
-  border-top: 1px solid var(--kube-line);
-  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
+  border-top: 1px solid var(--hud-line);
+  background: color-mix(in srgb, var(--hud-panel) 88%, black);
   font-size: 0.62rem;
   letter-spacing: 0.12em;
-  color: var(--kube-mute);
+  color: var(--hud-mute);
 }
 
 .footer .mono {
-  color: var(--kube-ink);
+  color: var(--hud-ink);
 }
 
 .footer .hint {
   margin-left: auto;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .hud-shell :deep(.hud-svg) {
