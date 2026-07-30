@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FilePlus2 } from '@lucide/vue'
+import { ArrowLeft, FilePlus2, GitBranch } from '@lucide/vue'
 import BlockNoteEditor from '@/components/BlockNoteEditor.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import type { DocId } from '@/types'
@@ -21,6 +21,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   navigate: [id: DocId]
   createUntitled: []
+  openStructure: []
 }>()
 </script>
 
@@ -33,19 +34,39 @@ const emit = defineEmits<{
 
     <div class="stage-body">
       <template v-if="hasActive">
-        <div class="sheet" :class="{ split: showPreview }">
-          <div class="pane">
-            <BlockNoteEditor
-              :doc-key="docKey"
-              :model-value="body"
-              :note-ids="noteIds"
-              :tags="tags"
-              @update:model-value="emit('update:modelValue', $event)"
-              @navigate="emit('navigate', $event)"
-            />
+        <div class="flex flex-col h-full min-h-0">
+          <div class="flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200/90 dark:border-zinc-800 shadow-xs">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-zinc-900 dark:text-zinc-100 bg-orange-50 hover:bg-orange-500 hover:text-white border border-orange-200 transition-all duration-150 cursor-pointer shadow-2xs group"
+              title="Return to Vault Structure Graph"
+              @click="emit('openStructure')"
+            >
+              <ArrowLeft class="w-3.5 h-3.5 text-orange-500 group-hover:text-white transition-colors" />
+              <span>Back to Main Graph</span>
+            </button>
+            <div class="flex items-center gap-2 text-xs font-mono text-zinc-500">
+              <GitBranch class="w-3.5 h-3.5 text-orange-500" />
+              <span>Vault / {{ folder.length > 0 ? folder : 'Root' }}</span>
+              <span>·</span>
+              <span class="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold border border-zinc-200 dark:border-zinc-700">{{ title }}</span>
+            </div>
           </div>
-          <div v-if="showPreview" class="pane preview">
-            <MarkdownPreview :body="body" :known="known" @navigate="emit('navigate', $event)" />
+
+          <div class="sheet flex-1 min-h-0" :class="{ split: showPreview }">
+            <div class="pane">
+              <BlockNoteEditor
+                :doc-key="docKey"
+                :model-value="body"
+                :note-ids="noteIds"
+                :tags="tags"
+                @update:model-value="emit('update:modelValue', $event)"
+                @navigate="emit('navigate', $event)"
+              />
+            </div>
+            <div v-if="showPreview" class="pane preview">
+              <MarkdownPreview :body="body" :known="known" @navigate="emit('navigate', $event)" />
+            </div>
           </div>
         </div>
       </template>
@@ -63,10 +84,16 @@ const emit = defineEmits<{
         </div>
         <p class="empty-gauge">No note open</p>
         <p class="empty-copy">Open Structure to browse the vault, or create a note</p>
-        <button type="button" class="empty-cta" @click="emit('createUntitled')">
-          <FilePlus2 class="size-3.5" />
-          New note
-        </button>
+        <div class="flex items-center gap-2 mt-2">
+          <button type="button" class="empty-cta" @click="emit('openStructure')">
+            <GitBranch class="size-3.5 text-orange-400" />
+            Open Main Graph
+          </button>
+          <button type="button" class="empty-cta" @click="emit('createUntitled')">
+            <FilePlus2 class="size-3.5" />
+            New note
+          </button>
+        </div>
       </div>
     </div>
 

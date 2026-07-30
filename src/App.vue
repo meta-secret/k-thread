@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FilePlus2, FolderOpen } from '@lucide/vue'
+import { ArrowLeft, FilePlus2, FolderOpen } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
@@ -157,11 +157,6 @@ const openNoteFromStructure = (id: DocId) => {
   vaultStore.setActive(id)
 }
 
-const notePathLabel = computed(() => {
-  if (active.value.tag === 'none') return ''
-  const folder = activeFolder.value
-  return folder.length > 0 ? folder : 'Vault'
-})
 </script>
 
 <template>
@@ -176,13 +171,14 @@ const notePathLabel = computed(() => {
           {{ message }}
           <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
           <button
-            v-if="view === ViewMode.Note && active.tag === 'some'"
+            v-if="view === ViewMode.Note"
             type="button"
-            class="path-jump"
-            :title="`Show in Structure · ${notePathLabel}`"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 shadow-2xs transition-colors cursor-pointer ml-2"
+            title="Return to Main Graph (Structure)"
             @click="openStructure"
           >
-            {{ notePathLabel }} · Structure
+            <ArrowLeft class="w-3.5 h-3.5" />
+            <span>Back to Main Graph</span>
           </button>
         </p>
         <div class="ord mono">
@@ -236,6 +232,7 @@ const notePathLabel = computed(() => {
               @update:model-value="vaultStore.updateBody"
               @navigate="vaultStore.openOrCreate"
               @create-untitled="vaultStore.createUntitled(activeFolder)"
+              @open-structure="openStructure"
             />
             <Inspector
               :active-id="activeId"
