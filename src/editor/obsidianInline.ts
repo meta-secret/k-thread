@@ -82,6 +82,36 @@ export const createWikilinkSpec = (onNavigate: WikilinkNavigate, known: Readonly
     },
   )
 
+export const ObsidianComment = createReactInlineContentSpec(
+  {
+    type: 'obsidianComment' as const,
+    propSchema: {
+      text: { default: '' },
+    },
+    content: 'none',
+  },
+  {
+    render: (props): ReactElement =>
+      createElement(
+        'span',
+        {
+          className: 'obsidian-comment',
+          contentEditable: false,
+          title: `%%${props.inlineContent.props.text}%%`,
+        },
+        `%%${props.inlineContent.props.text}%%`,
+      ),
+    toExternalHTML: (props): ReactElement =>
+      createElement('span', null, `%%${props.inlineContent.props.text}%%`),
+    parse: (element: HTMLElement) => {
+      if (element.getAttribute('data-obsidian-comment') !== 'true') return
+      let text = element.textContent ?? ''
+      text = text.replace(/^%%/, '').replace(/%%$/, '')
+      return { text }
+    },
+  },
+)
+
 export const ObsidianTag = createReactInlineContentSpec(
   {
     type: 'obsidianTag' as const,

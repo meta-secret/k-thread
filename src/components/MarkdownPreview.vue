@@ -115,4 +115,49 @@ const onClick = (event: MouseEvent) => {
   border-radius: 2px;
   padding-inline: 0.1em;
 }
+
+.preview :deep(.obsidian-comment) {
+  color: var(--ink-muted);
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.preview :deep(.obsidian-frontmatter),
+.preview :deep(.obsidian-plugin),
+.preview :deep(.obsidian-comment-block),
+.preview :deep(.obsidian-callout) {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 1rem 0;
+  overflow: hidden;
+  background: var(--bg-muted);
+}
+
+.preview :deep(.obsidian-frontmatter .label),
+.preview :deep(.obsidian-plugin .label),
+.preview :deep(.obsidian-comment-block .label),
+.preview :deep(.obsidian-callout-title) {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.45rem 0.75rem;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.preview :deep(.obsidian-frontmatter pre),
+.preview :deep(.obsidian-plugin pre),
+.preview :deep(.obsidian-comment-block pre),
+.preview :deep(.obsidian-callout-body) {
+  margin: 0;
+  padding: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.preview :deep(.obsidian-callout) {
+  border-left-width: 4px;
+}
 </style>

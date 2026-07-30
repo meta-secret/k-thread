@@ -1,7 +1,12 @@
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/mantine/style.css'
+import { filterSuggestionItems } from '@blocknote/core/extensions'
 import { BlockNoteView } from '@blocknote/mantine'
-import { SuggestionMenuController, useCreateBlockNote } from '@blocknote/react'
+import {
+  getDefaultReactSlashMenuItems,
+  SuggestionMenuController,
+  useCreateBlockNote,
+} from '@blocknote/react'
 import {
   createElement,
   useEffect,
@@ -15,6 +20,7 @@ import { finalizeObsidianMarkdown, prepareObsidianMarkdown } from '@/lib/obsidia
 import {
   createObsidianSchema,
   noteSuggestionItems,
+  obsidianSlashItems,
   tagSuggestionItems,
   type ObsidianEditor,
 } from './obsidianSchema'
@@ -82,11 +88,20 @@ export function BlockNoteApp(props: BlockNoteAppProps): ReactElement {
       editor,
       theme: 'light',
       className: 'k-thread-blocknote',
+      slashMenu: false,
       onChange: () => {
         if (!ready.current || lastKey.current !== props.docKey) return
         props.onChange(finalizeObsidianMarkdown(editor.blocksToMarkdownLossy(editor.document)))
       },
     },
+    createElement(Suggestions, {
+      triggerCharacter: '/',
+      getItems: async (query: string) =>
+        filterSuggestionItems(
+          [...obsidianSlashItems(editor), ...getDefaultReactSlashMenuItems(editor)],
+          query,
+        ),
+    }),
     createElement(Suggestions, {
       triggerCharacter: '[',
       shouldOpen: shouldOpenWikilinkMenu,

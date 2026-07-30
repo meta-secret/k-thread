@@ -128,4 +128,97 @@ onBeforeUnmount(() => {
   border-radius: 2px;
   padding-inline: 0.1em;
 }
+
+.blocknote-host .obsidian-comment {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.blocknote-host .obsidian-frontmatter,
+.blocknote-host .obsidian-comment-block,
+.blocknote-host .obsidian-plugin-code,
+.blocknote-host .obsidian-callout {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0.4rem 0;
+  overflow: hidden;
+  background: var(--muted);
+}
+
+.blocknote-host .obsidian-frontmatter-label,
+.blocknote-host .obsidian-comment-label,
+.blocknote-host .obsidian-plugin-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.75rem;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+.blocknote-host .obsidian-frontmatter-editor,
+.blocknote-host .obsidian-comment-editor,
+.blocknote-host .obsidian-plugin-editor,
+.blocknote-host .obsidian-callout-body {
+  width: 100%;
+  min-height: 5rem;
+  border: 0;
+  resize: vertical;
+  padding: 0.75rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  outline: none;
+}
+
+.blocknote-host .obsidian-callout {
+  border-left-width: 4px;
+}
+
+.blocknote-host .obsidian-callout[data-callout-type='note'],
+.blocknote-host .obsidian-callout[data-callout-type='info'] {
+  border-left-color: #507aff;
+}
+
+.blocknote-host .obsidian-callout[data-callout-type='tip'],
+.blocknote-host .obsidian-callout[data-callout-type='success'] {
+  border-left-color: #0bc10b;
+}
+
+.blocknote-host .obsidian-callout[data-callout-type='warning'] {
+  border-left-color: #e69819;
+}
+
+.blocknote-host .obsidian-callout[data-callout-type='danger'],
+.blocknote-host .obsidian-callout[data-callout-type='failure'],
+.blocknote-host .obsidian-callout[data-callout-type='bug'] {
+  border-left-color: #d80d0d;
+}
+
+.blocknote-host .obsidian-callout-header {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 70%, transparent);
+}
+
+.blocknote-host .obsidian-callout-type,
+.blocknote-host .obsidian-callout-title {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.blocknote-host .obsidian-callout-title {
+  flex: 1;
+}
 </style>
