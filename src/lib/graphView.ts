@@ -128,12 +128,16 @@ export const folderHue = (folder: string): number => {
   return hash % 360
 }
 
-export const CHIP_W = 118
-export const CHIP_H = 36
-export const SUB_W = 96
+export const HUB_W = 268
+export const HUB_H = 76
+export const BRIDGE_W = 188
+export const BRIDGE_H = 52
+export const SUB_W = 92
 export const SUB_H = 28
-export const BUNDLE_STRANDS = 4
-export const FORK_STRANDS = 7
+export const CHIP_W = BRIDGE_W
+export const CHIP_H = BRIDGE_H
+export const BUNDLE_STRANDS = 5
+export const FORK_STRANDS = 8
 
 export const HudTier = {
   Hub: 'hub',
@@ -170,7 +174,7 @@ export type Point = { x: number; y: number }
 const linked = (a: DocId, b: DocId, edgeSet: ReadonlySet<string>): boolean =>
   edgeSet.has(`${a}|${b}`) || edgeSet.has(`${b}|${a}`)
 
-/** 3 hubs → 2 bridges → fork into remaining sub-components (left-to-right HUD). */
+/** 2 meta-secret hubs → 2 bridges → fork into sub-components (dense L→R). */
 export const buildHudStage = (
   nodes: readonly ViewNode[],
   edges: readonly ViewEdge[],
@@ -186,7 +190,7 @@ export const buildHudStage = (
     return a.id.localeCompare(b.id)
   })
 
-  const hubsRaw = byDegree.slice(0, Math.min(3, byDegree.length))
+  const hubsRaw = byDegree.slice(0, Math.min(2, byDegree.length))
   const hubIds = new Set(hubsRaw.map((n) => n.id))
   const restAfterHubs = byDegree.filter((n) => !hubIds.has(n.id))
 
@@ -205,9 +209,9 @@ export const buildHudStage = (
   const subsRaw = restAfterHubs.filter((n) => !bridgeIds.has(n.id))
 
   const midY = height / 2
-  const hubX = Math.max(210, width * 0.18)
-  const bridgeX = Math.max(380, width * 0.34)
-  const subX0 = Math.max(560, width * 0.52)
+  const hubX = Math.max(150, width * 0.17)
+  const bridgeX = Math.max(390, width * 0.4)
+  const subX0 = Math.max(560, width * 0.56)
 
   const placeColumn = (
     list: readonly ViewNode[],
@@ -223,16 +227,16 @@ export const buildHudStage = (
       tier,
       x,
       y: start + i * gap,
-      code: `CHR-${tier === HudTier.Hub ? '1' : tier === HudTier.Bridge ? '2' : '3'}.${String(i + 11)}`,
+      code: `${String(i + 1).padStart(2, '0')}`,
     }))
   }
 
-  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, 78)
-  const bridges = placeColumn(bridgesRaw, HudTier.Bridge, bridgeX, 96)
+  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, HUB_H + 28)
+  const bridges = placeColumn(bridgesRaw, HudTier.Bridge, bridgeX, BRIDGE_H + 36)
 
-  const cols = Math.max(2, Math.ceil(Math.sqrt(Math.max(subsRaw.length, 1))))
-  const colGap = 118
-  const rowGap = 52
+  const cols = Math.max(2, Math.min(4, Math.ceil(Math.sqrt(Math.max(subsRaw.length, 1)))))
+  const colGap = 108
+  const rowGap = 44
   const subs: HudNode[] = subsRaw.map((n, i) => {
     const col = i % cols
     const row = Math.floor(i / cols)
@@ -243,7 +247,7 @@ export const buildHudStage = (
       tier: HudTier.Sub,
       x: subX0 + col * colGap,
       y: midY - blockH / 2 + row * rowGap,
-      code: `SUB-${String(i + 1).padStart(2, '0')}`,
+      code: `S${String(i + 1).padStart(2, '0')}`,
     }
   })
 
@@ -284,7 +288,7 @@ export const buildHudStage = (
     }
   }
 
-  // Ensure 3→2 staging links (affinity) when sparse
+  // Ensure 2→2 staging links (affinity) when sparse
   for (const hub of hubs) {
     let linkedBridge = bridges.find((b) => linked(hub.id, b.id, edgeSet))
     if (!linkedBridge && bridges.length > 0) {
