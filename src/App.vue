@@ -47,9 +47,14 @@ onUnmounted(() => {
 
 // Vault restored but nothing remembered → open Files so the user chooses (no random note).
 watch(
-  () => [ready.value, active.tag] as const,
-  ([isReady, tag]) => {
-    if (isReady && tag === 'none' && view.value === ViewMode.Note) {
+  () =>
+    [
+      vaultStore.state.status,
+      vaultStore.state.activeId.tag,
+      vaultStore.state.view,
+    ] as const,
+  ([statusNow, activeTag, viewNow]) => {
+    if (statusNow === VaultStatus.Ready && activeTag === 'none' && viewNow === ViewMode.Note) {
       filesOpen.value = true
     }
   },
