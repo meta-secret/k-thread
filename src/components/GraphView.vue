@@ -3,6 +3,7 @@ import 'd3-transition'
 import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
+import { Maximize2, Network, Search, ZoomIn, ZoomOut } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -112,6 +113,16 @@ const bindHost = (el: Element | ComponentPublicInstance | null) => {
 const resetZoom = () => {
   if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
   svgRoot.value.transition().duration(350).call(zoomBehavior.value.transform, zoomIdentity)
+}
+
+const zoomIn = () => {
+  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
+  svgRoot.value.transition().duration(250).call(zoomBehavior.value.scaleBy, 1.25)
+}
+
+const zoomOut = () => {
+  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
+  svgRoot.value.transition().duration(250).call(zoomBehavior.value.scaleBy, 0.8)
 }
 
 const nodeMap = (): Map<DocId, HudNode> => {
@@ -256,165 +267,95 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="hud-shell">
-    <div class="toolbar">
-      <div class="modes">
-        <Button
-          size="sm"
-          :variant="scope === GraphScope.Global ? 'secondary' : 'ghost'"
-          class="hud-btn"
-          @click="scope = GraphScope.Global"
-        >
-          Global
-        </Button>
-        <Button
-          size="sm"
-          :variant="scope === GraphScope.Local ? 'secondary' : 'ghost'"
-          class="hud-btn"
-          :disabled="activeId.length === 0"
-          @click="scope = GraphScope.Local"
-        >
-          Local
-        </Button>
-        <label v-if="scope === GraphScope.Local" class="hops">
-          Depth
-          <input v-model.number="hops" type="range" min="1" max="3" step="1" />
-          <span>{{ hops }}</span>
-        </label>
-        <span class="sep" />
-        <span class="readout">{{ scopeLabel }} · Links</span>
+  <div class="hud-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden bg-[#09090b] text-zinc-100 font-sans">
+    <header class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
+          <Network class="w-4 h-4" />
+        </div>
+        <div class="flex items-center gap-2">
+          <Button
+            size="sm"
+            :variant="scope === GraphScope.Global ? 'secondary' : 'ghost'"
+            class="h-7 text-xs bg-zinc-900 border-zinc-800 text-zinc-200"
+            @click="scope = GraphScope.Global"
+          >
+            Global
+          </Button>
+          <Button
+            size="sm"
+            :variant="scope === GraphScope.Local ? 'secondary' : 'ghost'"
+            class="h-7 text-xs bg-zinc-900 border-zinc-800 text-zinc-200"
+            :disabled="activeId.length === 0"
+            @click="scope = GraphScope.Local"
+          >
+            Local
+          </Button>
+
+          <label v-if="scope === GraphScope.Local" class="flex items-center gap-1.5 text-xs text-zinc-400 font-mono ml-2">
+            Depth
+            <input v-model.number="hops" type="range" min="1" max="3" step="1" class="w-16 accent-orange-500" />
+            <span class="text-orange-400 font-semibold">{{ hops }}</span>
+          </label>
+
+          <span class="w-px h-4 bg-zinc-800 mx-1" />
+          <span class="text-xs font-mono font-medium text-orange-400 uppercase tracking-wide">
+            {{ scopeLabel }} · WIKILINKS
+          </span>
+        </div>
       </div>
 
-      <Input v-model="query" class="search" placeholder="Filter notes…" autocomplete="off" />
+      <div class="flex items-center gap-2">
+        <div class="relative w-48 sm:w-60">
+          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+          <Input
+            v-model="query"
+            class="pl-8 text-xs bg-zinc-900/90 border-zinc-800 text-zinc-200 placeholder:text-zinc-500 h-8 focus:border-orange-500/50"
+            placeholder="Filter wikilinks…"
+            autocomplete="off"
+          />
+        </div>
 
-      <div class="actions">
-        <Button size="sm" variant="ghost" class="hud-btn" @click="showOrphans = !showOrphans">
-          {{ showOrphans ? 'Hide orphans' : 'Show orphans' }}
+        <Button
+          size="sm"
+          variant="outline"
+          class="h-8 text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800"
+          @click="showOrphans = !showOrphans"
+        >
+          {{ showOrphans ? 'Hide Orphans' : 'Show Orphans' }}
         </Button>
-        <Button size="sm" variant="outline" class="hud-btn" @click="resetZoom">Reset view</Button>
+
+        <div class="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 p-0.5">
+          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Zoom In" @click="zoomIn">
+            <ZoomIn class="w-3.5 h-3.5" />
+          </button>
+          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Zoom Out" @click="zoomOut">
+            <ZoomOut class="w-3.5 h-3.5" />
+          </button>
+          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Reset View" @click="resetZoom">
+            <Maximize2 class="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <div :ref="bindHost" class="canvas" />
+    <div :ref="bindHost" class="z-0 min-h-0 w-full h-full" />
 
-    <div class="footer">
-      <span class="mono">{{ stageStats.nodes }} nodes</span>
-      <span class="mono">{{ stageStats.links }} links</span>
-      <span class="hint">Click to focus · double-click to open</span>
-    </div>
+    <footer class="z-10 flex items-center justify-between px-5 py-2.5 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800/80 text-xs text-zinc-400 font-mono">
+      <div class="flex items-center gap-4">
+        <span class="text-zinc-200 font-medium">{{ stageStats.nodes }} nodes</span>
+        <span>·</span>
+        <span class="text-zinc-200 font-medium">{{ stageStats.links }} links</span>
+      </div>
+      <span class="text-zinc-500 text-[11px]">Click node to focus · Double-click to open</span>
+    </footer>
   </div>
 </template>
 
 <style scoped>
-.hud-shell {
-  position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: #ffffff;
-  color: var(--kube-ink);
-  font-family: var(--font-sans, "IBM Plex Sans", "Segoe UI", sans-serif);
-}
-
-.toolbar,
-.footer {
-  position: relative;
-  z-index: 2;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem 1rem;
-  border-bottom: 1px solid rgba(18, 18, 20, 0.08);
-  background: #ffffff;
-}
-
-.modes,
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.hops {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  color: var(--kube-mute);
-}
-
-.hops input {
-  width: 70px;
-}
-
-.sep {
-  width: 1px;
-  height: 1rem;
-  background: rgba(18, 18, 20, 0.12);
-  margin: 0 0.25rem;
-}
-
-.readout {
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  color: var(--kube-mute);
-  font-weight: 500;
-}
-
-.search {
-  width: min(220px, 100%);
-  background: #f4f4f6;
-  border-color: rgba(18, 18, 20, 0.12);
-  color: var(--kube-ink);
-  font-family: inherit;
-  font-size: 0.8rem;
-}
-
-.hud-btn {
-  font-family: inherit;
-  letter-spacing: 0.04em;
-}
-
-.canvas {
-  position: relative;
-  z-index: 0;
-  min-height: 0;
+:deep(.hud-svg) {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.45rem 1rem;
-  border-top: 1px solid rgba(18, 18, 20, 0.08);
-  background: #ffffff;
-  font-size: 0.7rem;
-  letter-spacing: 0.02em;
-  color: var(--kube-mute);
-}
-
-.footer .mono {
-  color: var(--kube-ink);
-}
-
-.footer .hint {
-  margin-left: auto;
-  opacity: 0.7;
-}
-
-.hud-shell :deep(.hud-svg) {
-  display: block;
 }
 </style>

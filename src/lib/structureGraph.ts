@@ -32,10 +32,10 @@ export type StructureGraph = {
 
 export const ROOT_ID = '__vault__'
 
-export const WIDGET_W = 260
-export const WIDGET_H = 86
-const COL_GAP = 36
-const ROW_GAP = 56
+export const WIDGET_W = 280
+export const WIDGET_H = 94
+const COL_GAP = 44
+const ROW_GAP = 64
 
 const parentFolder = (folderPath: string): string => {
   if (!folderPath.includes('/')) return ''

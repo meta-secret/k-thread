@@ -199,6 +199,19 @@ body > [data-floating-ui-portal] .bn-suggestion-menu {
   }
 }
 
+@keyframes strand-flow {
+  from {
+    stroke-dashoffset: 48;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.strand-pulse {
+  animation: strand-flow 1.8s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

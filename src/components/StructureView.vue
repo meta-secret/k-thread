@@ -3,6 +3,16 @@ import 'd3-transition'
 import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
+import {
+  Crosshair,
+  FileText,
+  GitBranch,
+  Maximize2,
+  RefreshCw,
+  Search,
+  ZoomIn,
+  ZoomOut,
+} from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,7 +38,6 @@ const props = defineProps<{
   docs: readonly Doc[]
   folders: readonly string[]
   activeId: DocId | ''
-  /** When set (e.g. jump from Note), focus this folder subtree. */
   seedFolder?: string
 }>()
 
@@ -50,6 +59,7 @@ watch(
   },
   { immediate: true },
 )
+
 let zoomBehavior: Option<ZoomBehavior<SVGSVGElement, unknown>> = none
 let svgRoot: Option<Selection<SVGSVGElement, unknown, null, undefined>> = none
 let wireSel: Option<StructWireSel> = none
@@ -57,6 +67,19 @@ let nodeSel: Option<StructNodeSel> = none
 let resizeObserver: Option<ResizeObserver> = none
 const dragOffsets = new Map<string, { x: number; y: number }>()
 const stats = ref({ nodes: 0, links: 0 })
+
+const selectedNode = computed<PlacedStructureNode | null>(() => {
+  if (!hoveredId.value && !props.activeId) return null
+  const targetId = hoveredId.value || `note:${props.activeId}`
+  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value)
+  const stage = placeStructureStage(graph, 1100, 640)
+  return stage.nodes.find((n) => n.id === targetId || n.noteId === props.activeId) ?? null
+})
+
+const selectedDoc = computed(() => {
+  if (!selectedNode.value || !selectedNode.value.noteId) return null
+  return props.docs.find((d) => d.id === selectedNode.value?.noteId) ?? null
+})
 
 const filteredDocs = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -82,6 +105,16 @@ const bindHost = (el: Element | ComponentPublicInstance | null) => {
 const resetZoom = () => {
   if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
   svgRoot.value.transition().duration(350).call(zoomBehavior.value.transform, zoomIdentity)
+}
+
+const zoomIn = () => {
+  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
+  svgRoot.value.transition().duration(250).call(zoomBehavior.value.scaleBy, 1.25)
+}
+
+const zoomOut = () => {
+  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
+  svgRoot.value.transition().duration(250).call(zoomBehavior.value.scaleBy, 0.8)
 }
 
 const clearFocusFolder = () => {
@@ -136,7 +169,7 @@ const rebuild = () => {
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
-    .scaleExtent([0.25, 2.5])
+    .scaleExtent([0.2, 3])
     .on('zoom', (event) => {
       root.attr('transform', event.transform.toString())
     })
@@ -234,114 +267,158 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="structure-shell">
-    <div class="toolbar">
-      <div class="heading">
-        <h2 class="title">{{ focusFolder.length > 0 ? focusFolder : 'Project structure' }}</h2>
-        <p class="sub">Folders and notes · click a note to write</p>
+  <div class="structure-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden bg-[#09090b] text-zinc-100 font-sans">
+    <!-- Top Glassmorphic High-Tech Toolbar -->
+    <header class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
+          <GitBranch class="w-4 h-4" />
+        </div>
+        <div>
+          <h2 class="m-0 text-sm font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
+            <span>{{ focusFolder.length > 0 ? focusFolder : 'Vault Structure Funnel' }}</span>
+            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-800/80 text-orange-400 border border-orange-500/20">
+              WORKFLOW GRAPH
+            </span>
+          </h2>
+          <p class="m-0 text-xs text-zinc-400 font-mono tracking-wide">
+            Parent-aligned workflow · {{ stats.nodes }} nodes · {{ stats.links }} connections
+          </p>
+        </div>
       </div>
-      <Input v-model="query" class="search" placeholder="Filter notes…" autocomplete="off" />
-      <div class="actions">
+
+      <!-- Search & Controls -->
+      <div class="flex items-center gap-2">
+        <div class="relative w-52 sm:w-64">
+          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+          <Input
+            v-model="query"
+            class="pl-8 text-xs bg-zinc-900/90 border-zinc-800 text-zinc-200 placeholder:text-zinc-500 h-8 focus:border-orange-500/50 focus:ring-orange-500/20"
+            placeholder="Search nodes or folders…"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="h-4 w-px bg-zinc-800 mx-1" />
+
         <Button
+          v-if="focusFolder.length > 0"
           size="sm"
-          variant="ghost"
-          :disabled="focusFolder.length === 0"
+          variant="outline"
+          class="h-8 text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white"
           @click="clearFocusFolder"
         >
-          Whole vault
+          <RefreshCw class="w-3 h-3 mr-1 text-orange-400" />
+          Whole Vault
         </Button>
-        <Button size="sm" variant="outline" @click="resetZoom">Reset</Button>
+
+        <div class="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 p-0.5">
+          <button
+            type="button"
+            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            title="Zoom In"
+            @click="zoomIn"
+          >
+            <ZoomIn class="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            title="Zoom Out"
+            @click="zoomOut"
+          >
+            <ZoomOut class="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            title="Reset View"
+            @click="resetZoom"
+          >
+            <Maximize2 class="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
+    </header>
+
+    <!-- Main SVG Canvas Stage -->
+    <div class="relative z-0 min-h-0 w-full h-full overflow-hidden">
+      <div :ref="bindHost" class="w-full h-full" />
+
+      <!-- Floating Interactive Inspector Card (Pic 3 style preview widget) -->
+      <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
+        <div
+          v-if="selectedNode"
+          class="absolute bottom-4 right-4 z-20 w-80 rounded-xl bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/90 shadow-2xl p-4 text-xs"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-mono text-[10px] uppercase tracking-widest text-orange-400 font-semibold flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              Node Inspector
+            </span>
+            <span class="font-mono text-[10px] text-zinc-500">#{String(selectedNode.index).padStart(2, '0')}</span>
+          </div>
+
+          <h3 class="font-semibold text-sm text-zinc-100 m-0 truncate">
+            {{ selectedNode.title }}
+          </h3>
+          <p class="text-zinc-400 m-0 mt-0.5 truncate text-[11px]">
+            {{ selectedNode.meta }}
+          </p>
+
+          <div v-if="selectedDoc" class="mt-3 pt-2.5 border-t border-zinc-800/80">
+            <p class="text-zinc-300 font-mono text-[10.5px] line-clamp-3 bg-zinc-900/80 p-2 rounded border border-zinc-800">
+              {{ selectedDoc.body || '(Empty note content)' }}
+            </p>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-zinc-500 text-[10px]">Click node to edit note</span>
+              <Button
+                size="sm"
+                class="h-7 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium px-2.5"
+                @click="emit('openNote', selectedNode.noteId as DocId)"
+              >
+                <FileText class="w-3 h-3 mr-1" />
+                Open Note
+              </Button>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
-    <div :ref="bindHost" class="canvas" />
-    <div class="footer">
-      <span>{{ stats.nodes }} steps</span>
-      <span>{{ stats.links }} links</span>
-      <span class="hint">Folder → focus subtree · Note → open editor</span>
-    </div>
+
+    <!-- Bottom High-Tech Legend Bar (Pic 2 inspired) -->
+    <footer class="z-10 flex flex-wrap items-center justify-between gap-4 px-5 py-2.5 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800/80 text-xs text-zinc-400 font-mono">
+      <div class="flex items-center gap-5">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-0.5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+          <span class="text-zinc-300 text-[11px]">Sequence Flow</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full border border-orange-500 bg-zinc-950" />
+          <span class="text-zinc-300 text-[11px]">Hierarchy Port</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+          <span class="text-zinc-300 text-[11px]">Active Focus</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4 text-[11px] text-zinc-500">
+        <span class="flex items-center gap-1">
+          <Crosshair class="w-3 h-3 text-orange-400" />
+          <span>Click folder to focus subtree</span>
+        </span>
+        <span>·</span>
+        <span>Double-click note to write</span>
+      </div>
+    </footer>
   </div>
 </template>
 
 <style scoped>
-.structure-shell {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: 100%;
-  min-height: 0;
-  background: var(--kube-wash-top);
-  color: var(--kube-ink);
-  font-family: var(--font-sans, "IBM Plex Sans", "Segoe UI", sans-serif);
-}
-
-.toolbar,
-.footer {
-  z-index: 2;
-  background: color-mix(in srgb, var(--kube-wash-top) 92%, white);
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--kube-line);
-}
-
-.heading {
-  min-width: 0;
-}
-
-.title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-
-.sub {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
-  color: var(--kube-mute);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.search {
-  width: min(220px, 100%);
-  background: var(--card, #fff);
-  border-color: var(--kube-line);
-  font-size: 0.8rem;
-}
-
-.canvas {
-  min-height: 0;
+.structure-svg {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.5rem 1.25rem;
-  border-top: 1px solid var(--kube-line);
-  font-size: 0.7rem;
-  color: var(--kube-mute);
-}
-
-.footer .hint {
-  margin-left: auto;
-}
-
-.structure-shell :deep(.structure-svg) {
-  display: block;
 }
 </style>
