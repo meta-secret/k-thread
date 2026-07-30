@@ -128,21 +128,24 @@ export const folderHue = (folder: string): number => {
   return hash % 360
 }
 
-export const HUB_W = 148
-export const HUB_H = 36
-export const BRIDGE_W = 128
-export const BRIDGE_H = 32
-export const SUB_W = 104
-export const SUB_H = 28
-export const CHIP_W = BRIDGE_W
-export const CHIP_H = BRIDGE_H
+export const NODE_W = 132
+export const NODE_H = 34
+/** @deprecated use NODE_W — kept for older imports */
+export const HUB_W = NODE_W
+export const HUB_H = NODE_H
+export const BRIDGE_W = NODE_W
+export const BRIDGE_H = NODE_H
+export const SUB_W = NODE_W
+export const SUB_H = NODE_H
+export const CHIP_W = NODE_W
+export const CHIP_H = NODE_H
 export const BUNDLE_STRANDS = 1
 export const FORK_STRANDS = 1
 
+/** Visual weight only — every note is still one graph node. */
 export const HudTier = {
-  Hub: 'hub',
-  Bridge: 'bridge',
-  Sub: 'sub',
+  Root: 'root',
+  Node: 'node',
 } as const
 export type HudTier = (typeof HudTier)[keyof typeof HudTier]
 
@@ -151,6 +154,7 @@ export type HudNode = ViewNode & {
   x: number
   y: number
   code: string
+  layer: number
 }
 
 export type HudWire = {
@@ -162,19 +166,17 @@ export type HudWire = {
 }
 
 export type HudStage = {
+  nodes: HudNode[]
+  wires: HudWire[]
+  /** @deprecated aliases for gradual migration */
   hubs: HudNode[]
   bridges: HudNode[]
   subs: HudNode[]
-  wires: HudWire[]
-  records: { id: DocId; code: string; degree: number; rate: string }[]
 }
 
 export type Point = { x: number; y: number }
 
-const linked = (a: DocId, b: DocId, edgeSet: ReadonlySet<string>): boolean =>
-  edgeSet.has(`${a}|${b}`) || edgeSet.has(`${b}|${a}`)
-
-/** 2 meta-secret hubs → 2 bridges → fork into sub-components (dense L→R). */
+/** One node per note; columns = BFS distance from focus; edges = real links only. */
 export const buildHudStage = (
   nodes: readonly ViewNode[],
   edges: readonly ViewEdge[],
@@ -182,153 +184,108 @@ export const buildHudStage = (
   width: number,
   height: number,
 ): HudStage => {
-  const edgeSet = new Set(edges.map((e) => `${e.from}|${e.to}`))
-  const byDegree = [...nodes].sort((a, b) => {
-    if (a.id === activeId) return -1
-    if (b.id === activeId) return 1
-    if (b.degree !== a.degree) return b.degree - a.degree
-    return a.id.localeCompare(b.id)
-  })
-
-  const hubsRaw = byDegree.slice(0, Math.min(2, byDegree.length))
-  const hubIds = new Set(hubsRaw.map((n) => n.id))
-  const restAfterHubs = byDegree.filter((n) => !hubIds.has(n.id))
-
-  const bridgeScore = (n: ViewNode): number => {
-    let score = n.degree
-    for (const h of hubIds) {
-      if (linked(n.id, h, edgeSet)) score += 10
-    }
-    return score
+  if (nodes.length === 0) {
+    return { nodes: [], wires: [], hubs: [], bridges: [], subs: [] }
   }
 
-  const bridgesRaw = [...restAfterHubs]
-    .sort((a, b) => bridgeScore(b) - bridgeScore(a) || a.id.localeCompare(b.id))
-    .slice(0, Math.min(2, restAfterHubs.length))
-  const bridgeIds = new Set(bridgesRaw.map((n) => n.id))
-  const subsRaw = restAfterHubs.filter((n) => !bridgeIds.has(n.id))
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  const adj = new Map<DocId, DocId[]>()
+  for (const n of nodes) adj.set(n.id, [])
+  for (const e of edges) {
+    if (!byId.has(e.from) || !byId.has(e.to)) continue
+    adj.get(e.from)?.push(e.to)
+    adj.get(e.to)?.push(e.from)
+  }
 
+  const rootId =
+    activeId.length > 0 && byId.has(activeId)
+      ? activeId
+      : [...nodes].sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))[0]?.id ?? ''
+
+  const layerOf = new Map<DocId, number>()
+  const queue: DocId[] = []
+  if (rootId.length > 0) {
+    layerOf.set(rootId, 0)
+    queue.push(rootId)
+  }
+  while (queue.length > 0) {
+    const id = queue.shift()
+    if (!id) break
+    const depth = layerOf.get(id) ?? 0
+    for (const n of adj.get(id) ?? []) {
+      if (layerOf.has(n)) continue
+      layerOf.set(n, depth + 1)
+      queue.push(n)
+    }
+  }
+
+  // Orphans / disconnected → last column
+  let maxLayer = 0
+  for (const d of layerOf.values()) maxLayer = Math.max(maxLayer, d)
+  const orphanLayer = maxLayer + (layerOf.size > 0 && layerOf.size < nodes.length ? 1 : 0)
+  for (const n of nodes) {
+    if (!layerOf.has(n.id)) layerOf.set(n.id, orphanLayer)
+  }
+  for (const d of layerOf.values()) maxLayer = Math.max(maxLayer, d)
+
+  const columns: ViewNode[][] = Array.from({ length: maxLayer + 1 }, () => [])
+  for (const n of nodes) {
+    const layer = layerOf.get(n.id) ?? 0
+    columns[layer]?.push(n)
+  }
+  for (const col of columns) {
+    col.sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))
+  }
+
+  const colGap = Math.max(160, Math.min(220, (width - 160) / Math.max(columns.length, 1)))
+  const rowGap = NODE_H + 28
+  const originX = Math.max(90, (width - colGap * Math.max(columns.length - 1, 0)) / 2)
   const midY = height / 2
-  const hubX = Math.max(120, width * 0.18)
-  const bridgeX = Math.max(320, width * 0.42)
-  const subX0 = Math.max(500, width * 0.62)
 
-  const placeColumn = (
-    list: readonly ViewNode[],
-    tier: HudTier,
-    x: number,
-    gap: number,
-  ): HudNode[] => {
-    if (list.length === 0) return []
-    const total = (list.length - 1) * gap
-    const start = midY - total / 2
-    return list.map((n, i) => ({
-      ...n,
-      tier,
-      x,
-      y: start + i * gap,
-      code: `${String(i + 1).padStart(2, '0')}`,
-    }))
-  }
-
-  const hubs = placeColumn(hubsRaw, HudTier.Hub, hubX, HUB_H + 40)
-  const bridges = placeColumn(bridgesRaw, HudTier.Bridge, bridgeX, BRIDGE_H + 36)
-
-  const cols = Math.max(2, Math.min(4, Math.ceil(Math.sqrt(Math.max(subsRaw.length, 1)))))
-  const colGap = 120
-  const rowGap = 40
-  const subs: HudNode[] = subsRaw.map((n, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    const rows = Math.ceil(subsRaw.length / cols)
-    const blockH = (rows - 1) * rowGap
-    return {
-      ...n,
-      tier: HudTier.Sub,
-      x: subX0 + col * colGap,
-      y: midY - blockH / 2 + row * rowGap,
-      code: `S${String(i + 1).padStart(2, '0')}`,
-    }
+  const placed: HudNode[] = []
+  let code = 1
+  columns.forEach((col, li) => {
+    const blockH = Math.max(0, (col.length - 1) * rowGap)
+    const startY = midY - blockH / 2
+    col.forEach((n, ri) => {
+      placed.push({
+        ...n,
+        tier: n.id === rootId ? HudTier.Root : HudTier.Node,
+        layer: li,
+        x: originX + li * colGap,
+        y: startY + ri * rowGap,
+        code: String(code).padStart(2, '0'),
+      })
+      code += 1
+    })
   })
 
-  const byId = new Map<DocId, HudNode>()
-  for (const n of [...hubs, ...bridges, ...subs]) byId.set(n.id, n)
-
+  const pos = new Map(placed.map((n) => [n.id, n]))
   const wires: HudWire[] = []
   const seen = new Set<string>()
-  const pushWire = (from: DocId, to: DocId, fork: boolean, real: boolean) => {
-    const key = from < to ? `${from}|${to}` : `${to}|${from}`
-    if (seen.has(key)) return
-    seen.add(key)
-    const a = byId.get(from)
-    const b = byId.get(to)
-    wires.push({
-      from,
-      to,
-      fork,
-      real,
-      missing: (a?.kind === 'missing' || b?.kind === 'missing') ?? false,
-    })
-  }
-
-  // Real edges across stages
   for (const e of edges) {
-    const a = byId.get(e.from)
-    const b = byId.get(e.to)
+    const a = pos.get(e.from)
+    const b = pos.get(e.to)
     if (!a || !b) continue
-    const tiers = new Set([a.tier, b.tier])
-    if (tiers.has(HudTier.Hub) && tiers.has(HudTier.Bridge)) {
-      pushWire(e.from, e.to, false, true)
-    } else if (tiers.has(HudTier.Bridge) && tiers.has(HudTier.Sub)) {
-      pushWire(e.from, e.to, true, true)
-    } else if (tiers.has(HudTier.Hub) && tiers.has(HudTier.Sub)) {
-      pushWire(e.from, e.to, true, true)
-    } else if (a.tier === b.tier && a.tier === HudTier.Hub) {
-      pushWire(e.from, e.to, false, true)
-    }
-  }
-
-  // Ensure 2→2 staging links (affinity) when sparse
-  for (const hub of hubs) {
-    let linkedBridge = bridges.find((b) => linked(hub.id, b.id, edgeSet))
-    if (!linkedBridge && bridges.length > 0) {
-      linkedBridge = bridges[hubs.indexOf(hub) % bridges.length]
-    }
-    if (linkedBridge) pushWire(hub.id, linkedBridge.id, false, linked(hub.id, linkedBridge.id, edgeSet))
-  }
-
-  // Fork: every sub attaches to a bridge (linked preferred, else round-robin)
-  bridges.forEach((bridge, bi) => {
-    const mine = subs.filter((s, si) => {
-      if (linked(bridge.id, s.id, edgeSet)) return true
-      const owners = bridges.filter((b) => linked(b.id, s.id, edgeSet))
-      if (owners.length > 0) return owners[0]?.id === bridge.id
-      return si % bridges.length === bi
-    })
-    for (const sub of mine) {
-      pushWire(bridge.id, sub.id, true, linked(bridge.id, sub.id, edgeSet))
-    }
-  })
-
-  // If no bridges, hubs fork directly to subs
-  if (bridges.length === 0) {
-    hubs.forEach((hub, hi) => {
-      for (const [si, sub] of subs.entries()) {
-        if (linked(hub.id, sub.id, edgeSet) || si % Math.max(hubs.length, 1) === hi) {
-          pushWire(hub.id, sub.id, true, linked(hub.id, sub.id, edgeSet))
-        }
-      }
+    const key = e.from < e.to ? `${e.from}|${e.to}` : `${e.to}|${e.from}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    wires.push({
+      from: e.from,
+      to: e.to,
+      fork: false,
+      real: true,
+      missing: a.kind === 'missing' || b.kind === 'missing',
     })
   }
 
-  const records = hubs.map((h, i) => ({
-    id: h.id,
-    code: h.code,
-    degree: h.degree,
-    rate: `${(40 + h.degree * 17 + i * 3).toFixed(1)}Kb/s`,
-  }))
-
-  return { hubs, bridges, subs, wires, records }
+  return {
+    nodes: placed,
+    wires,
+    hubs: placed.filter((n) => n.tier === HudTier.Root),
+    bridges: [],
+    subs: placed.filter((n) => n.tier === HudTier.Node),
+  }
 }
 
 /** Orthogonal elbow path (graph / HUD style). */

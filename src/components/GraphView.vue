@@ -7,18 +7,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicI
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  BRIDGE_H,
-  BRIDGE_W,
   buildHudStage,
   buildViewGraph,
   GraphScope,
-  HUB_H,
-  HUB_W,
   HudTier,
   labelOf,
+  NODE_H,
+  NODE_W,
   orthoPath,
-  SUB_H,
-  SUB_W,
   type GraphScope as GraphScopeT,
   type HudNode,
   type HudStage,
@@ -54,7 +50,7 @@ let wireSel: Option<WireSel> = none
 let nodeSel: Option<NodeSel> = none
 let resizeObserver: Option<ResizeObserver> = none
 let stage: Option<HudStage> = none
-const stageStats = ref({ hubs: 0, bridges: 0, subs: 0 })
+const stageStats = ref({ nodes: 0, links: 0 })
 const dragOffsets = new Map<DocId, { x: number; y: number }>()
 
 const existingSet = computed(() => new Set(props.existingIds))
@@ -83,11 +79,7 @@ const scopeLabel = computed(() =>
   scope.value === GraphScope.Local ? `LOCAL·${hops.value}` : 'GLOBAL',
 )
 
-const sizeOf = (d: HudNode): { w: number; h: number } => {
-  if (d.tier === HudTier.Hub) return { w: HUB_W, h: HUB_H }
-  if (d.tier === HudTier.Bridge) return { w: BRIDGE_W, h: BRIDGE_H }
-  return { w: SUB_W, h: SUB_H }
-}
+const sizeOf = (_d: HudNode): { w: number; h: number } => ({ w: NODE_W, h: NODE_H })
 
 const portOf = (d: HudNode, side: 'in' | 'out'): { x: number; y: number } => {
   const { w } = sizeOf(d)
@@ -134,9 +126,7 @@ const resetZoom = () => {
 const nodeMap = (): Map<DocId, HudNode> => {
   const map = new Map<DocId, HudNode>()
   if (stage.tag === 'none') return map
-  for (const n of [...stage.value.hubs, ...stage.value.bridges, ...stage.value.subs]) {
-    map.set(n.id, n)
-  }
+  for (const n of stage.value.nodes) map.set(n.id, n)
   return map
 }
 
@@ -205,7 +195,7 @@ const paintFocus = () => {
     if (d.id === props.activeId) return '#c02323'
     if (d.id === hoveredId.value) return '#121214'
     if (d.kind === 'missing') return '#9a9aa4'
-    if (d.tier === HudTier.Hub) return 'rgba(18,18,20,0.55)'
+    if (d.tier === HudTier.Root) return 'rgba(18,18,20,0.55)'
     return 'rgba(18,18,20,0.28)'
   })
   nodeSel.value
@@ -216,15 +206,14 @@ const paintFocus = () => {
     .attr('opacity', (d) => (d.id === props.activeId ? 1 : 0))
 }
 
-/** Compact pill node — graph vocabulary, not marketing cards. */
+/** One pill = one note. */
 const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
   const { w, h } = sizeOf(d)
   const x0 = -w / 2
   const y0 = -h / 2
   const r = h / 2
-  const isHub = d.tier === HudTier.Hub
-  const maxLen = isHub ? 14 : d.tier === HudTier.Bridge ? 12 : 11
-  const title = clipLabel(labelOf(d.id), maxLen)
+  const isRoot = d.tier === HudTier.Root
+  const title = clipLabel(labelOf(d.id), 14)
 
   g.append('rect')
     .attr('class', 'chip-active')
@@ -245,14 +234,10 @@ const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNod
     .attr('width', w)
     .attr('height', h)
     .attr('rx', r)
-    .attr(
-      'fill',
-      d.kind === 'missing' ? '#ececef' : isHub ? '#fafafa' : '#f4f4f6',
-    )
-    .attr('stroke', isHub ? 'rgba(18,18,20,0.55)' : 'rgba(18,18,20,0.28)')
-    .attr('stroke-width', isHub ? 1.4 : 1.1)
+    .attr('fill', d.kind === 'missing' ? '#ececef' : isRoot ? '#fafafa' : '#f4f4f6')
+    .attr('stroke', isRoot ? 'rgba(18,18,20,0.55)' : 'rgba(18,18,20,0.28)')
+    .attr('stroke-width', isRoot ? 1.4 : 1.1)
 
-  // In / out ports
   g.append('circle')
     .attr('class', 'port-in')
     .attr('cx', x0)
@@ -270,35 +255,22 @@ const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNod
     .attr('stroke', '#f4f4f6')
     .attr('stroke-width', 1.1)
 
-  if (isHub) {
-    g.append('text')
-      .attr('x', x0 + 14)
-      .attr('y', -5)
-      .attr('fill', '#8a8a96')
-      .attr('font-size', 7)
-      .attr('letter-spacing', '0.1em')
-      .attr('font-family', 'ui-monospace, Menlo, monospace')
-      .text(`${d.code} · ${d.degree}`)
-    g.append('text')
-      .attr('x', x0 + 14)
-      .attr('y', 9)
-      .attr('fill', '#121214')
-      .attr('font-size', 12)
-      .attr('font-weight', 650)
-      .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
-      .text(title)
-  } else {
-    g.append('text')
-      .attr('x', 0)
-      .attr('y', 4)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#121214')
-      .attr('font-size', d.tier === HudTier.Bridge ? 10 : 9)
-      .attr('font-weight', 600)
-      .attr('letter-spacing', '0.04em')
-      .attr('font-family', 'ui-monospace, Menlo, monospace')
-      .text(title.toUpperCase())
-  }
+  g.append('text')
+    .attr('x', x0 + 12)
+    .attr('y', -4)
+    .attr('fill', '#8a8a96')
+    .attr('font-size', 7)
+    .attr('letter-spacing', '0.08em')
+    .attr('font-family', 'ui-monospace, Menlo, monospace')
+    .text(`${d.code} · L${d.layer} · ${d.degree}`)
+  g.append('text')
+    .attr('x', x0 + 12)
+    .attr('y', 10)
+    .attr('fill', '#121214')
+    .attr('font-size', 12)
+    .attr('font-weight', 650)
+    .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
+    .text(title)
 }
 
 const rebuild = () => {
@@ -308,7 +280,7 @@ const rebuild = () => {
   const height = el.clientHeight > 0 ? el.clientHeight : 640
 
   const built = buildHudStage(view.value.nodes, view.value.edges, props.activeId, width, height)
-  for (const n of [...built.hubs, ...built.bridges, ...built.subs]) {
+  for (const n of built.nodes) {
     const off = dragOffsets.get(n.id)
     if (off) {
       n.x = off.x
@@ -317,9 +289,8 @@ const rebuild = () => {
   }
   stage = some(built)
   stageStats.value = {
-    hubs: built.hubs.length,
-    bridges: built.bridges.length,
-    subs: built.subs.length,
+    nodes: built.nodes.length,
+    links: built.wires.length,
   }
 
   el.replaceChildren()
@@ -395,21 +366,21 @@ const rebuild = () => {
   mark(16, height - 16)
   mark(width - 16, height - 16)
 
-  const label = (x: number, text: string) => {
+  const layers = [...new Set(built.nodes.map((n) => n.layer))].sort((a, b) => a - b)
+  for (const layer of layers) {
+    const sample = built.nodes.find((n) => n.layer === layer)
+    if (!sample) continue
     chrome
       .append('text')
-      .attr('x', x)
+      .attr('x', sample.x)
       .attr('y', 28)
       .attr('text-anchor', 'middle')
       .attr('fill', '#6b6b73')
       .attr('font-size', 9)
       .attr('letter-spacing', '0.18em')
       .attr('font-family', 'ui-monospace, Menlo, monospace')
-      .text(text)
+      .text(layer === 0 ? 'FOCUS' : `L${layer}`)
   }
-  if (built.hubs[0]) label(built.hubs[0].x, '01  ROOT')
-  if (built.bridges[0]) label(built.bridges[0].x, '02  LINK')
-  if (built.subs[0]) label(built.subs[0].x, '03  NODE')
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -421,7 +392,7 @@ const rebuild = () => {
   svg.on('dblclick.zoom', null)
   zoomBehavior = some(zb)
 
-  const allNodes = [...built.hubs, ...built.bridges, ...built.subs]
+  const allNodes = built.nodes
 
   const wiresJoined = root
     .append('g')
@@ -550,10 +521,9 @@ onBeforeUnmount(() => {
     <div :ref="bindHost" class="canvas" />
 
     <div class="footer">
-      <span class="mono">HUB {{ stageStats.hubs }}</span>
-      <span class="mono">BRG {{ stageStats.bridges }}</span>
-      <span class="mono">SUB {{ stageStats.subs }}</span>
-      <span class="hint">CLICK FOCUS · DBL OPEN · DRAG NODES</span>
+      <span class="mono">NODES {{ stageStats.nodes }}</span>
+      <span class="mono">LINKS {{ stageStats.links }}</span>
+      <span class="hint">ONE NOTE = ONE NODE · CLICK FOCUS · DBL OPEN</span>
     </div>
   </div>
 </template>
