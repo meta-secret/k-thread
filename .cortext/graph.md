@@ -27,17 +27,25 @@ Instead of splitting directory tree and wikilink network across disconnected vie
 - **Architectural Micro-Cards (`196px` × `54px`)**: Clean micro-rounded (`rx = 10`) cards featuring 34×34px icon tile, crisp title, meta subtitle, step ordinal (`#01`, `#02`), and kind tag (`VAULT`, `DIR`, `NOTE`).
 - **Animated Energy Strands**: Glowing animated pulses flow continuously along cubic Bezier wire strands (`stroke-dashoffset` animation). Hovering accelerates flow from 1.2s to 0.5s.
 
-## Ergonomic 1-Click Direct Manipulation
+## Ergonomic 1-Click Direct Manipulation & Contextual Links Widget
 
-All popover menus, side drawers, and tiny three-dot `⋮` buttons have been eliminated in favor of instant 1-click direct interaction:
+All tiny three-dot `⋮` buttons have been replaced with direct manipulation and a floating **Contextual Node Links & Management Widget**:
 
 | Target | Action | Behavior |
 | --- | --- | --- |
-| **Note Card** | **Single Click** | Opens Note directly in editor |
+| **Note Card** | **Single Click** | Pins node & opens **Contextual Node Links Widget** |
 | **Folder Card** | **Single Click** | Toggles Collapse / Expand subtree in-place |
 | **Folder Card** | **Double Click** | Focuses subtree (zooms into folder) |
 | **Vault Root** | **Click** | Clears focus back to Whole Vault |
 | **Collapsed Folder** | **Visual Badge** | Displays `▸ EXPAND` orange pill on card edge |
+
+### Contextual Node Links & Management Widget
+
+Clicking any note card displays a floating popover widget featuring:
+1. **Direct Mode Switcher**: `[ Structure | Links | Combined ]` buttons right inside the widget so you can switch graph modes with 1 click directly from the selected note.
+2. **Outbound `[[Wikilinks]]`**: List of all notes linked from this document with 1-click jump buttons.
+3. **Inbound Backlinks**: List of all notes linking to this document with 1-click jump buttons.
+4. **Editor Action**: Quick `Open Note in Editor` button.
 
 ## Modules & File Mapping
 
