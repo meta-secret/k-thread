@@ -19,8 +19,10 @@
     "@vueuse/core": "^14.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "d3-drag": "^3.0.0",
     "d3-force": "^3.0.0",
     "d3-selection": "^3.0.0",
+    "d3-transition": "^3.0.1",
     "d3-zoom": "^3.0.0",
     "marked": "^18.0.7",
     "react": "^19.2.8",
@@ -34,8 +36,10 @@
     "yaml": "^2.9.0"
   },
   "devDependencies": {
+    "@types/d3-drag": "^3.0.7",
     "@types/d3-force": "^3.0.10",
     "@types/d3-selection": "^3.0.11",
+    "@types/d3-transition": "^3.0.9",
     "@types/d3-zoom": "^3.0.8",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",

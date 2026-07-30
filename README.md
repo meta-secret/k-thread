@@ -45,3 +45,7 @@ edges:
 ## Deploy
 
 Pushes to `main` → https://meta-secret.github.io/k-thread/
+
+## Cortex
+
+Design notes (vision, architecture, stack, type safety, deploy): [`.cortext/`](./.cortext/README.md)

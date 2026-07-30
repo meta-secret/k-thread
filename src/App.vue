@@ -1,21 +1,16 @@
 <script setup lang="ts">
-import { Eye, FilePlus2, FolderOpen, Network, Pencil, StickyNote, Trash2 } from '@lucide/vue'
+import { FilePlus2, FolderOpen } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import BlockNoteEditor from '@/components/BlockNoteEditor.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
 import GraphView from '@/components/GraphView.vue'
-import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
 import RenameNoteDialog from '@/components/RenameNoteDialog.vue'
+import EditorStage from '@/components/shell/EditorStage.vue'
+import Inspector from '@/components/shell/Inspector.vue'
+import ToolRail from '@/components/shell/ToolRail.vue'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { vaultStore } from '@/lib/vaultStore'
 import { VaultStatus, ViewMode, type DocId } from '@/types'
 
@@ -29,6 +24,7 @@ const dialogOpen = ref(false)
 const dialogKind = ref<CreateKind>(CreateKind.Note)
 const dialogFolder = ref('')
 const showPreview = ref(false)
+const filesOpen = ref(false)
 
 const renameOpen = ref(false)
 const renameId = ref<DocId>('')
@@ -49,6 +45,11 @@ const isMod = (event: KeyboardEvent): boolean => event.metaKey || event.ctrlKey
 
 const onKeydown = (event: KeyboardEvent) => {
   if (!isMod(event)) return
+  if (event.key.toLowerCase() === 'b' && !event.shiftKey) {
+    event.preventDefault()
+    filesOpen.value = !filesOpen.value
+    return
+  }
   if (event.key.toLowerCase() !== 'n') return
   event.preventDefault()
   if (event.shiftKey) {
@@ -90,6 +91,9 @@ const index = vaultStore.index
 const known = vaultStore.knownIds
 const noteIds = vaultStore.noteIds
 const tags = vaultStore.tags
+const activeTags = vaultStore.activeTags
+const activeLinks = vaultStore.activeLinks
+const noteOrdinal = vaultStore.noteOrdinal
 const active = vaultStore.activeDoc
 const activeFolder = computed(() => vaultStore.state.activeFolder)
 
@@ -99,159 +103,123 @@ const activeId = computed(() =>
 
 const body = computed(() => (active.value.tag === 'some' ? active.value.value.body : ''))
 const docKey = computed(() => (active.value.tag === 'some' ? active.value.value.id : ''))
+const title = computed(() => (active.value.tag === 'some' ? active.value.value.title : ''))
+const linkCount = computed(
+  () => activeLinks.value.out.length + activeLinks.value.back.length,
+)
 const ready = computed(() => status.value === VaultStatus.Ready)
+
+const onSelectFromFiles = (id: DocId) => {
+  vaultStore.setActive(id)
+  filesOpen.value = false
+}
+
+const openGraph = () => {
+  vaultStore.setView(ViewMode.Graph)
+}
 </script>
 
 <template>
   <TooltipProvider>
-    <div class="grid h-screen grid-rows-[auto_1fr] bg-background text-foreground">
-      <header class="flex flex-wrap items-center gap-3 border-b bg-background/80 px-3 py-2 backdrop-blur">
-        <div class="flex items-center gap-2">
-          <div
-            class="grid size-7 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground"
-          >
-            k
-          </div>
-          <span class="font-semibold tracking-tight">k-thread</span>
+    <div class="app">
+      <header class="top">
+        <div class="brand">
+          <div class="mark">k</div>
+          <span>k-thread</span>
         </div>
-
-        <p class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+        <p class="msg">
           {{ message }}
           <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
         </p>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button size="sm" @click="vaultStore.createUntitled(activeFolder)">
-                <FilePlus2 class="size-4" />
-                New note
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Create note in current folder (⌘N)</TooltipContent>
-          </Tooltip>
-
-          <Button size="sm" variant="outline" @click="openNamed(activeFolder)">Named…</Button>
-          <Button size="sm" variant="outline" @click="openFolderDialog(activeFolder)">
-            Folder…
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            :disabled="active.tag !== 'some'"
-            @click="active.tag === 'some' && openRename(active.value.id)"
-          >
-            <Pencil class="size-4" />
-            Rename
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            :disabled="active.tag !== 'some'"
-            @click="active.tag === 'some' && openDelete(active.value.id)"
-          >
-            <Trash2 class="size-4" />
-            Delete
-          </Button>
-
-          <Separator orientation="vertical" class="mx-1 hidden h-6 sm:block" />
-
-          <Button size="sm" variant="outline" @click="vaultStore.openLocalVault">
-            <FolderOpen class="size-4" />
-            Import vault
-          </Button>
-
-          <Button
-            size="sm"
-            :variant="view === ViewMode.Note ? 'secondary' : 'ghost'"
-            :disabled="!ready"
-            @click="vaultStore.setView(ViewMode.Note)"
-          >
-            <StickyNote class="size-4" />
-            Note
-          </Button>
-          <Button
-            size="sm"
-            :variant="showPreview ? 'secondary' : 'ghost'"
-            :disabled="!ready || view !== ViewMode.Note"
-            @click="showPreview = !showPreview"
-          >
-            <Eye class="size-4" />
-            Preview
-          </Button>
-          <Button
-            size="sm"
-            :variant="view === ViewMode.Graph ? 'secondary' : 'ghost'"
-            :disabled="!ready"
-            @click="vaultStore.setView(ViewMode.Graph)"
-          >
-            <Network class="size-4" />
-            Graph
-          </Button>
+        <div class="ord mono">
+          <template v-if="ready && noteOrdinal.total > 0">
+            {{ String(noteOrdinal.index).padStart(3, '0') }} / {{ noteOrdinal.total }}
+          </template>
         </div>
       </header>
 
-      <main v-if="ready" class="grid min-h-0 grid-cols-1 md:grid-cols-[280px_1fr]">
-        <NoteSidebar
-          :nodes="tree"
-          :active-id="activeId"
-          :active-folder="activeFolder"
-          @select="vaultStore.setActive"
-          @select-folder="vaultStore.setActiveFolder"
-          @create-untitled="vaultStore.createUntitled"
-          @create-named="openNamed"
-          @create-folder="openFolderDialog"
-          @rename="openRename"
-          @delete="openDelete"
+      <main v-if="ready" class="workspace">
+        <ToolRail
+          :view="view"
+          :show-preview="showPreview"
+          :has-active="active.tag === 'some'"
+          :files-open="filesOpen"
+          @set-view="vaultStore.setView"
+          @toggle-preview="showPreview = !showPreview"
+          @toggle-files="filesOpen = !filesOpen"
+          @import-vault="vaultStore.openLocalVault"
+          @create-untitled="vaultStore.createUntitled(activeFolder)"
+          @create-named="openNamed(activeFolder)"
+          @create-folder="openFolderDialog(activeFolder)"
+          @rename="active.tag === 'some' && openRename(active.value.id)"
+          @delete="active.tag === 'some' && openDelete(active.value.id)"
         />
 
-        <section
-          v-if="view === ViewMode.Note"
-          :class="
-            showPreview
-              ? 'grid min-h-0 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1'
-              : 'grid min-h-0'
-          "
-        >
-          <template v-if="active.tag === 'some'">
-            <div class="min-h-0 overflow-hidden" :class="showPreview ? 'border-b lg:border-r lg:border-b-0' : ''">
-              <BlockNoteEditor
-                :doc-key="docKey"
-                :model-value="body"
-                :note-ids="noteIds"
-                :tags="tags"
-                @update:model-value="vaultStore.updateBody"
-                @navigate="vaultStore.openOrCreate"
-              />
-            </div>
-            <div v-if="showPreview" class="min-h-0 overflow-hidden bg-card">
-              <MarkdownPreview :body="body" :known="known" @navigate="vaultStore.openOrCreate" />
-            </div>
-          </template>
-          <div v-else class="grid place-content-center gap-3 p-8 text-center">
-            <p class="text-muted-foreground">Select a note or create a new one</p>
-            <Button @click="vaultStore.createUntitled(activeFolder)">
-              <FilePlus2 class="size-4" />
-              New note
-            </Button>
-          </div>
-        </section>
+        <div class="center">
+          <section v-if="view === ViewMode.Note" class="note-layout">
+            <EditorStage
+              :has-active="active.tag === 'some'"
+              :doc-key="docKey"
+              :body="body"
+              :note-ids="noteIds"
+              :tags="tags"
+              :title="title"
+              :folder="activeFolder"
+              :link-count="linkCount"
+              :show-preview="showPreview"
+              :known="known"
+              @update:model-value="vaultStore.updateBody"
+              @navigate="vaultStore.openOrCreate"
+              @create-untitled="vaultStore.createUntitled(activeFolder)"
+            />
+            <Inspector
+              :active-id="activeId"
+              :folder="activeFolder"
+              :tags="activeTags"
+              :backlinks="activeLinks.back"
+              :outlinks="activeLinks.out"
+              :show-preview="showPreview"
+              @navigate="vaultStore.openOrCreate"
+              @open-graph="openGraph"
+              @toggle-preview="showPreview = !showPreview"
+            />
+          </section>
 
-        <section v-else class="min-h-0">
-          <GraphView :index="index" :active-id="activeId" @select="vaultStore.openOrCreate" />
-        </section>
+          <section v-else class="graph-layout">
+            <GraphView
+              :index="index"
+              :active-id="activeId"
+              :existing-ids="noteIds"
+              @select="vaultStore.focusNote"
+              @open="vaultStore.openOrCreate"
+            />
+          </section>
+
+          <div v-if="filesOpen" class="files-scrim" @click="filesOpen = false" />
+          <aside v-if="filesOpen" class="files-drawer">
+            <NoteSidebar
+              :nodes="tree"
+              :active-id="activeId"
+              :active-folder="activeFolder"
+              @select="onSelectFromFiles"
+              @select-folder="vaultStore.setActiveFolder"
+              @create-untitled="vaultStore.createUntitled"
+              @create-named="openNamed"
+              @create-folder="openFolderDialog"
+              @rename="openRename"
+              @delete="openDelete"
+            />
+          </aside>
+        </div>
       </main>
 
-      <main v-else class="grid place-content-center gap-4 px-6 py-16 text-center">
-        <h1 class="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-          Your notes, locally
-        </h1>
-        <p class="mx-auto max-w-lg text-muted-foreground">
+      <main v-else class="landing">
+        <h1>Your notes, locally</h1>
+        <p>
           Create hierarchical notes like Obsidian. Folders are real OPFS directories. Editing uses
           BlockNote; storage stays markdown for vault interop.
         </p>
-        <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="landing-actions">
           <Button size="lg" @click="vaultStore.createUntitled()">
             <FilePlus2 class="size-4" />
             Create a note
@@ -263,8 +231,13 @@ const ready = computed(() => status.value === VaultStatus.Ready)
             Import vault
           </Button>
         </div>
-        <p v-if="status === VaultStatus.Failed" class="text-sm text-destructive">{{ message }}</p>
+        <p v-if="status === VaultStatus.Failed" class="fail">{{ message }}</p>
       </main>
+
+      <footer v-if="ready" class="foot">
+        <span class="logo-box">k-thread</span>
+        <span class="mono">{{ String(noteOrdinal.index).padStart(3, '0') }}</span>
+      </footer>
 
       <NewNoteDialog v-model:open="dialogOpen" :kind="dialogKind" :folder="dialogFolder" />
       <RenameNoteDialog
@@ -281,3 +254,164 @@ const ready = computed(() => status.value === VaultStatus.Ready)
     </div>
   </TooltipProvider>
 </template>
+
+<style scoped>
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background: #cfcfcf;
+  color: #111;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid #b0b0b0;
+  background: #d8d8d8;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  background: #111;
+  color: #f2f2f2;
+  font-size: 0.85rem;
+}
+
+.msg {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.ord {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #333;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 0;
+}
+
+.center {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.note-layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(12rem, 16rem);
+  height: 100%;
+  min-height: 0;
+}
+
+.graph-layout {
+  height: 100%;
+  min-height: 0;
+}
+
+.files-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.files-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(280px, 90vw);
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.files-drawer :deep(aside) {
+  height: 100%;
+}
+
+.landing {
+  display: grid;
+  place-content: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: #d6d6d6;
+}
+
+.landing h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.landing p {
+  max-width: 32rem;
+  margin: 0 auto;
+  color: #555;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.fail {
+  color: #b00020;
+  font-size: 0.85rem;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.85rem;
+  border-top: 1px solid #b0b0b0;
+  background: #d0d0d0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.logo-box {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid #222;
+  text-transform: lowercase;
+}
+
+@media (max-width: 900px) {
+  .note-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+}
+</style>

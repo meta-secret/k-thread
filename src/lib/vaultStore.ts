@@ -16,6 +16,7 @@ import {
   type ViewMode as ViewModeT,
 } from '../types'
 import { buildIndex } from './graph'
+import { noteLinks } from './graphView'
 import { buildNoteTree, joinPath } from './tree'
 import {
   createFolderInOpfs,
@@ -80,6 +81,39 @@ const tags = computed(() => {
   return [...found].sort()
 })
 
+const activeTags = computed(() => {
+  const doc = activeDoc.value
+  if (doc.tag === 'none') return [] as string[]
+  const found = new Set<string>()
+  const re = /(^|[\s([{])#([A-Za-z0-9_][\w/-]*)/gm
+  for (const match of doc.value.body.matchAll(re)) {
+    const tag = match[2]
+    if (typeof tag === 'string' && tag.length > 0) found.add(tag)
+  }
+  return [...found].sort()
+})
+
+const activeLinks = computed(() => {
+  const active = state.activeId
+  if (active.tag === 'none') {
+    return { out: [] as DocId[], back: [] as DocId[] }
+  }
+  const edges = index.value.edges.map((e) => ({ from: e.from, to: e.to }))
+  return noteLinks(active.value, edges)
+})
+
+const noteOrdinal = computed(() => {
+  const active = state.activeId
+  if (active.tag === 'none' || noteIds.value.length === 0) {
+    return { index: 0, total: noteIds.value.length }
+  }
+  const pos = noteIds.value.indexOf(active.value)
+  return {
+    index: pos >= 0 ? pos + 1 : 0,
+    total: noteIds.value.length,
+  }
+})
+
 const markReady = (message: string) => {
   state.status = VaultStatus.Ready
   state.message = message
@@ -89,10 +123,15 @@ const persist = () => {
   void persistIndex(state.docs, state.folders)
 }
 
-const setActive = (id: DocId) => {
+const focusNote = (id: DocId) => {
+  ensureDoc(id)
   state.activeId = some(id)
   const parts = id.split('/')
   state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
+}
+
+const setActive = (id: DocId) => {
+  focusNote(id)
   state.view = ViewMode.Note
 }
 
@@ -126,7 +165,6 @@ const ensureDoc = (id: DocId): Doc => {
 }
 
 const openOrCreate = (id: DocId) => {
-  ensureDoc(id)
   markReady(`${state.docs.length} notes`)
   setActive(id)
 }
@@ -326,7 +364,11 @@ export const vaultStore = {
   sortedDocs,
   noteIds,
   tags,
+  activeTags,
+  activeLinks,
+  noteOrdinal,
   setActive,
+  focusNote,
   setActiveFolder,
   openOrCreate,
   createUntitled,
