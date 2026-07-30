@@ -25,10 +25,16 @@ bun run build
 ## Usage
 
 1. Open the app (Chrome/Edge recommended for OPFS + directory picker).
-2. Click **Open vault** and choose your Obsidian vault directory.
-3. Markdown notes are imported into Origin Private File System (OPFS).
-4. Edit in the CodeMirror markdown editor; preview resolves wikilinks.
-5. Open **Graph** for the dependency view. The index is stored as `index.yaml` in OPFS.
+2. Click **Create a note** (or press �
+
+1. Open the app (Chrome/Edge recommended for OPFS + directory picker).
+2. Click **Create a note** (or press ⌘N / Ctrl+N) — like Notion/Obsidian.
+3. Or **Named…** (⇧⌘N) to create `Projects/Ideas`-style paths.
+4. Optionally **Import vault** to load an existing Obsidian folder into OPFS.
+5. Edit in CodeMirror; preview resolves `[[wikilinks]]`.
+6. Open **Graph** for the dependency view (`index.yaml` in OPFS).
+
+UI is built with [shadcn-vue](https://www.shadcn-vue.com/).
 
 ## `index.yaml`
 

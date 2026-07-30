@@ -1,94 +1,84 @@
 <script setup lang="ts">
-import type { Doc, DocId } from '../types'
+import { FilePlus2, FileText, Plus } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import type { Doc, DocId } from '@/types'
 
 defineProps<{
   docs: readonly Doc[]
   activeId: DocId | ''
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   select: [id: DocId]
+  createUntitled: []
+  createNamed: []
 }>()
 </script>
 
 <template>
-  <aside class="sidebar">
-    <div class="heading">Notes</div>
-    <ul>
-      <li v-for="doc in docs" :key="doc.id">
-        <button
-          type="button"
-          :class="{ active: doc.id === activeId }"
-          @click="$emit('select', doc.id)"
-        >
-          <span class="title">{{ doc.title }}</span>
-          <span v-if="doc.id.includes('/')" class="path">{{ doc.id }}</span>
-        </button>
-      </li>
-    </ul>
+  <aside class="flex min-h-0 flex-col border-r bg-sidebar text-sidebar-foreground">
+    <div class="flex items-center justify-between gap-2 px-3 py-3">
+      <div class="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+        Notes
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button size="icon-sm" variant="outline" aria-label="Create note">
+            <Plus class="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuItem @click="emit('createUntitled')">
+            <FilePlus2 class="size-4" />
+            New note
+            <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="emit('createNamed')">
+            <FileText class="size-4" />
+            New named note…
+            <DropdownMenuShortcut>⇧⌘N</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+
+    <Separator />
+
+    <ScrollArea class="min-h-0 flex-1">
+      <ul class="space-y-0.5 p-2">
+        <li v-for="doc in docs" :key="doc.id">
+          <button
+            type="button"
+            :class="
+              cn(
+                'flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors',
+                doc.id === activeId
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'hover:bg-sidebar-accent/70',
+              )
+            "
+            @click="emit('select', doc.id)"
+          >
+            <span class="text-sm font-medium">{{ doc.title }}</span>
+            <span v-if="doc.id.includes('/')" class="truncate text-xs text-muted-foreground">
+              {{ doc.id }}
+            </span>
+          </button>
+        </li>
+        <li v-if="docs.length === 0" class="px-2.5 py-6 text-center text-sm text-muted-foreground">
+          No notes yet
+        </li>
+      </ul>
+    </ScrollArea>
   </aside>
 </template>
-
-<style scoped>
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-right: 1px solid var(--line);
-  background: var(--bg-panel);
-}
-
-.heading {
-  padding: 0.85rem 1rem 0.5rem;
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0 0.4rem 1rem;
-  overflow: auto;
-}
-
-button {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  text-align: left;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  padding: 0.45rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: var(--font-sans);
-}
-
-button:hover {
-  background: var(--bg-muted);
-}
-
-button.active {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-}
-
-.title {
-  font-size: 0.92rem;
-  font-weight: 500;
-}
-
-.path {
-  font-size: 0.72rem;
-  color: var(--ink-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-</style>

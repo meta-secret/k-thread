@@ -1,13 +1,17 @@
 import { computed, reactive, readonly } from 'vue'
 import {
+  err,
   none,
+  ok,
   some,
   VaultStatus,
   ViewMode,
+  type AppError,
   type Doc,
   type DocId,
   type GraphIndex,
   type Option,
+  type Result,
   type VaultStatus as VaultStatusT,
   type ViewMode as ViewModeT,
 } from '../types'
@@ -19,7 +23,7 @@ import {
   pickLocalVault,
   saveDoc,
 } from './vault'
-import { pathFromId, titleFromPath } from './wikilink'
+import { normalizeNoteId, pathFromId, titleFromPath } from './wikilink'
 
 type State = {
   status: VaultStatusT
@@ -52,6 +56,11 @@ const sortedDocs = computed(() =>
   [...state.docs].sort((a, b) => a.id.localeCompare(b.id)),
 )
 
+const markReady = (message: string) => {
+  state.status = VaultStatus.Ready
+  state.message = message
+}
+
 const setActive = (id: DocId) => {
   state.activeId = some(id)
   state.view = ViewMode.Note
@@ -60,11 +69,12 @@ const setActive = (id: DocId) => {
 const ensureDoc = (id: DocId): Doc => {
   const existing = state.docs.find((d) => d.id === id)
   if (existing) return existing
+  const title = titleFromPath(pathFromId(id))
   const doc: Doc = {
     id,
     path: pathFromId(id),
-    title: titleFromPath(pathFromId(id)),
-    body: `# ${titleFromPath(pathFromId(id))}\n`,
+    title,
+    body: `# ${title}\n\n`,
   }
   state.docs.push(doc)
   void saveDoc(doc)
@@ -74,7 +84,35 @@ const ensureDoc = (id: DocId): Doc => {
 
 const openOrCreate = (id: DocId) => {
   ensureDoc(id)
+  markReady(`${state.docs.length} notes`)
   setActive(id)
+}
+
+const nextUntitledId = (): DocId => {
+  const ids = knownIds.value
+  if (!ids.has('Untitled')) return 'Untitled'
+  let n = 1
+  while (ids.has(`Untitled ${n}`)) n += 1
+  return `Untitled ${n}`
+}
+
+const createUntitled = (): Doc => {
+  const doc = ensureDoc(nextUntitledId())
+  markReady(`${state.docs.length} notes`)
+  setActive(doc.id)
+  return doc
+}
+
+const createNote = (rawName: string): Result<Doc, AppError> => {
+  const normalized = normalizeNoteId(rawName)
+  if (normalized.tag === 'err') return normalized
+  if (knownIds.value.has(normalized.value)) {
+    return err({ kind: 'parse', detail: 'A note with this name already exists' })
+  }
+  const doc = ensureDoc(normalized.value)
+  markReady(`${state.docs.length} notes`)
+  setActive(doc.id)
+  return ok(doc)
 }
 
 let saveTimer = 0
@@ -108,8 +146,7 @@ const openLocalVault = async () => {
     return
   }
   state.docs = picked.value
-  state.status = VaultStatus.Ready
-  state.message = `${picked.value.length} notes loaded`
+  markReady(`${picked.value.length} notes loaded`)
   const [first] = picked.value
   state.activeId = first ? some(first.id) : none
   state.view = ViewMode.Note
@@ -121,17 +158,16 @@ const hydrateFromOpfs = async () => {
   const loaded = await loadDocsFromOpfs()
   if (loaded.tag === 'err') {
     state.status = VaultStatus.Idle
-    state.message = loaded.error.detail
+    state.message = 'Create a note to begin'
     return
   }
   if (loaded.value.length === 0) {
     state.status = VaultStatus.Idle
-    state.message = 'Open a local Obsidian vault to begin'
+    state.message = 'Create a note to begin'
     return
   }
   state.docs = loaded.value
-  state.status = VaultStatus.Ready
-  state.message = `${loaded.value.length} notes restored`
+  markReady(`${loaded.value.length} notes restored`)
   const [first] = loaded.value
   state.activeId = first ? some(first.id) : none
 }
@@ -148,6 +184,8 @@ export const vaultStore = {
   sortedDocs,
   setActive,
   openOrCreate,
+  createUntitled,
+  createNote,
   updateBody,
   openLocalVault,
   hydrateFromOpfs,

@@ -78,7 +78,7 @@ const render = () => {
 
   const link = root
     .append('g')
-    .attr('stroke', 'var(--line-strong)')
+    .attr('stroke', 'var(--border)')
     .attr('stroke-opacity', 0.9)
     .selectAll('line')
     .data(links)
@@ -96,8 +96,8 @@ const render = () => {
   node
     .append('circle')
     .attr('r', (d) => (d.id === props.activeId ? 8 : 6))
-    .attr('fill', (d) => (d.id === props.activeId ? 'var(--accent)' : 'var(--accent-2)'))
-    .attr('stroke', 'var(--bg)')
+    .attr('fill', (d) => (d.id === props.activeId ? 'var(--primary)' : 'var(--accent-2)'))
+    .attr('stroke', 'var(--background)')
     .attr('stroke-width', 2)
 
   node
@@ -105,7 +105,7 @@ const render = () => {
     .text((d) => labelOf(d.id))
     .attr('x', 10)
     .attr('y', 4)
-    .attr('fill', 'var(--ink)')
+    .attr('fill', 'var(--foreground)')
     .attr('font-size', 12)
     .attr('font-family', 'var(--font-sans)')
 

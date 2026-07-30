@@ -82,13 +82,13 @@ const onClick = (event: MouseEvent) => {
 }
 
 .preview :deep(a.wiki-link) {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .preview :deep(a.wiki-link.is-missing) {
-  color: var(--warn);
+  color: var(--destructive);
   border-bottom-style: dashed;
 }
 
