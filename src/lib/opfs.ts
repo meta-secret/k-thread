@@ -66,10 +66,34 @@ export const readText = async (path: string): Promise<Result<string, AppError>> 
   }
 }
 
-export const listMarkdown = async (): Promise<Result<string[], AppError>> => {
+export const ensureDir = async (path: string): Promise<Result<true, AppError>> => {
   const root = await getRoot()
   if (root.tag === 'err') return root
-  const paths: string[] = []
+  const parts = path.split('/').filter((p) => p.length > 0)
+  if (parts.length === 0) {
+    return err({ kind: 'io', detail: 'Empty folder path' })
+  }
+  let dir = root.value
+  try {
+    for (const part of parts) {
+      dir = await dir.getDirectoryHandle(part, { create: true })
+    }
+    return ok(true)
+  } catch (e) {
+    return err({ kind: 'io', detail: e instanceof Error ? e.message : 'Failed to create folder' })
+  }
+}
+
+export type VaultListing = {
+  files: string[]
+  folders: string[]
+}
+
+export const listVault = async (): Promise<Result<VaultListing, AppError>> => {
+  const root = await getRoot()
+  if (root.tag === 'err') return root
+  const files: string[] = []
+  const folders: string[] = []
 
   const walk = async (dir: FileSystemDirectoryHandle, prefix: string): Promise<Result<true, AppError>> => {
     try {
@@ -77,10 +101,11 @@ export const listMarkdown = async (): Promise<Result<string[], AppError>> => {
         const next = prefix.length === 0 ? name : `${prefix}/${name}`
         if (handle.kind === 'directory') {
           if (name === '.obsidian' || name.startsWith('.')) continue
+          folders.push(next)
           const nested = await walk(handle, next)
           if (nested.tag === 'err') return nested
         } else if (name.endsWith('.md')) {
-          paths.push(next)
+          files.push(next)
         }
       }
       return ok(true)
@@ -91,7 +116,10 @@ export const listMarkdown = async (): Promise<Result<string[], AppError>> => {
 
   const walked = await walk(root.value, '')
   if (walked.tag === 'err') return walked
-  return ok(paths.sort())
+  return ok({
+    files: files.sort(),
+    folders: folders.sort(),
+  })
 }
 
 export const clearVault = async (): Promise<Result<true, AppError>> => {

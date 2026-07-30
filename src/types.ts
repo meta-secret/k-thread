@@ -36,6 +36,7 @@ export type GraphEdge = {
 
 export type GraphIndex = {
   version: 1
+  folders: string[]
   nodes: DocId[]
   edges: GraphEdge[]
 }

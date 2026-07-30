@@ -1,21 +1,38 @@
 import { parse, stringify } from 'yaml'
-import { err, ok, type GraphEdge, type GraphIndex, type Doc, type DocId, type Result, type AppError } from '../types'
+import {
+  err,
+  ok,
+  type AppError,
+  type Doc,
+  type DocId,
+  type GraphEdge,
+  type GraphIndex,
+  type Result,
+} from '../types'
 import { extractWikilinks, resolveWikilink } from './wikilink'
 
 export const INDEX_PATH = 'index.yaml'
 
 export const emptyIndex = (): GraphIndex => ({
   version: 1,
+  folders: [],
   nodes: [],
   edges: [],
 })
 
-export const buildIndex = (docs: readonly Doc[]): GraphIndex => {
+export const buildIndex = (docs: readonly Doc[], folders: readonly string[] = []): GraphIndex => {
   const known = new Set(docs.map((d) => d.id))
   const edges: GraphEdge[] = []
   const edgeKey = new Set<string>()
+  const folderSet = new Set(folders.filter((f) => f.length > 0))
 
   for (const doc of docs) {
+    const parts = doc.id.split('/').filter((p) => p.length > 0)
+    let walked = ''
+    for (const part of parts.slice(0, -1)) {
+      walked = walked.length === 0 ? part : `${walked}/${part}`
+      folderSet.add(walked)
+    }
     for (const target of extractWikilinks(doc.body)) {
       const to = resolveWikilink(target, known)
       const key = `${doc.id}->${to}`
@@ -28,6 +45,7 @@ export const buildIndex = (docs: readonly Doc[]): GraphIndex => {
 
   return {
     version: 1,
+    folders: [...folderSet].sort(),
     nodes: [...known].sort(),
     edges,
   }
@@ -46,6 +64,9 @@ export const parseIndex = (text: string): Result<GraphIndex, AppError> => {
     if (record.version !== 1) {
       return err({ kind: 'parse', detail: 'Unsupported index.yaml version' })
     }
+    const folders = Array.isArray(record.folders)
+      ? record.folders.filter((n): n is string => typeof n === 'string')
+      : []
     const nodes = Array.isArray(record.nodes)
       ? record.nodes.filter((n): n is DocId => typeof n === 'string')
       : []
@@ -59,7 +80,7 @@ export const parseIndex = (text: string): Result<GraphIndex, AppError> => {
         }
       }
     }
-    return ok({ version: 1, nodes, edges })
+    return ok({ version: 1, folders, nodes, edges })
   } catch (e) {
     return err({ kind: 'parse', detail: e instanceof Error ? e.message : 'YAML parse failed' })
   }

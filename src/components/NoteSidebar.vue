@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { FilePlus2, FileText, Plus } from '@lucide/vue'
+import { FilePlus2, FileText, FolderPlus, Plus } from '@lucide/vue'
+import { reactive } from 'vue'
+import NoteTreeNode from '@/components/NoteTreeNode.vue'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -10,19 +12,28 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
-import type { Doc, DocId } from '@/types'
+import type { TreeFolder, TreeNode } from '@/lib/tree'
+import type { DocId } from '@/types'
 
 defineProps<{
-  docs: readonly Doc[]
+  nodes: readonly TreeNode[]
   activeId: DocId | ''
+  activeFolder: string
 }>()
 
 const emit = defineEmits<{
   select: [id: DocId]
-  createUntitled: []
-  createNamed: []
+  selectFolder: [folder: string]
+  createUntitled: [folder: string]
+  createNamed: [folder: string]
+  createFolder: [folder: string]
 }>()
+
+const openFolders = reactive<Record<string, boolean>>({})
+
+const onToggle = (folder: TreeFolder, open: boolean) => {
+  openFolders[folder.path] = open
+}
 </script>
 
 <template>
@@ -33,20 +44,24 @@ const emit = defineEmits<{
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button size="icon-sm" variant="outline" aria-label="Create note">
+          <Button size="icon-sm" variant="outline" aria-label="Create">
             <Plus class="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
-          <DropdownMenuItem @click="emit('createUntitled')">
+          <DropdownMenuItem @click="emit('createUntitled', activeFolder)">
             <FilePlus2 class="size-4" />
             New note
             <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem @click="emit('createNamed')">
+          <DropdownMenuItem @click="emit('createNamed', activeFolder)">
             <FileText class="size-4" />
             New named note…
             <DropdownMenuShortcut>⇧⌘N</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="emit('createFolder', activeFolder)">
+            <FolderPlus class="size-4" />
+            New folder…
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -55,30 +70,26 @@ const emit = defineEmits<{
     <Separator />
 
     <ScrollArea class="min-h-0 flex-1">
-      <ul class="space-y-0.5 p-2">
-        <li v-for="doc in docs" :key="doc.id">
-          <button
-            type="button"
-            :class="
-              cn(
-                'flex w-full flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors',
-                doc.id === activeId
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'hover:bg-sidebar-accent/70',
-              )
-            "
-            @click="emit('select', doc.id)"
-          >
-            <span class="text-sm font-medium">{{ doc.title }}</span>
-            <span v-if="doc.id.includes('/')" class="truncate text-xs text-muted-foreground">
-              {{ doc.id }}
-            </span>
-          </button>
-        </li>
-        <li v-if="docs.length === 0" class="px-2.5 py-6 text-center text-sm text-muted-foreground">
+      <div class="space-y-0.5 p-2">
+        <NoteTreeNode
+          v-for="node in nodes"
+          :key="node.kind === 'folder' ? node.path : node.id"
+          :node="node"
+          :depth="0"
+          :active-id="activeId"
+          :active-folder="activeFolder"
+          :open-folders="openFolders"
+          @toggle="onToggle"
+          @select="emit('select', $event)"
+          @select-folder="emit('selectFolder', $event)"
+          @create-untitled="emit('createUntitled', $event)"
+          @create-named="emit('createNamed', $event)"
+          @create-folder="emit('createFolder', $event)"
+        />
+        <p v-if="nodes.length === 0" class="px-2.5 py-6 text-center text-sm text-muted-foreground">
           No notes yet
-        </li>
-      </ul>
+        </p>
+      </div>
     </ScrollArea>
   </aside>
 </template>

@@ -16,9 +16,11 @@ import {
   type ViewMode as ViewModeT,
 } from '../types'
 import { buildIndex } from './graph'
+import { buildNoteTree, joinPath } from './tree'
 import {
-  importDocsToOpfs,
-  loadDocsFromOpfs,
+  createFolderInOpfs,
+  importVaultToOpfs,
+  loadVaultFromOpfs,
   persistIndex,
   pickLocalVault,
   saveDoc,
@@ -29,7 +31,9 @@ type State = {
   status: VaultStatusT
   message: string
   docs: Doc[]
+  folders: string[]
   activeId: Option<DocId>
+  activeFolder: string
   view: ViewModeT
 }
 
@@ -37,13 +41,17 @@ const state = reactive<State>({
   status: VaultStatus.Idle,
   message: '',
   docs: [],
+  folders: [],
   activeId: none,
+  activeFolder: '',
   view: ViewMode.Note,
 })
 
 const knownIds = computed(() => new Set(state.docs.map((d) => d.id)))
 
-const index = computed<GraphIndex>(() => buildIndex(state.docs))
+const index = computed<GraphIndex>(() => buildIndex(state.docs, state.folders))
+
+const tree = computed(() => buildNoteTree(state.docs, state.folders))
 
 const activeDoc = computed<Option<Doc>>(() => {
   const active = state.activeId
@@ -61,9 +69,26 @@ const markReady = (message: string) => {
   state.message = message
 }
 
+const persist = () => {
+  void persistIndex(state.docs, state.folders)
+}
+
 const setActive = (id: DocId) => {
   state.activeId = some(id)
+  const parts = id.split('/')
+  state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
   state.view = ViewMode.Note
+}
+
+const setActiveFolder = (folder: string) => {
+  state.activeFolder = folder
+}
+
+const rememberFolder = (folder: string) => {
+  if (folder.length === 0) return
+  if (state.folders.includes(folder)) return
+  state.folders.push(folder)
+  state.folders.sort()
 }
 
 const ensureDoc = (id: DocId): Doc => {
@@ -76,9 +101,11 @@ const ensureDoc = (id: DocId): Doc => {
     title,
     body: `# ${title}\n\n`,
   }
+  const parent = id.includes('/') ? id.split('/').slice(0, -1).join('/') : ''
+  rememberFolder(parent)
   state.docs.push(doc)
   void saveDoc(doc)
-  void persistIndex(state.docs)
+  persist()
   return doc
 }
 
@@ -88,23 +115,25 @@ const openOrCreate = (id: DocId) => {
   setActive(id)
 }
 
-const nextUntitledId = (): DocId => {
+const nextUntitledId = (folder: string): DocId => {
   const ids = knownIds.value
-  if (!ids.has('Untitled')) return 'Untitled'
+  const base = joinPath(folder, 'Untitled')
+  if (!ids.has(base)) return base
   let n = 1
-  while (ids.has(`Untitled ${n}`)) n += 1
-  return `Untitled ${n}`
+  while (ids.has(`${base} ${n}`)) n += 1
+  return `${base} ${n}`
 }
 
-const createUntitled = (): Doc => {
-  const doc = ensureDoc(nextUntitledId())
+const createUntitled = (folder: string = state.activeFolder): Doc => {
+  const doc = ensureDoc(nextUntitledId(folder))
   markReady(`${state.docs.length} notes`)
   setActive(doc.id)
   return doc
 }
 
-const createNote = (rawName: string): Result<Doc, AppError> => {
-  const normalized = normalizeNoteId(rawName)
+const createNote = (rawName: string, folder: string = state.activeFolder): Result<Doc, AppError> => {
+  const prefixed = folder.length === 0 || rawName.includes('/') ? rawName : joinPath(folder, rawName)
+  const normalized = normalizeNoteId(prefixed)
   if (normalized.tag === 'err') return normalized
   if (knownIds.value.has(normalized.value)) {
     return err({ kind: 'parse', detail: 'A note with this name already exists' })
@@ -113,6 +142,25 @@ const createNote = (rawName: string): Result<Doc, AppError> => {
   markReady(`${state.docs.length} notes`)
   setActive(doc.id)
   return ok(doc)
+}
+
+const createFolder = async (rawName: string, parent: string = state.activeFolder): Promise<Result<string, AppError>> => {
+  const prefixed = parent.length === 0 || rawName.includes('/') ? rawName : joinPath(parent, rawName)
+  const normalized = normalizeNoteId(prefixed)
+  if (normalized.tag === 'err') return normalized
+  if (state.folders.includes(normalized.value)) {
+    return err({ kind: 'parse', detail: 'A folder with this name already exists' })
+  }
+  if (knownIds.value.has(normalized.value)) {
+    return err({ kind: 'parse', detail: 'A note already uses this path' })
+  }
+  const made = await createFolderInOpfs(normalized.value)
+  if (made.tag === 'err') return made
+  rememberFolder(normalized.value)
+  state.activeFolder = normalized.value
+  markReady(`${state.docs.length} notes`)
+  persist()
+  return ok(normalized.value)
 }
 
 let saveTimer = 0
@@ -126,7 +174,7 @@ const updateBody = (body: string) => {
   window.clearTimeout(saveTimer)
   saveTimer = window.setTimeout(() => {
     void saveDoc(doc)
-    void persistIndex(state.docs)
+    persist()
   }, 250)
 }
 
@@ -139,36 +187,39 @@ const openLocalVault = async () => {
     state.message = picked.error.detail
     return
   }
-  const imported = await importDocsToOpfs(picked.value)
+  const imported = await importVaultToOpfs(picked.value)
   if (imported.tag === 'err') {
     state.status = VaultStatus.Failed
     state.message = imported.error.detail
     return
   }
-  state.docs = picked.value
-  markReady(`${picked.value.length} notes loaded`)
-  const [first] = picked.value
+  state.docs = picked.value.docs
+  state.folders = picked.value.folders
+  markReady(`${picked.value.docs.length} notes loaded`)
+  const [first] = picked.value.docs
   state.activeId = first ? some(first.id) : none
+  state.activeFolder = ''
   state.view = ViewMode.Note
 }
 
 const hydrateFromOpfs = async () => {
   state.status = VaultStatus.Loading
   state.message = 'Restoring from OPFS…'
-  const loaded = await loadDocsFromOpfs()
+  const loaded = await loadVaultFromOpfs()
   if (loaded.tag === 'err') {
     state.status = VaultStatus.Idle
     state.message = 'Create a note to begin'
     return
   }
-  if (loaded.value.length === 0) {
+  if (loaded.value.docs.length === 0 && loaded.value.folders.length === 0) {
     state.status = VaultStatus.Idle
     state.message = 'Create a note to begin'
     return
   }
-  state.docs = loaded.value
-  markReady(`${loaded.value.length} notes restored`)
-  const [first] = loaded.value
+  state.docs = loaded.value.docs
+  state.folders = loaded.value.folders
+  markReady(`${loaded.value.docs.length} notes restored`)
+  const [first] = loaded.value.docs
   state.activeId = first ? some(first.id) : none
 }
 
@@ -180,12 +231,15 @@ export const vaultStore = {
   state: readonly(state),
   knownIds,
   index,
+  tree,
   activeDoc,
   sortedDocs,
   setActive,
+  setActiveFolder,
   openOrCreate,
   createUntitled,
   createNote,
+  createFolder,
   updateBody,
   openLocalVault,
   hydrateFromOpfs,

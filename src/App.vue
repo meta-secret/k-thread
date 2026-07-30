@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { FilePlus2, FolderOpen, Network, StickyNote } from '@lucide/vue'
+import { Eye, FilePlus2, FolderOpen, Network, StickyNote } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import BlockNoteEditor from '@/components/BlockNoteEditor.vue'
 import GraphView from '@/components/GraphView.vue'
-import MarkdownEditor from '@/components/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
@@ -17,7 +17,16 @@ import {
 import { vaultStore } from '@/lib/vaultStore'
 import { VaultStatus, ViewMode } from '@/types'
 
-const namedOpen = ref(false)
+const CreateKind = {
+  Note: 'note',
+  Folder: 'folder',
+} as const
+type CreateKind = (typeof CreateKind)[keyof typeof CreateKind]
+
+const dialogOpen = ref(false)
+const dialogKind = ref<CreateKind>(CreateKind.Note)
+const dialogFolder = ref('')
+const showPreview = ref(false)
 
 onMounted(() => {
   void vaultStore.hydrateFromOpfs()
@@ -35,19 +44,32 @@ const onKeydown = (event: KeyboardEvent) => {
   if (event.key.toLowerCase() !== 'n') return
   event.preventDefault()
   if (event.shiftKey) {
-    namedOpen.value = true
+    openNamed(vaultStore.state.activeFolder)
     return
   }
-  vaultStore.createUntitled()
+  vaultStore.createUntitled(vaultStore.state.activeFolder)
+}
+
+const openNamed = (folder: string) => {
+  dialogFolder.value = folder
+  dialogKind.value = CreateKind.Note
+  dialogOpen.value = true
+}
+
+const openFolderDialog = (folder: string) => {
+  dialogFolder.value = folder
+  dialogKind.value = CreateKind.Folder
+  dialogOpen.value = true
 }
 
 const status = computed(() => vaultStore.state.status)
 const message = computed(() => vaultStore.state.message)
 const view = computed(() => vaultStore.state.view)
-const docs = vaultStore.sortedDocs
+const tree = vaultStore.tree
 const index = vaultStore.index
 const known = vaultStore.knownIds
 const active = vaultStore.activeDoc
+const activeFolder = computed(() => vaultStore.state.activeFolder)
 
 const activeId = computed(() =>
   vaultStore.state.activeId.tag === 'some' ? vaultStore.state.activeId.value : '',
@@ -71,20 +93,26 @@ const ready = computed(() => status.value === VaultStatus.Ready)
           <span class="font-semibold tracking-tight">k-thread</span>
         </div>
 
-        <p class="min-w-0 flex-1 truncate text-sm text-muted-foreground">{{ message }}</p>
+        <p class="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+          {{ message }}
+          <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
+        </p>
 
         <div class="flex flex-wrap items-center gap-2">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button size="sm" @click="vaultStore.createUntitled">
+              <Button size="sm" @click="vaultStore.createUntitled(activeFolder)">
                 <FilePlus2 class="size-4" />
                 New note
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Create untitled note (⌘N)</TooltipContent>
+            <TooltipContent>Create note in current folder (⌘N)</TooltipContent>
           </Tooltip>
 
-          <Button size="sm" variant="outline" @click="namedOpen = true">Named…</Button>
+          <Button size="sm" variant="outline" @click="openNamed(activeFolder)">Named…</Button>
+          <Button size="sm" variant="outline" @click="openFolderDialog(activeFolder)">
+            Folder…
+          </Button>
 
           <Separator orientation="vertical" class="mx-1 hidden h-6 sm:block" />
 
@@ -104,6 +132,15 @@ const ready = computed(() => status.value === VaultStatus.Ready)
           </Button>
           <Button
             size="sm"
+            :variant="showPreview ? 'secondary' : 'ghost'"
+            :disabled="!ready || view !== ViewMode.Note"
+            @click="showPreview = !showPreview"
+          >
+            <Eye class="size-4" />
+            Preview
+          </Button>
+          <Button
+            size="sm"
             :variant="view === ViewMode.Graph ? 'secondary' : 'ghost'"
             :disabled="!ready"
             @click="vaultStore.setView(ViewMode.Graph)"
@@ -114,31 +151,41 @@ const ready = computed(() => status.value === VaultStatus.Ready)
         </div>
       </header>
 
-      <main v-if="ready" class="grid min-h-0 grid-cols-1 md:grid-cols-[260px_1fr]">
+      <main v-if="ready" class="grid min-h-0 grid-cols-1 md:grid-cols-[280px_1fr]">
         <NoteSidebar
-          :docs="docs"
+          :nodes="tree"
           :active-id="activeId"
+          :active-folder="activeFolder"
           @select="vaultStore.setActive"
+          @select-folder="vaultStore.setActiveFolder"
           @create-untitled="vaultStore.createUntitled"
-          @create-named="namedOpen = true"
+          @create-named="openNamed"
+          @create-folder="openFolderDialog"
         />
 
-        <section v-if="view === ViewMode.Note" class="grid min-h-0 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1">
+        <section
+          v-if="view === ViewMode.Note"
+          :class="
+            showPreview
+              ? 'grid min-h-0 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1'
+              : 'grid min-h-0'
+          "
+        >
           <template v-if="active.tag === 'some'">
-            <div class="min-h-0 overflow-hidden border-b lg:border-r lg:border-b-0">
-              <MarkdownEditor
+            <div class="min-h-0 overflow-hidden" :class="showPreview ? 'border-b lg:border-r lg:border-b-0' : ''">
+              <BlockNoteEditor
                 :doc-key="docKey"
                 :model-value="body"
                 @update:model-value="vaultStore.updateBody"
               />
             </div>
-            <div class="min-h-0 overflow-hidden bg-card">
+            <div v-if="showPreview" class="min-h-0 overflow-hidden bg-card">
               <MarkdownPreview :body="body" :known="known" @navigate="vaultStore.openOrCreate" />
             </div>
           </template>
-          <div v-else class="col-span-full grid place-content-center gap-3 p-8 text-center">
+          <div v-else class="grid place-content-center gap-3 p-8 text-center">
             <p class="text-muted-foreground">Select a note or create a new one</p>
-            <Button @click="vaultStore.createUntitled">
+            <Button @click="vaultStore.createUntitled(activeFolder)">
               <FilePlus2 class="size-4" />
               New note
             </Button>
@@ -155,25 +202,25 @@ const ready = computed(() => status.value === VaultStatus.Ready)
           Your notes, locally
         </h1>
         <p class="mx-auto max-w-lg text-muted-foreground">
-          Create notes the way you would in Obsidian or Notion. Everything stays in your browser
-          (OPFS). Optionally import an existing Obsidian vault.
+          Create hierarchical notes like Obsidian. Folders are real OPFS directories. Editing uses
+          BlockNote; storage stays markdown for vault interop.
         </p>
         <div class="flex flex-wrap items-center justify-center gap-2">
-          <Button size="lg" @click="vaultStore.createUntitled">
+          <Button size="lg" @click="vaultStore.createUntitled()">
             <FilePlus2 class="size-4" />
             Create a note
           </Button>
-          <Button size="lg" variant="outline" @click="namedOpen = true">Name a note…</Button>
+          <Button size="lg" variant="outline" @click="openNamed('')">Name a note…</Button>
+          <Button size="lg" variant="outline" @click="openFolderDialog('')">New folder…</Button>
           <Button size="lg" variant="ghost" @click="vaultStore.openLocalVault">
             <FolderOpen class="size-4" />
             Import vault
           </Button>
         </div>
         <p v-if="status === VaultStatus.Failed" class="text-sm text-destructive">{{ message }}</p>
-        <p class="text-xs text-muted-foreground">Shortcuts: ⌘N new note · ⇧⌘N named note</p>
       </main>
 
-      <NewNoteDialog v-model:open="namedOpen" />
+      <NewNoteDialog v-model:open="dialogOpen" :kind="dialogKind" :folder="dialogFolder" />
     </div>
   </TooltipProvider>
 </template>

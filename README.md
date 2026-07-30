@@ -3,12 +3,11 @@
 Local-first Obsidian-style notes in the browser.
 
 - **Vue 3 + TypeScript + Bun + Vite**
-- **shadcn-vue** UI
-- **No server** — static app for GitHub Pages
-- **Create notes in-app** (Notion/Obsidian-style) or import a vault
-- **OPFS** storage
-- **`[[wikilinks]]`** with click-through / create-missing notes
-- **Graph view** driven by a generated `index.yaml`
+- **shadcn-vue** UI shell
+- **[BlockNote](https://www.blocknotejs.org/)** editor (React island)
+- **Hierarchical folders** mirrored in **OPFS** (`Projects/Note.md` → real directories)
+- **No server** — GitHub Pages
+- **`[[wikilinks]]`** + graph (`index.yaml`)
 
 ## Develop
 
@@ -17,25 +16,21 @@ bun install
 bun dev
 ```
 
-## Build
-
-```bash
-bun run build
-```
-
 ## Usage
 
-1. Open the app (Chrome/Edge recommended for OPFS + directory picker).
-2. Click **Create a note** (or press ⌘N / Ctrl+N).
-3. Or **Named…** (⇧⌘N) for paths like `Projects/Ideas`.
-4. Optionally **Import vault** to load an existing Obsidian folder into OPFS.
-5. Edit in CodeMirror; preview resolves `[[wikilinks]]`.
-6. Open **Graph** for the dependency view (`index.yaml` in OPFS).
+1. **Create a note** (⌘N) or **Named…** / **Folder…**
+2. Right-click a folder for “New note here”
+3. Notes live in OPFS as nested markdown files; folders are real OPFS directories
+4. BlockNote edits blocks; content is saved back to markdown for Obsidian interop
+5. Optional **Preview** for wikilink click-through
+6. **Import vault** to load an existing Obsidian folder
 
 ## `index.yaml`
 
 ```yaml
 version: 1
+folders:
+  - Projects
 nodes:
   - Welcome
   - Projects/Alpha
@@ -46,4 +41,4 @@ edges:
 
 ## Deploy
 
-Pushes to `main` deploy to GitHub Pages at `/k-thread/`.
+Pushes to `main` → https://meta-secret.github.io/k-thread/
