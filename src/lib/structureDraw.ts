@@ -339,14 +339,30 @@ export const drawStructureWidget = (
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(meta)
 
-  // Three-dot action menu trigger button ⋮ (Top-right micro trigger)
-  const menuG = g.append('g').attr('class', 'btn-menu').style('cursor', 'pointer')
-  const mx = x0 + WIDGET_W - 14
-  const my = y0 + 38
-  menuG.append('circle').attr('cx', mx).attr('cy', my - 8).attr('r', 1.3).attr('fill', paint.inkMuted)
-  menuG.append('circle').attr('cx', mx).attr('cy', my - 4).attr('r', 1.3).attr('fill', paint.inkMuted)
-  menuG.append('circle').attr('cx', mx).attr('cy', my).attr('r', 1.3).attr('fill', paint.inkMuted)
-  menuG.append('rect').attr('x', mx - 6).attr('y', my - 12).attr('width', 12).attr('height', 16).attr('fill', 'transparent')
+  // Collapse indicator badge if collapsed
+  if (d.isCollapsed) {
+    const cx = x0 + WIDGET_W - 54
+    const cy = y0 + 33
+    g.append('rect')
+      .attr('x', cx)
+      .attr('y', cy)
+      .attr('width', 44)
+      .attr('height', 15)
+      .attr('rx', 3.5)
+      .attr('fill', 'rgba(249,115,22,0.18)')
+      .attr('stroke', '#f97316')
+      .attr('stroke-width', 0.8)
+
+    g.append('text')
+      .attr('x', cx + 22)
+      .attr('y', cy + 10.5)
+      .attr('text-anchor', 'middle')
+      .attr('fill', paint.accentOrange)
+      .attr('font-size', 8.5)
+      .attr('font-weight', 700)
+      .attr('font-family', '"IBM Plex Sans", sans-serif')
+      .text('▸ EXPAND')
+  }
 
   // Connection port dots on left & right card edges
   for (const side of ['in', 'out'] as const) {

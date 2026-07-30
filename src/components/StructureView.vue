@@ -5,7 +5,6 @@ import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
 import {
   Crosshair,
-  FileText,
   FolderTree,
   GitBranch,
   Home,
@@ -92,31 +91,6 @@ let nodeSel: Option<StructNodeSel> = none
 let resizeObserver: Option<ResizeObserver> = none
 const dragOffsets = new Map<string, { x: number; y: number }>()
 const stats = ref({ nodes: 0, links: 0 })
-
-const activeMenuNode = ref<{ node: PlacedStructureNode; x: number; y: number } | null>(null)
-
-const closeMenu = () => {
-  activeMenuNode.value = null
-}
-
-const handleMenuCollapse = () => {
-  if (!activeMenuNode.value) return
-  toggleFolderCollapse(activeMenuNode.value.node.folderPath)
-  closeMenu()
-}
-
-const handleMenuFocus = () => {
-  if (!activeMenuNode.value) return
-  focusFolder.value = activeMenuNode.value.node.folderPath
-  rebuild()
-  closeMenu()
-}
-
-const handleMenuOpenNote = () => {
-  if (!activeMenuNode.value || !activeMenuNode.value.node.noteId) return
-  emit('openNote', activeMenuNode.value.node.noteId as DocId)
-  closeMenu()
-}
 
 const filteredDocs = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -300,7 +274,7 @@ const rebuild = () => {
       pinnedId.value = d.id
       refreshFocus()
       if (d.kind === StructureKind.Note && d.noteId.length > 0) {
-        emit('focusNote', d.noteId)
+        emit('openNote', d.noteId)
       } else if (d.kind === StructureKind.Folder) {
         toggleFolderCollapse(d.folderPath)
       }
@@ -315,20 +289,9 @@ const rebuild = () => {
       }
     })
 
-    .on('contextmenu', (event, d) => {
-      event.preventDefault()
-      event.stopPropagation()
-      activeMenuNode.value = { node: d, x: event.clientX, y: event.clientY }
-    })
-
   nodesJoined.each(function (d) {
     const sel = select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>
     drawStructureWidget(sel, d, themeMode.value)
-
-    sel.select('.btn-menu').on('click', (event) => {
-      event.stopPropagation()
-      activeMenuNode.value = { node: d, x: event.clientX, y: event.clientY }
-    })
   })
 
   wireSel = some(wiresJoined as StructWireSel)
@@ -533,59 +496,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Contextual Action Dropdown Menu -->
-      <div v-if="activeMenuNode" class="fixed inset-0 z-50" @click="closeMenu" @contextmenu.prevent="closeMenu">
-        <div
-          class="absolute z-50 w-52 rounded-xl backdrop-blur-2xl border p-1.5 shadow-2xl transition-all duration-150"
-          :style="{ left: `${Math.min(1000, activeMenuNode.x)}px`, top: `${Math.min(700, activeMenuNode.y)}px` }"
-          :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100 shadow-black/80' : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-zinc-400/20'"
-          @click.stopPropagation
-        >
-          <!-- Menu Header -->
-          <div class="px-2 py-1.5 mb-1 border-b flex items-center justify-between" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200/80'">
-            <span class="font-semibold text-xs truncate max-w-[130px]">{{ activeMenuNode.node.title }}</span>
-            <span class="font-mono text-[9px] px-1 py-0.2 rounded border" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'">
-              #{{ String(activeMenuNode.node.index).padStart(2, '0') }}
-            </span>
-          </div>
 
-          <!-- Folder Actions -->
-          <template v-if="activeMenuNode.node.kind === StructureKind.Folder">
-            <button
-              type="button"
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer"
-              :class="themeMode === 'dark' ? 'hover:bg-zinc-800/80 text-zinc-200' : 'hover:bg-zinc-100 text-zinc-800'"
-              @click="handleMenuCollapse"
-            >
-              <span class="text-orange-500 font-mono text-xs">{{ activeMenuNode.node.isCollapsed ? '▸' : '▾' }}</span>
-              <span>{{ activeMenuNode.node.isCollapsed ? 'Expand Subtree' : 'Collapse Subtree' }}</span>
-            </button>
-
-            <button
-              type="button"
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer"
-              :class="themeMode === 'dark' ? 'hover:bg-zinc-800/80 text-zinc-200' : 'hover:bg-zinc-100 text-zinc-800'"
-              @click="handleMenuFocus"
-            >
-              <Crosshair class="w-3.5 h-3.5 text-orange-500" />
-              <span>Focus Subtree</span>
-            </button>
-          </template>
-
-          <!-- Note Actions -->
-          <template v-else-if="activeMenuNode.node.kind === StructureKind.Note">
-            <button
-              type="button"
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer"
-              :class="themeMode === 'dark' ? 'hover:bg-zinc-800/80 text-zinc-200' : 'hover:bg-zinc-100 text-zinc-800'"
-              @click="handleMenuOpenNote"
-            >
-              <FileText class="w-3.5 h-3.5 text-orange-500" />
-              <span>Open Note in Editor</span>
-            </button>
-          </template>
-        </div>
-      </div>
     </div>
 
     <!-- Bottom Legend Bar -->
