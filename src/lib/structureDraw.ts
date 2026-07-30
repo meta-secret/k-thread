@@ -8,23 +8,47 @@ import {
   type StructureEdge,
 } from '@/lib/structureGraph'
 
-/** Dark Obsidian Tech Aesthetic (inspired by reference pictures 1, 2 & 3). */
-const Paint = {
-  bg: '#09090b',
-  cardBg: '#121217',
-  cardBorder: '#27272a',
-  cardHoverBorder: '#f97316',
-  inkPrimary: '#f4f4f5',
-  inkMuted: '#a1a1aa',
-  inkOrdinal: '#71717a',
-  accentOrange: '#f97316',
-  accentGlow: '#ff6b00',
-  strandDefault: '#27272a',
-  strandHot: '#f97316',
-  portBorder: '#f97316',
-  portBg: '#09090b',
-  gridDot: '#27272a',
+export type ThemeMode = 'dark' | 'light'
+
+/** Dual-theme palette: Light (main page aligned) & Dark Obsidian. */
+export const ThemePaints = {
+  dark: {
+    bg: '#09090b',
+    cardBg: '#121217',
+    cardBorder: '#27272a',
+    cardHoverBorder: '#f97316',
+    inkPrimary: '#f4f4f5',
+    inkMuted: '#a1a1aa',
+    inkOrdinal: '#71717a',
+    accentOrange: '#f97316',
+    accentGlow: '#ff6b00',
+    strandDefault: '#27272a',
+    strandHot: '#f97316',
+    portBorder: '#f97316',
+    portBg: '#09090b',
+    gridDot: '#27272a',
+    shadowId: 'dark-card-shadow',
+  },
+  light: {
+    bg: '#efeff1',
+    cardBg: '#ffffff',
+    cardBorder: 'rgba(18, 18, 20, 0.14)',
+    cardHoverBorder: '#f97316',
+    inkPrimary: '#121214',
+    inkMuted: '#6b6b73',
+    inkOrdinal: '#8a8a96',
+    accentOrange: '#f97316',
+    accentGlow: '#ea580c',
+    strandDefault: 'rgba(18, 18, 20, 0.18)',
+    strandHot: '#f97316',
+    portBorder: '#f97316',
+    portBg: '#ffffff',
+    gridDot: 'rgba(18, 18, 20, 0.08)',
+    shadowId: 'light-card-shadow',
+  },
 } as const
+
+export const getPaint = (mode: ThemeMode) => ThemePaints[mode]
 
 export type StructWireSel = Selection<SVGGElement, StructureEdge, SVGGElement, unknown>
 export type StructNodeSel = Selection<SVGGElement, PlacedStructureNode, SVGGElement, unknown>
@@ -42,7 +66,7 @@ export const bezierPath = (
 export const attachStructureDefs = (svg: Selection<SVGSVGElement, unknown, null, undefined>) => {
   const defs = svg.append('defs')
 
-  // Glow filter for cards and active wires
+  // Glow filter
   const glow = defs
     .append('filter')
     .attr('id', 'orange-glow')
@@ -56,20 +80,35 @@ export const attachStructureDefs = (svg: Selection<SVGSVGElement, unknown, null,
     <feMergeNode in="SourceGraphic"/>
   `)
 
-  // Card drop shadow
-  const shadow = defs
+  // Dark card drop shadow
+  const shadowDark = defs
     .append('filter')
     .attr('id', 'dark-card-shadow')
     .attr('x', '-20%')
     .attr('y', '-20%')
     .attr('width', '140%')
     .attr('height', '140%')
-  shadow
+  shadowDark
     .append('feDropShadow')
     .attr('dx', 0)
     .attr('dy', 8)
     .attr('stdDeviation', 12)
     .attr('flood-color', 'rgba(0,0,0,0.65)')
+
+  // Light card drop shadow
+  const shadowLight = defs
+    .append('filter')
+    .attr('id', 'light-card-shadow')
+    .attr('x', '-20%')
+    .attr('y', '-20%')
+    .attr('width', '140%')
+    .attr('height', '140%')
+  shadowLight
+    .append('feDropShadow')
+    .attr('dx', 0)
+    .attr('dy', 6)
+    .attr('stdDeviation', 10)
+    .attr('flood-color', 'rgba(18,18,20,0.08)')
 
   // Arrow markers
   const marker = (id: string, fill: string) => {
@@ -86,19 +125,8 @@ export const attachStructureDefs = (svg: Selection<SVGSVGElement, unknown, null,
       .attr('d', 'M 0 1.5 L 10 5 L 0 8.5 z')
       .attr('fill', fill)
   }
-  marker('struct-arrow', '#3f3f46')
-  marker('struct-arrow-hot', Paint.accentOrange)
-
-  // Gradient for hot wire strands
-  const grad = defs
-    .append('linearGradient')
-    .attr('id', 'strand-glow-grad')
-    .attr('x1', '0%')
-    .attr('y1', '0%')
-    .attr('x2', '0%')
-    .attr('y2', '100%')
-  grad.append('stop').attr('offset', '0%').attr('stop-color', '#ff6b00')
-  grad.append('stop').attr('offset', '100%').attr('stop-color', '#f97316')
+  marker('struct-arrow', '#8a8a96')
+  marker('struct-arrow-hot', '#f97316')
 
   return defs
 }
@@ -107,34 +135,46 @@ export const drawStructureBackdrop = (
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   width: number,
   height: number,
+  mode: ThemeMode = 'light',
 ) => {
+  const paint = getPaint(mode)
   const defs = svg.select('defs')
 
-  // Dot matrix grid pattern
+  // Dot matrix pattern
+  const patternId = `dot-grid-${mode}`
+  defs.select(`#${patternId}`).remove()
+
   const pattern = defs
     .append('pattern')
-    .attr('id', 'dark-dot-grid')
+    .attr('id', patternId)
     .attr('width', 28)
     .attr('height', 28)
     .attr('patternUnits', 'userSpaceOnUse')
-  pattern.append('circle').attr('cx', 14).attr('cy', 14).attr('r', 1.1).attr('fill', Paint.gridDot)
+  pattern.append('circle').attr('cx', 14).attr('cy', 14).attr('r', 1.1).attr('fill', paint.gridDot)
 
-  // Background rect with subtle radial ambient glow
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', Paint.bg)
+  svg.append('rect').attr('width', width).attr('height', height).attr('fill', paint.bg)
 
   // Ambient center glow
-  const radialGrad = defs.append('radialGradient').attr('id', 'ambient-glow')
-  radialGrad.append('stop').attr('offset', '0%').attr('stop-color', 'rgba(249, 115, 22, 0.04)')
-  radialGrad.append('stop').attr('offset', '70%').attr('stop-color', 'rgba(9, 9, 11, 0)')
+  const gradId = `ambient-glow-${mode}`
+  defs.select(`#${gradId}`).remove()
+  const radialGrad = defs.append('radialGradient').attr('id', gradId)
+  radialGrad.append('stop').attr('offset', '0%').attr('stop-color', mode === 'dark' ? 'rgba(249, 115, 22, 0.05)' : 'rgba(249, 115, 22, 0.06)')
+  radialGrad.append('stop').attr('offset', '70%').attr('stop-color', mode === 'dark' ? 'rgba(9, 9, 11, 0)' : 'rgba(239, 239, 241, 0)')
 
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#ambient-glow)')
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#dark-dot-grid)')
+  svg.append('rect').attr('width', width).attr('height', height).attr('fill', `url(#${gradId})`)
+  svg.append('rect').attr('width', width).attr('height', height).attr('fill', `url(#${patternId})`)
 }
 
-const iconTileStyle = (kind: StructureKind) => {
-  if (kind === StructureKind.Root) return { bg: 'rgba(249, 115, 22, 0.15)', stroke: '#f97316', icon: '#ff6b00' }
-  if (kind === StructureKind.Folder) return { bg: 'rgba(39, 39, 42, 0.8)', stroke: '#3f3f46', icon: '#fb923c' }
-  return { bg: 'rgba(24, 24, 27, 0.9)', stroke: '#27272a', icon: '#a1a1aa' }
+const iconTileStyle = (kind: StructureKind, mode: ThemeMode) => {
+  if (mode === 'dark') {
+    if (kind === StructureKind.Root) return { bg: 'rgba(249, 115, 22, 0.15)', stroke: '#f97316', icon: '#ff6b00' }
+    if (kind === StructureKind.Folder) return { bg: 'rgba(39, 39, 42, 0.8)', stroke: '#3f3f46', icon: '#fb923c' }
+    return { bg: 'rgba(24, 24, 27, 0.9)', stroke: '#27272a', icon: '#a1a1aa' }
+  }
+  // Light theme
+  if (kind === StructureKind.Root) return { bg: 'rgba(249, 115, 22, 0.12)', stroke: 'rgba(249, 115, 22, 0.4)', icon: '#ea580c' }
+  if (kind === StructureKind.Folder) return { bg: '#e4e8f0', stroke: '#d0d5e0', icon: '#2563eb' }
+  return { bg: '#e8e0f5', stroke: '#d8ccf0', icon: '#7c3aed' }
 }
 
 const badgeText = (kind: StructureKind) => {
@@ -178,15 +218,17 @@ const drawIconGlyph = (
   g.append('line').attr('x1', cx - 4).attr('y1', cy + 2).attr('x2', cx + 2).attr('y2', cy + 2).attr('stroke', color).attr('stroke-width', 1.4)
 }
 
-/** Draw high-tech sleek widget node (pic2 / pic3 style). */
+/** Draw high-tech sleek widget node. */
 export const drawStructureWidget = (
   g: Selection<SVGGElement, PlacedStructureNode, null, undefined>,
   d: PlacedStructureNode,
+  mode: ThemeMode = 'light',
 ) => {
+  const paint = getPaint(mode)
   const x0 = -WIDGET_W / 2
   const y0 = -WIDGET_H / 2
   const r = 14
-  const style = iconTileStyle(d.kind)
+  const style = iconTileStyle(d.kind, mode)
 
   // Outer active glow ring
   g.append('rect')
@@ -197,12 +239,12 @@ export const drawStructureWidget = (
     .attr('height', WIDGET_H + 6)
     .attr('rx', r + 3)
     .attr('fill', 'none')
-    .attr('stroke', Paint.accentOrange)
+    .attr('stroke', paint.accentOrange)
     .attr('stroke-width', 2)
     .attr('filter', 'url(#orange-glow)')
     .attr('opacity', 0)
 
-  // Main dark card body
+  // Main card body
   g.append('rect')
     .attr('class', 'widget-body')
     .attr('x', x0)
@@ -210,12 +252,12 @@ export const drawStructureWidget = (
     .attr('width', WIDGET_W)
     .attr('height', WIDGET_H)
     .attr('rx', r)
-    .attr('fill', Paint.cardBg)
-    .attr('stroke', Paint.cardBorder)
+    .attr('fill', paint.cardBg)
+    .attr('stroke', paint.cardBorder)
     .attr('stroke-width', 1.2)
-    .attr('filter', 'url(#dark-card-shadow)')
+    .attr('filter', `url(#${paint.shadowId})`)
 
-  // Left icon tile box (Pic 2)
+  // Left icon tile box
   const ix = x0 + 14
   const iy = y0 + (WIDGET_H - 52) / 2
   g.append('rect')
@@ -235,7 +277,7 @@ export const drawStructureWidget = (
     .attr('x', x0 + WIDGET_W - 14)
     .attr('y', y0 + 22)
     .attr('text-anchor', 'end')
-    .attr('fill', Paint.inkOrdinal)
+    .attr('fill', paint.inkOrdinal)
     .attr('font-size', 11)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace')
@@ -247,21 +289,23 @@ export const drawStructureWidget = (
   const badgeH = 16
   const bx = x0 + WIDGET_W - 14 - badgeW - 24
   const by = y0 + 10
+  const isRoot = d.kind === StructureKind.Root
+
   g.append('rect')
     .attr('x', bx)
     .attr('y', by)
     .attr('width', badgeW)
     .attr('height', badgeH)
     .attr('rx', 4)
-    .attr('fill', d.kind === StructureKind.Root ? 'rgba(249,115,22,0.2)' : 'rgba(39,39,42,0.6)')
-    .attr('stroke', d.kind === StructureKind.Root ? '#f97316' : '#3f3f46')
+    .attr('fill', isRoot ? 'rgba(249,115,22,0.15)' : mode === 'dark' ? 'rgba(39,39,42,0.6)' : 'rgba(18,18,20,0.06)')
+    .attr('stroke', isRoot ? '#f97316' : mode === 'dark' ? '#3f3f46' : 'rgba(18,18,20,0.14)')
     .attr('stroke-width', 0.8)
 
   g.append('text')
     .attr('x', bx + badgeW / 2)
     .attr('y', by + 11)
     .attr('text-anchor', 'middle')
-    .attr('fill', d.kind === StructureKind.Root ? '#fb923c' : '#a1a1aa')
+    .attr('fill', isRoot ? '#ea580c' : paint.inkMuted)
     .attr('font-size', 9)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Mono", monospace')
@@ -273,7 +317,7 @@ export const drawStructureWidget = (
   g.append('text')
     .attr('x', ix + 64)
     .attr('y', y0 + 42)
-    .attr('fill', Paint.inkPrimary)
+    .attr('fill', paint.inkPrimary)
     .attr('font-size', 14)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
@@ -284,20 +328,20 @@ export const drawStructureWidget = (
   g.append('text')
     .attr('x', ix + 64)
     .attr('y', y0 + 62)
-    .attr('fill', Paint.inkMuted)
+    .attr('fill', paint.inkMuted)
     .attr('font-size', 11)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(meta)
 
-  // Connection port dots on top & bottom card edges (Pic 2)
+  // Connection port dots on top & bottom card edges
   for (const side of ['in', 'out'] as const) {
     const p = structurePort({ ...d, x: 0, y: 0 }, side)
     g.append('circle')
       .attr('cx', p.x)
       .attr('cy', p.y)
       .attr('r', 4)
-      .attr('fill', Paint.portBg)
-      .attr('stroke', Paint.portBorder)
+      .attr('fill', paint.portBg)
+      .attr('stroke', paint.portBorder)
       .attr('stroke-width', 1.5)
   }
 }
@@ -306,7 +350,9 @@ export const drawStructureWidget = (
 export const updateStructureWires = (
   wires: StructWireSel,
   nodes: Map<string, PlacedStructureNode>,
+  mode: ThemeMode = 'light',
 ) => {
+  const paint = getPaint(mode)
   wires.each(function (d) {
     const s = nodes.get(d.from)
     const t = nodes.get(d.to)
@@ -317,14 +363,14 @@ export const updateStructureWires = (
 
     const group = select(this)
 
-    // Base dark strand line
+    // Base strand line
     group
       .selectAll<SVGPathElement, string>('path.strand-base')
       .data([path])
       .join('path')
       .attr('class', 'strand-base')
       .attr('fill', 'none')
-      .attr('stroke', Paint.strandDefault)
+      .attr('stroke', paint.strandDefault)
       .attr('stroke-width', 2)
       .attr('marker-end', 'url(#struct-arrow)')
       .attr('d', (p) => p)
@@ -336,7 +382,7 @@ export const updateStructureWires = (
       .join('path')
       .attr('class', 'strand-pulse')
       .attr('fill', 'none')
-      .attr('stroke', Paint.strandHot)
+      .attr('stroke', paint.strandHot)
       .attr('stroke-width', 2)
       .attr('stroke-dasharray', '8 16')
       .attr('opacity', 0.6)
@@ -350,7 +396,9 @@ export const paintStructureFocus = (
   hotId: string,
   focusFolder: string,
   activeNoteId: string,
+  mode: ThemeMode = 'light',
 ) => {
+  const paint = getPaint(mode)
   wireSel.attr('opacity', (d) => {
     if (hotId.length === 0) return 0.95
     return d.from === hotId || d.to === hotId ? 1 : 0.18
@@ -359,7 +407,7 @@ export const paintStructureFocus = (
   wireSel.selectAll<SVGPathElement, string>('path.strand-base').attr('stroke', function () {
     const edge = select(this.parentNode as SVGGElement).datum() as StructureEdge
     const hot = hotId.length > 0 && (edge.from === hotId || edge.to === hotId)
-    return hot ? Paint.strandHot : Paint.strandDefault
+    return hot ? paint.strandHot : paint.strandDefault
   })
 
   wireSel.selectAll<SVGPathElement, string>('path.strand-base').attr('marker-end', function () {
@@ -387,9 +435,9 @@ export const paintStructureFocus = (
   })
 
   nodeSel.selectAll<SVGRectElement, PlacedStructureNode>('rect.widget-body').attr('stroke', (d) => {
-    if (d.noteId.length > 0 && d.noteId === activeNoteId) return Paint.accentOrange
-    if (d.folderPath.length > 0 && d.folderPath === focusFolder) return Paint.accentOrange
-    if (d.id === hotId) return Paint.accentOrange
-    return Paint.cardBorder
+    if (d.noteId.length > 0 && d.noteId === activeNoteId) return paint.accentOrange
+    if (d.folderPath.length > 0 && d.folderPath === focusFolder) return paint.accentOrange
+    if (d.id === hotId) return paint.accentOrange
+    return paint.cardBorder
   })
 }

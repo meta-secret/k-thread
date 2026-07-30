@@ -3,7 +3,7 @@ import 'd3-transition'
 import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
-import { Maximize2, Network, Search, ZoomIn, ZoomOut } from '@lucide/vue'
+import { Maximize2, Moon, Network, Search, Sun, ZoomIn, ZoomOut } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ import {
   type HudStage,
   type HudWire,
 } from '@/lib/graphView'
+import type { ThemeMode } from '@/lib/structureDraw'
 import { none, some, type DocId, type GraphIndex, type Option } from '@/types'
 
 const props = defineProps<{
@@ -44,6 +45,16 @@ const hops = ref(1)
 const showOrphans = ref(true)
 const query = ref('')
 const hoveredId = ref<DocId | ''>('')
+
+const themeMode = ref<ThemeMode>(
+  (localStorage.getItem('k-thread-graph-theme') as ThemeMode) || 'light',
+)
+
+const toggleTheme = () => {
+  themeMode.value = themeMode.value === 'light' ? 'dark' : 'light'
+  localStorage.setItem('k-thread-graph-theme', themeMode.value)
+  rebuild()
+}
 
 const hostEl = ref<Option<HTMLElement>>(none)
 let zoomBehavior: Option<ZoomBehavior<SVGSVGElement, unknown>> = none
@@ -139,6 +150,7 @@ const refreshFocus = () => {
     hoveredId: hoveredId.value,
     isDimmed,
     isWireHot,
+    mode: themeMode.value,
   })
 }
 
@@ -170,8 +182,8 @@ const rebuild = () => {
   svgRoot = some(svg)
 
   attachHudDefs(svg)
-  const chrome = drawHudBackdrop(svg, width, height)
-  drawLayerLabels(chrome, built.nodes)
+  const chrome = drawHudBackdrop(svg, width, height, themeMode.value)
+  drawLayerLabels(chrome, built.nodes, themeMode.value)
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -199,7 +211,7 @@ const rebuild = () => {
       if (nodeSel.tag === 'some') {
         nodeSel.value.attr('transform', (n) => `translate(${n.x},${n.y})`)
       }
-      updateWires(wiresJoined as WireSel, nodeMap())
+      updateWires(wiresJoined as WireSel, nodeMap(), themeMode.value)
     })
 
   const nodesJoined = root
@@ -230,12 +242,12 @@ const rebuild = () => {
     })
 
   nodesJoined.each(function (d) {
-    drawPill(select(this) as Selection<SVGGElement, HudNode, null, undefined>, d)
+    drawPill(select(this) as Selection<SVGGElement, HudNode, null, undefined>, d, themeMode.value)
   })
 
   wireSel = some(wiresJoined as WireSel)
   nodeSel = some(nodesJoined as NodeSel)
-  updateWires(wiresJoined as WireSel, nodeMap())
+  updateWires(wiresJoined as WireSel, nodeMap(), themeMode.value)
   refreshFocus()
 }
 
@@ -249,6 +261,7 @@ watch(
     hops.value,
     showOrphans.value,
     query.value,
+    themeMode.value,
   ],
   () => rebuild(),
   { deep: true },
@@ -267,8 +280,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="hud-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden bg-[#09090b] text-zinc-100 font-sans">
-    <header class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
+  <div
+    class="hud-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden font-sans transition-colors duration-200"
+    :class="themeMode === 'dark' ? 'bg-[#09090b] text-zinc-100' : 'bg-[#efeff1] text-zinc-900'"
+  >
+    <header
+      class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 backdrop-blur-md border-b transition-colors duration-200"
+      :class="themeMode === 'dark' ? 'bg-zinc-950/80 border-zinc-800/80' : 'bg-white/80 border-zinc-200/90 shadow-sm'"
+    >
       <div class="flex items-center gap-3">
         <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
           <Network class="w-4 h-4" />
@@ -277,7 +296,8 @@ onBeforeUnmount(() => {
           <Button
             size="sm"
             :variant="scope === GraphScope.Global ? 'secondary' : 'ghost'"
-            class="h-7 text-xs bg-zinc-900 border-zinc-800 text-zinc-200"
+            class="h-7 text-xs"
+            :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-200/70 border-zinc-300 text-zinc-800'"
             @click="scope = GraphScope.Global"
           >
             Global
@@ -285,21 +305,22 @@ onBeforeUnmount(() => {
           <Button
             size="sm"
             :variant="scope === GraphScope.Local ? 'secondary' : 'ghost'"
-            class="h-7 text-xs bg-zinc-900 border-zinc-800 text-zinc-200"
+            class="h-7 text-xs"
+            :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-200' : 'bg-zinc-200/70 border-zinc-300 text-zinc-800'"
             :disabled="activeId.length === 0"
             @click="scope = GraphScope.Local"
           >
             Local
           </Button>
 
-          <label v-if="scope === GraphScope.Local" class="flex items-center gap-1.5 text-xs text-zinc-400 font-mono ml-2">
+          <label v-if="scope === GraphScope.Local" class="flex items-center gap-1.5 text-xs font-mono ml-2" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-600'">
             Depth
             <input v-model.number="hops" type="range" min="1" max="3" step="1" class="w-16 accent-orange-500" />
-            <span class="text-orange-400 font-semibold">{{ hops }}</span>
+            <span class="text-orange-500 font-semibold">{{ hops }}</span>
           </label>
 
-          <span class="w-px h-4 bg-zinc-800 mx-1" />
-          <span class="text-xs font-mono font-medium text-orange-400 uppercase tracking-wide">
+          <span class="w-px h-4 mx-1" :class="themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-300'" />
+          <span class="text-xs font-mono font-medium text-orange-500 uppercase tracking-wide">
             {{ scopeLabel }} · WIKILINKS
           </span>
         </div>
@@ -310,7 +331,8 @@ onBeforeUnmount(() => {
           <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
           <Input
             v-model="query"
-            class="pl-8 text-xs bg-zinc-900/90 border-zinc-800 text-zinc-200 placeholder:text-zinc-500 h-8 focus:border-orange-500/50"
+            class="pl-8 text-xs h-8 placeholder:text-zinc-400 focus:border-orange-500/50"
+            :class="themeMode === 'dark' ? 'bg-zinc-900/90 border-zinc-800 text-zinc-200' : 'bg-white border-zinc-200 text-zinc-800 shadow-xs'"
             placeholder="Filter wikilinks…"
             autocomplete="off"
           />
@@ -319,20 +341,32 @@ onBeforeUnmount(() => {
         <Button
           size="sm"
           variant="outline"
-          class="h-8 text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800"
+          class="h-8 text-xs font-medium"
+          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100'"
           @click="showOrphans = !showOrphans"
         >
           {{ showOrphans ? 'Hide Orphans' : 'Show Orphans' }}
         </Button>
 
-        <div class="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 p-0.5">
-          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Zoom In" @click="zoomIn">
+        <button
+          type="button"
+          class="flex items-center justify-center p-2 rounded-lg border transition-colors"
+          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-xs'"
+          :title="themeMode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+          @click="toggleTheme"
+        >
+          <Sun v-if="themeMode === 'dark'" class="w-3.5 h-3.5" />
+          <Moon v-else class="w-3.5 h-3.5" />
+        </button>
+
+        <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'">
+          <button type="button" class="p-1.5 rounded transition-colors" :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'" title="Zoom In" @click="zoomIn">
             <ZoomIn class="w-3.5 h-3.5" />
           </button>
-          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Zoom Out" @click="zoomOut">
+          <button type="button" class="p-1.5 rounded transition-colors" :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'" title="Zoom Out" @click="zoomOut">
             <ZoomOut class="w-3.5 h-3.5" />
           </button>
-          <button type="button" class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800" title="Reset View" @click="resetZoom">
+          <button type="button" class="p-1.5 rounded transition-colors" :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'" title="Reset View" @click="resetZoom">
             <Maximize2 class="w-3.5 h-3.5" />
           </button>
         </div>
@@ -341,13 +375,16 @@ onBeforeUnmount(() => {
 
     <div :ref="bindHost" class="z-0 min-h-0 w-full h-full" />
 
-    <footer class="z-10 flex items-center justify-between px-5 py-2.5 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800/80 text-xs text-zinc-400 font-mono">
+    <footer
+      class="z-10 flex items-center justify-between px-5 py-2.5 backdrop-blur-md border-t text-xs font-mono transition-colors duration-200"
+      :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800/80 text-zinc-400' : 'bg-white/90 border-zinc-200 text-zinc-600 shadow-sm'"
+    >
       <div class="flex items-center gap-4">
-        <span class="text-zinc-200 font-medium">{{ stageStats.nodes }} nodes</span>
+        <span class="font-medium" :class="themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-800'">{{ stageStats.nodes }} nodes</span>
         <span>·</span>
-        <span class="text-zinc-200 font-medium">{{ stageStats.links }} links</span>
+        <span class="font-medium" :class="themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-800'">{{ stageStats.links }} links</span>
       </div>
-      <span class="text-zinc-500 text-[11px]">Click node to focus · Double-click to open</span>
+      <span class="text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">Click node to focus · Double-click to open</span>
     </footer>
   </div>
 </template>

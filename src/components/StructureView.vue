@@ -8,8 +8,10 @@ import {
   FileText,
   GitBranch,
   Maximize2,
+  Moon,
   RefreshCw,
   Search,
+  Sun,
   ZoomIn,
   ZoomOut,
 } from '@lucide/vue'
@@ -24,6 +26,7 @@ import {
   updateStructureWires,
   type StructNodeSel,
   type StructWireSel,
+  type ThemeMode,
 } from '@/lib/structureDraw'
 import {
   buildStructureGraph,
@@ -50,6 +53,17 @@ const query = ref('')
 const focusFolder = ref('')
 const hoveredId = ref('')
 const hostEl = ref<Option<HTMLElement>>(none)
+
+/** Theme mode: defaults to 'light' to align with main page shell, toggleable to 'dark'. */
+const themeMode = ref<ThemeMode>(
+  (localStorage.getItem('k-thread-graph-theme') as ThemeMode) || 'light',
+)
+
+const toggleTheme = () => {
+  themeMode.value = themeMode.value === 'light' ? 'dark' : 'light'
+  localStorage.setItem('k-thread-graph-theme', themeMode.value)
+  rebuild()
+}
 
 watch(
   () => props.seedFolder ?? '',
@@ -136,6 +150,7 @@ const refreshFocus = () => {
     hoveredId.value,
     focusFolder.value,
     props.activeId,
+    themeMode.value,
   )
 }
 
@@ -165,7 +180,7 @@ const rebuild = () => {
     .attr('class', 'structure-svg')
   svgRoot = some(svg)
   attachStructureDefs(svg)
-  drawStructureBackdrop(svg, width, height)
+  drawStructureBackdrop(svg, width, height, themeMode.value)
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -193,7 +208,7 @@ const rebuild = () => {
       if (nodeSel.tag === 'some') {
         nodeSel.value.attr('transform', (n) => `translate(${n.x},${n.y})`)
       }
-      updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes))
+      updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes), themeMode.value)
     })
 
   const nodesJoined = root
@@ -239,17 +254,17 @@ const rebuild = () => {
     })
 
   nodesJoined.each(function (d) {
-    drawStructureWidget(select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>, d)
+    drawStructureWidget(select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>, d, themeMode.value)
   })
 
   wireSel = some(wiresJoined as StructWireSel)
   nodeSel = some(nodesJoined as StructNodeSel)
-  updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes))
+  updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes), themeMode.value)
   refreshFocus()
 }
 
 watch(
-  () => [props.docs, props.folders, props.activeId, query.value, focusFolder.value],
+  () => [props.docs, props.folders, props.activeId, query.value, focusFolder.value, themeMode.value],
   () => rebuild(),
   { deep: true },
 )
@@ -267,21 +282,30 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="structure-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden bg-[#09090b] text-zinc-100 font-sans">
-    <!-- Top Glassmorphic High-Tech Toolbar -->
-    <header class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80">
+  <div
+    class="structure-shell relative grid grid-rows-[auto_1fr_auto] h-full min-h-0 overflow-hidden font-sans transition-colors duration-200"
+    :class="themeMode === 'dark' ? 'bg-[#09090b] text-zinc-100' : 'bg-[#efeff1] text-zinc-900'"
+  >
+    <!-- Top Glassmorphic Toolbar -->
+    <header
+      class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 backdrop-blur-md border-b transition-colors duration-200"
+      :class="themeMode === 'dark' ? 'bg-zinc-950/80 border-zinc-800/80' : 'bg-white/80 border-zinc-200/90 shadow-sm'"
+    >
       <div class="flex items-center gap-3 min-w-0">
         <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
           <GitBranch class="w-4 h-4" />
         </div>
         <div>
-          <h2 class="m-0 text-sm font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
+          <h2 class="m-0 text-sm font-semibold tracking-tight flex items-center gap-2" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
             <span>{{ focusFolder.length > 0 ? focusFolder : 'Vault Structure Funnel' }}</span>
-            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-800/80 text-orange-400 border border-orange-500/20">
+            <span
+              class="text-[10px] font-mono font-medium px-2 py-0.5 rounded border"
+              :class="themeMode === 'dark' ? 'bg-zinc-800/80 text-orange-400 border-orange-500/20' : 'bg-orange-50 text-orange-600 border-orange-200'"
+            >
               WORKFLOW GRAPH
             </span>
           </h2>
-          <p class="m-0 text-xs text-zinc-400 font-mono tracking-wide">
+          <p class="m-0 text-xs font-mono tracking-wide" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
             Parent-aligned workflow · {{ stats.nodes }} nodes · {{ stats.links }} connections
           </p>
         </div>
@@ -293,29 +317,44 @@ onBeforeUnmount(() => {
           <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
           <Input
             v-model="query"
-            class="pl-8 text-xs bg-zinc-900/90 border-zinc-800 text-zinc-200 placeholder:text-zinc-500 h-8 focus:border-orange-500/50 focus:ring-orange-500/20"
+            class="pl-8 text-xs h-8 placeholder:text-zinc-400 focus:border-orange-500/50"
+            :class="themeMode === 'dark' ? 'bg-zinc-900/90 border-zinc-800 text-zinc-200' : 'bg-white border-zinc-200 text-zinc-800 shadow-xs'"
             placeholder="Search nodes or folders…"
             autocomplete="off"
           />
         </div>
 
-        <div class="h-4 w-px bg-zinc-800 mx-1" />
+        <div class="h-4 w-px mx-1" :class="themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-300'" />
 
         <Button
           v-if="focusFolder.length > 0"
           size="sm"
           variant="outline"
-          class="h-8 text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          class="h-8 text-xs font-medium"
+          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100'"
           @click="clearFocusFolder"
         >
-          <RefreshCw class="w-3 h-3 mr-1 text-orange-400" />
+          <RefreshCw class="w-3 h-3 mr-1 text-orange-500" />
           Whole Vault
         </Button>
 
-        <div class="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 p-0.5">
+        <!-- Theme Toggle (Light / Dark) -->
+        <button
+          type="button"
+          class="flex items-center justify-center p-2 rounded-lg border transition-colors"
+          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-xs'"
+          :title="themeMode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
+          @click="toggleTheme"
+        >
+          <Sun v-if="themeMode === 'dark'" class="w-3.5 h-3.5" />
+          <Moon v-else class="w-3.5 h-3.5" />
+        </button>
+
+        <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'">
           <button
             type="button"
-            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            class="p-1.5 rounded transition-colors"
+            :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Zoom In"
             @click="zoomIn"
           >
@@ -323,7 +362,8 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            class="p-1.5 rounded transition-colors"
+            :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Zoom Out"
             @click="zoomOut"
           >
@@ -331,7 +371,8 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="p-1.5 text-zinc-400 hover:text-zinc-100 rounded hover:bg-zinc-800 transition-colors"
+            class="p-1.5 rounded transition-colors"
+            :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Reset View"
             @click="resetZoom"
           >
@@ -345,33 +386,37 @@ onBeforeUnmount(() => {
     <div class="relative z-0 min-h-0 w-full h-full overflow-hidden">
       <div :ref="bindHost" class="w-full h-full" />
 
-      <!-- Floating Interactive Inspector Card (Pic 3 style preview widget) -->
+      <!-- Floating Interactive Inspector Card -->
       <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
         <div
           v-if="selectedNode"
-          class="absolute bottom-4 right-4 z-20 w-80 rounded-xl bg-zinc-950/90 backdrop-blur-xl border border-zinc-800/90 shadow-2xl p-4 text-xs"
+          class="absolute bottom-4 right-4 z-20 w-80 rounded-xl backdrop-blur-xl border p-4 text-xs shadow-2xl transition-colors duration-200"
+          :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800/90' : 'bg-white/95 border-zinc-200 shadow-xl'"
         >
           <div class="flex items-center justify-between mb-2">
-            <span class="font-mono text-[10px] uppercase tracking-widest text-orange-400 font-semibold flex items-center gap-1.5">
+            <span class="font-mono text-[10px] uppercase tracking-widest text-orange-500 font-semibold flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
               Node Inspector
             </span>
-            <span class="font-mono text-[10px] text-zinc-500">#{String(selectedNode.index).padStart(2, '0')}</span>
+            <span class="font-mono text-[10px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">#{String(selectedNode.index).padStart(2, '0')}</span>
           </div>
 
-          <h3 class="font-semibold text-sm text-zinc-100 m-0 truncate">
+          <h3 class="font-semibold text-sm m-0 truncate" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
             {{ selectedNode.title }}
           </h3>
-          <p class="text-zinc-400 m-0 mt-0.5 truncate text-[11px]">
+          <p class="m-0 mt-0.5 truncate text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
             {{ selectedNode.meta }}
           </p>
 
-          <div v-if="selectedDoc" class="mt-3 pt-2.5 border-t border-zinc-800/80">
-            <p class="text-zinc-300 font-mono text-[10.5px] line-clamp-3 bg-zinc-900/80 p-2 rounded border border-zinc-800">
-              {{ selectedDoc.body || '(Empty note content)' }}
+          <div class="mt-3 pt-2.5 border-t" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200'">
+            <p
+              class="font-mono text-[10.5px] line-clamp-3 p-2 rounded border"
+              :class="themeMode === 'dark' ? 'bg-zinc-900/80 text-zinc-300 border-zinc-800' : 'bg-zinc-50 text-zinc-700 border-zinc-200'"
+            >
+              {{ selectedDoc?.body || '(Empty note content)' }}
             </p>
             <div class="mt-2.5 flex items-center justify-between">
-              <span class="text-zinc-500 text-[10px]">Click node to edit note</span>
+              <span class="text-[10px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">Click node to edit note</span>
               <Button
                 size="sm"
                 class="h-7 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium px-2.5"
@@ -386,26 +431,29 @@ onBeforeUnmount(() => {
       </transition>
     </div>
 
-    <!-- Bottom High-Tech Legend Bar (Pic 2 inspired) -->
-    <footer class="z-10 flex flex-wrap items-center justify-between gap-4 px-5 py-2.5 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800/80 text-xs text-zinc-400 font-mono">
+    <!-- Bottom Legend Bar -->
+    <footer
+      class="z-10 flex flex-wrap items-center justify-between gap-4 px-5 py-2.5 backdrop-blur-md border-t text-xs font-mono transition-colors duration-200"
+      :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800/80 text-zinc-400' : 'bg-white/90 border-zinc-200 text-zinc-600 shadow-sm'"
+    >
       <div class="flex items-center gap-5">
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-0.5 bg-orange-500 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
-          <span class="text-zinc-300 text-[11px]">Sequence Flow</span>
+          <span class="text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-700'">Sequence Flow</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full border border-orange-500 bg-zinc-950" />
-          <span class="text-zinc-300 text-[11px]">Hierarchy Port</span>
+          <span class="w-2 h-2 rounded-full border border-orange-500" :class="themeMode === 'dark' ? 'bg-zinc-950' : 'bg-white'" />
+          <span class="text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-700'">Hierarchy Port</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
-          <span class="text-zinc-300 text-[11px]">Active Focus</span>
+          <span class="text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-700'">Active Focus</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-4 text-[11px] text-zinc-500">
+      <div class="flex items-center gap-4 text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">
         <span class="flex items-center gap-1">
-          <Crosshair class="w-3 h-3 text-orange-400" />
+          <Crosshair class="w-3 h-3 text-orange-500" />
           <span>Click folder to focus subtree</span>
         </span>
         <span>·</span>
