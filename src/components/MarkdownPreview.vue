@@ -92,7 +92,27 @@ const onClick = (event: MouseEvent) => {
   border-bottom-style: dashed;
 }
 
+.preview :deep(a.wiki-link.is-embed) {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  padding-inline: 0.25em;
+  border-radius: 3px;
+}
+
 .preview :deep(a:not(.wiki-link)) {
   color: var(--accent-2);
+}
+
+.preview :deep(.obsidian-tag) {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 999px;
+  padding: 0.05em 0.45em;
+  font-size: 0.92em;
+}
+
+.preview :deep(.obsidian-highlight) {
+  background: #ffe56a99;
+  border-radius: 2px;
+  padding-inline: 0.1em;
 }
 </style>

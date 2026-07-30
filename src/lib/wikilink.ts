@@ -1,7 +1,7 @@
 import { err, ok, type AppError, type DocId, type Result } from '../types'
 
-/** [[target]], [[target|alias]], [[target#heading]] */
-const WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g
+/** [[target]], [[target|alias]], [[target#heading]], and embeds ![[...]] */
+const WIKILINK = /!?\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g
 
 const leafName = (id: DocId): string => {
   const parts = id.split('/')

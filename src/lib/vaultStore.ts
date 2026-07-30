@@ -66,6 +66,20 @@ const sortedDocs = computed(() =>
   [...state.docs].sort((a, b) => a.id.localeCompare(b.id)),
 )
 
+const noteIds = computed(() => sortedDocs.value.map((d) => d.id))
+
+const tags = computed(() => {
+  const found = new Set<string>()
+  const re = /(^|[\s([{])#([A-Za-z0-9_][\w/-]*)/gm
+  for (const doc of state.docs) {
+    for (const match of doc.body.matchAll(re)) {
+      const tag = match[2]
+      if (typeof tag === 'string' && tag.length > 0) found.add(tag)
+    }
+  }
+  return [...found].sort()
+})
+
 const markReady = (message: string) => {
   state.status = VaultStatus.Ready
   state.message = message
@@ -310,6 +324,8 @@ export const vaultStore = {
   tree,
   activeDoc,
   sortedDocs,
+  noteIds,
+  tags,
   setActive,
   setActiveFolder,
   openOrCreate,

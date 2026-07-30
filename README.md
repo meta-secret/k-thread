@@ -4,10 +4,12 @@ Local-first Obsidian-style notes in the browser.
 
 - **Vue 3 + TypeScript + Bun + Vite**
 - **shadcn-vue** UI shell
-- **[BlockNote](https://www.blocknotejs.org/)** editor (React island)
-- **Hierarchical folders** mirrored in **OPFS** (`Projects/Note.md` → real directories)
+- **[BlockNote](https://www.blocknotejs.org/)** editor with Obsidian dialect support
+- **`[[wikilinks]]` / `![[embeds]]`**, `#tags`, `==highlights==` (parse, render, export)
+- Type `[[` for note picker, `#` for tags; click a wikilink to open/create
+- **Hierarchical folders** mirrored in **OPFS**
 - **No server** — GitHub Pages
-- **`[[wikilinks]]`** + graph (`index.yaml`)
+- Graph via `index.yaml`
 
 ## Develop
 

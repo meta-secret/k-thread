@@ -88,6 +88,8 @@ const view = computed(() => vaultStore.state.view)
 const tree = vaultStore.tree
 const index = vaultStore.index
 const known = vaultStore.knownIds
+const noteIds = vaultStore.noteIds
+const tags = vaultStore.tags
 const active = vaultStore.activeDoc
 const activeFolder = computed(() => vaultStore.state.activeFolder)
 
@@ -217,7 +219,10 @@ const ready = computed(() => status.value === VaultStatus.Ready)
               <BlockNoteEditor
                 :doc-key="docKey"
                 :model-value="body"
+                :note-ids="noteIds"
+                :tags="tags"
                 @update:model-value="vaultStore.updateBody"
+                @navigate="vaultStore.openOrCreate"
               />
             </div>
             <div v-if="showPreview" class="min-h-0 overflow-hidden bg-card">
