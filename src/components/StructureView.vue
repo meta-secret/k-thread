@@ -4,7 +4,11 @@ import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
 import {
+  ArrowDownLeft,
+  ArrowUpRight,
   Crosshair,
+  ExternalLink,
+  FileText,
   FolderTree,
   GitBranch,
   Home,
@@ -12,6 +16,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  X,
   ZoomIn,
   ZoomOut,
 } from '@lucide/vue'
@@ -36,6 +41,7 @@ import {
   type PlacedStructureNode,
   type StructureEdge,
 } from '@/lib/structureGraph'
+import { extractWikilinks, resolveWikilink } from '@/lib/wikilink'
 import { none, some, type Doc, type DocId, type Option } from '@/types'
 
 const props = withDefaults(
@@ -84,6 +90,10 @@ watch(
   { immediate: true },
 )
 
+watch(graphLayer, () => {
+  rebuild()
+})
+
 let zoomBehavior: Option<ZoomBehavior<SVGSVGElement, unknown>> = none
 let svgRoot: Option<Selection<SVGSVGElement, unknown, null, undefined>> = none
 let wireSel: Option<StructWireSel> = none
@@ -91,6 +101,40 @@ let nodeSel: Option<StructNodeSel> = none
 let resizeObserver: Option<ResizeObserver> = none
 const dragOffsets = new Map<string, { x: number; y: number }>()
 const stats = ref({ nodes: 0, links: 0 })
+const stageNodes = ref<PlacedStructureNode[]>([])
+
+const selectedNode = computed(() => {
+  if (!pinnedId.value) return null
+  return stageNodes.value.find((n) => n.id === pinnedId.value) || null
+})
+
+const selectedDoc = computed(() => {
+  const node = selectedNode.value
+  if (!node || node.kind !== StructureKind.Note || !node.noteId) return null
+  return props.docs.find((d) => d.id === node.noteId) || null
+})
+
+const selectedNodeOutlinks = computed(() => {
+  const doc = selectedDoc.value
+  if (!doc) return []
+  const known = new Set(props.docs.map((d) => d.id))
+  return extractWikilinks(doc.body).map((raw) => resolveWikilink(raw, known))
+})
+
+const selectedNodeBacklinks = computed(() => {
+  const doc = selectedDoc.value
+  if (!doc) return []
+  const known = new Set(props.docs.map((d) => d.id))
+  const backlinks: DocId[] = []
+  for (const other of props.docs) {
+    if (other.id === doc.id) continue
+    const out = extractWikilinks(other.body).map((raw) => resolveWikilink(raw, known))
+    if (out.includes(doc.id)) {
+      backlinks.push(other.id)
+    }
+  }
+  return backlinks
+})
 
 const filteredDocs = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -194,6 +238,7 @@ const rebuild = () => {
   })
   const graph = { ...fullGraph, edges: filteredEdges }
   const stage = placeStructureStage(graph, width, height)
+  stageNodes.value = stage.nodes
   stageBounds.value = stage.bounds
 
   for (const n of stage.nodes) {
@@ -496,7 +541,162 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <!-- Contextual Node Links & Management Widget Popover -->
+      <div
+        v-if="selectedNode"
+        class="absolute top-20 right-5 z-30 w-80 rounded-2xl backdrop-blur-2xl border p-4 shadow-2xl transition-all duration-200"
+        :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100 shadow-black/80' : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-zinc-400/20'"
+        @click.stopPropagation
+      >
+        <!-- Widget Header -->
+        <div class="flex items-start justify-between pb-3 border-b" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200/80'">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shrink-0">
+              <FileText v-if="selectedNode.kind === StructureKind.Note" class="w-4 h-4" />
+              <FolderTree v-else-if="selectedNode.kind === StructureKind.Folder" class="w-4 h-4 text-orange-500" />
+              <Home v-else class="w-4 h-4 text-orange-500" />
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-semibold text-sm truncate max-w-[140px]">{{ selectedNode.title }}</span>
+                <span class="font-mono text-[9px] px-1 py-0.2 rounded border shrink-0" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'">
+                  #{{ String(selectedNode.index).padStart(2, '0') }}
+                </span>
+              </div>
+              <span class="text-[11px] truncate" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
+                {{ selectedNode.meta }}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="p-1 rounded-md transition-colors cursor-pointer hover:bg-zinc-500/20 text-zinc-400 hover:text-zinc-200"
+            title="Close node inspector"
+            @click="pinnedId = ''; refreshFocus()"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
 
+        <!-- Layer Mode Toggles inside Node Widget -->
+        <div class="my-3 flex items-center justify-between gap-1 p-1 rounded-xl border bg-zinc-900/40 border-zinc-800/60">
+          <button
+            type="button"
+            class="flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center"
+            :class="graphLayer === 'hierarchy' ? 'bg-orange-500 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+            @click="graphLayer = 'hierarchy'"
+          >
+            Structure
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center"
+            :class="graphLayer === 'links' ? 'bg-cyan-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+            @click="graphLayer = 'links'"
+          >
+            Links
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-1 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center"
+            :class="graphLayer === 'combined' ? 'bg-gradient-to-r from-orange-500 to-cyan-500 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200'"
+            @click="graphLayer = 'combined'"
+          >
+            Combined
+          </button>
+        </div>
+
+        <!-- Note Links Breakdown -->
+        <template v-if="selectedNode.kind === StructureKind.Note">
+          <!-- Outbound Links -->
+          <div class="mb-2">
+            <div class="flex items-center justify-between text-[11px] font-medium mb-1" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-600'">
+              <span class="flex items-center gap-1">
+                <ArrowUpRight class="w-3 h-3 text-cyan-400" />
+                <span>Outbound Links</span>
+              </span>
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded-full" :class="themeMode === 'dark' ? 'bg-zinc-800 text-cyan-400' : 'bg-zinc-100 text-cyan-600'">
+                {{ selectedNodeOutlinks.length }}
+              </span>
+            </div>
+            <div v-if="selectedNodeOutlinks.length === 0" class="text-[11px] italic px-2 py-1 text-zinc-500">
+              No outbound links
+            </div>
+            <div v-else class="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+              <button
+                v-for="targetId in selectedNodeOutlinks"
+                :key="targetId"
+                type="button"
+                class="px-2 py-1 text-xs font-medium rounded-lg border flex items-center gap-1 transition-all cursor-pointer hover:border-cyan-500/50 hover:bg-cyan-500/10 text-cyan-400 border-cyan-500/20 bg-cyan-500/5"
+                @click="emit('openNote', targetId)"
+              >
+                <span>[[{{ targetId }}]]</span>
+                <ExternalLink class="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Backlinks -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between text-[11px] font-medium mb-1" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-600'">
+              <span class="flex items-center gap-1">
+                <ArrowDownLeft class="w-3 h-3 text-orange-400" />
+                <span>Backlinks</span>
+              </span>
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded-full" :class="themeMode === 'dark' ? 'bg-zinc-800 text-orange-400' : 'bg-zinc-100 text-orange-600'">
+                {{ selectedNodeBacklinks.length }}
+              </span>
+            </div>
+            <div v-if="selectedNodeBacklinks.length === 0" class="text-[11px] italic px-2 py-1 text-zinc-500">
+              No backlinks
+            </div>
+            <div v-else class="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+              <button
+                v-for="sourceId in selectedNodeBacklinks"
+                :key="sourceId"
+                type="button"
+                class="px-2 py-1 text-xs font-medium rounded-lg border flex items-center gap-1 transition-all cursor-pointer hover:border-orange-500/50 hover:bg-orange-500/10 text-orange-400 border-orange-500/20 bg-orange-500/5"
+                @click="emit('openNote', sourceId)"
+              >
+                <span>[[{{ sourceId }}]]</span>
+                <ExternalLink class="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Open Note Action -->
+          <Button
+            size="sm"
+            class="w-full h-8 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+            @click="emit('openNote', selectedNode.noteId)"
+          >
+            <FileText class="w-3.5 h-3.5" />
+            <span>Open Note in Editor</span>
+          </Button>
+        </template>
+
+        <!-- Folder Actions -->
+        <template v-else-if="selectedNode.kind === StructureKind.Folder">
+          <div class="flex flex-col gap-2 mt-2">
+            <Button
+              size="sm"
+              class="w-full h-8 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+              @click="toggleFolderCollapse(selectedNode.folderPath)"
+            >
+              <span>{{ selectedNode.isCollapsed ? 'Expand Subtree' : 'Collapse Subtree' }}</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              class="w-full h-8 text-xs font-semibold rounded-lg border-zinc-700 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+              @click="focusFolder = selectedNode.folderPath; rebuild()"
+            >
+              <Crosshair class="w-3.5 h-3.5 text-orange-500" />
+              <span>Focus Subtree</span>
+            </Button>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Bottom Legend Bar -->
