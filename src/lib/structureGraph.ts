@@ -1,6 +1,14 @@
 import type { Doc, DocId } from '../types'
 import { folderOf, labelOf } from './graphView'
 import { extractWikilinks, resolveWikilink } from './wikilink'
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCenter,
+  forceCollide,
+  type SimulationNodeDatum,
+} from 'd3-force'
 
 export const StructureKind = {
   Root: 'root',
@@ -234,74 +242,113 @@ export const placeStructureStage = (
     return { nodes: [], edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0, contentW: 0, contentH: 0 } }
   }
 
+  // Check if there are any hierarchy edges
+  const hasHierarchy = graph.edges.some((e) => e.kind === StructureEdgeKind.Hierarchy)
+
+  if (!hasHierarchy) {
+    return placeForceLayout(graph)
+  }
+
+  return placeTreeLayout(graph)
+}
+
+/** Force-directed layout for Links mode — handles cycles, bidirectional, many-to-many wikilinks. */
+const placeForceLayout = (
+  graph: StructureGraph,
+): { nodes: PlacedStructureNode[]; edges: StructureEdge[]; bounds: { minX: number; maxX: number; minY: number; maxY: number; contentW: number; contentH: number } } => {
+  type SimNode = StructureNode & SimulationNodeDatum
+  const simNodes: SimNode[] = graph.nodes.map((n) => ({
+    ...n,
+    x: Math.random() * 600 + 100,
+    y: Math.random() * 400 + 100,
+  }))
+
+  const nodeIndex = new Map<string, number>()
+  simNodes.forEach((n, i) => nodeIndex.set(n.id, i))
+
+  const simLinks = graph.edges
+    .filter((e) => nodeIndex.has(e.from) && nodeIndex.has(e.to))
+    .map((e) => ({
+      source: nodeIndex.get(e.from)!,
+      target: nodeIndex.get(e.to)!,
+    }))
+
+  const sim = forceSimulation(simNodes)
+    .force(
+      'link',
+      forceLink(simLinks)
+        .distance(WIDGET_W * 1.6)
+        .strength(0.7),
+    )
+    .force('charge', forceManyBody().strength(-600))
+    .force('center', forceCenter(400, 300))
+    .force('collide', forceCollide(WIDGET_W * 0.65))
+    .stop()
+
+  // Run simulation synchronously (300 ticks is plenty for convergence)
+  for (let i = 0; i < 300; i++) sim.tick()
+
+  const placed: PlacedStructureNode[] = simNodes.map((n) => ({
+    id: n.id,
+    kind: n.kind,
+    title: n.title,
+    meta: n.meta,
+    depth: n.depth,
+    index: n.index,
+    noteId: n.noteId,
+    folderPath: n.folderPath,
+    isCollapsed: n.isCollapsed,
+    childCount: n.childCount,
+    x: n.x!,
+    y: n.y!,
+  }))
+
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const n of placed) {
+    minX = Math.min(minX, n.x - WIDGET_W / 2)
+    maxX = Math.max(maxX, n.x + WIDGET_W / 2)
+    minY = Math.min(minY, n.y - WIDGET_H / 2)
+    maxY = Math.max(maxY, n.y + WIDGET_H / 2)
+  }
+
+  const contentW = maxX - minX
+  const contentH = maxY - minY
+  const padX = 40
+  const padY = 50
+  for (const n of placed) {
+    n.x = n.x - minX + padX
+    n.y = n.y - minY + padY
+  }
+
+  const ids = new Set(placed.map((n) => n.id))
+  const edges = graph.edges.filter((e) => ids.has(e.from) && ids.has(e.to))
+  return {
+    nodes: placed,
+    edges,
+    bounds: { minX: padX, maxX: padX + contentW, minY: padY, maxY: padY + contentH, contentW, contentH },
+  }
+}
+
+/** Tree layout for Structure & Combined modes — hierarchy edges define parent-child. */
+const placeTreeLayout = (
+  graph: StructureGraph,
+): { nodes: PlacedStructureNode[]; edges: StructureEdge[]; bounds: { minX: number; maxX: number; minY: number; maxY: number; contentW: number; contentH: number } } => {
   const byId = new Map<string, TreeNode>()
   for (const n of graph.nodes) {
     byId.set(n.id, { ...n, children: [], subtreeH: WIDGET_H, x: 0, y: 0 })
   }
 
-  // Check if there are any hierarchy edges
-  const hasHierarchy = graph.edges.some((e) => e.kind === StructureEdgeKind.Hierarchy)
-
   const childIds = new Set<string>()
-
-  if (hasHierarchy) {
-    // Normal tree layout using hierarchy edges
-    for (const e of graph.edges) {
-      if (e.kind !== StructureEdgeKind.Hierarchy) continue
-      const parent = byId.get(e.from)
-      const child = byId.get(e.to)
-      if (!parent || !child) continue
-      parent.children.push(child)
-      childIds.add(child.id)
-    }
-  } else {
-    // Links-only mode: use BFS over wikilink edges to build a spanning tree
-    // Build adjacency (outgoing wikilinks = children for layout)
-    const adj = new Map<string, string[]>()
-    for (const e of graph.edges) {
-      if (e.kind !== StructureEdgeKind.Wikilink) continue
-      if (!byId.has(e.from) || !byId.has(e.to)) continue
-      if (!adj.has(e.from)) adj.set(e.from, [])
-      adj.get(e.from)!.push(e.to)
-    }
-
-    // Find the node with the most connections as BFS root
-    const connectionCount = new Map<string, number>()
-    for (const n of byId.keys()) connectionCount.set(n, 0)
-    for (const e of graph.edges) {
-      if (e.kind !== StructureEdgeKind.Wikilink) continue
-      connectionCount.set(e.from, (connectionCount.get(e.from) || 0) + 1)
-      connectionCount.set(e.to, (connectionCount.get(e.to) || 0) + 1)
-    }
-
-    // Sort nodes by connection count (most connected first)
-    const sortedNodes = [...byId.keys()].sort(
-      (a, b) => (connectionCount.get(b) || 0) - (connectionCount.get(a) || 0),
-    )
-
-    // BFS to assign parent-child for layout
-    const visited = new Set<string>()
-    for (const startId of sortedNodes) {
-      if (visited.has(startId)) continue
-      visited.add(startId)
-
-      const queue = [startId]
-      while (queue.length > 0) {
-        const current = queue.shift()!
-        const neighbors = adj.get(current) || []
-        for (const neighbor of neighbors) {
-          if (visited.has(neighbor)) continue
-          visited.add(neighbor)
-          const parent = byId.get(current)
-          const child = byId.get(neighbor)
-          if (parent && child) {
-            parent.children.push(child)
-            childIds.add(child.id)
-          }
-          queue.push(neighbor)
-        }
-      }
-    }
+  for (const e of graph.edges) {
+    if (e.kind !== StructureEdgeKind.Hierarchy) continue
+    const parent = byId.get(e.from)
+    const child = byId.get(e.to)
+    if (!parent || !child) continue
+    parent.children.push(child)
+    childIds.add(child.id)
   }
 
   for (const n of byId.values()) {
@@ -316,7 +363,6 @@ export const placeStructureStage = (
 
   const roots = [...byId.values()].filter((n) => !childIds.has(n.id))
 
-  // Calculate vertical height needed by each subtree
   const measureVertical = (node: TreeNode): number => {
     if (node.children.length === 0) {
       node.subtreeH = WIDGET_H
@@ -329,11 +375,8 @@ export const placeStructureStage = (
     return node.subtreeH
   }
 
-  for (const r of roots) {
-    measureVertical(r)
-  }
+  for (const r of roots) measureVertical(r)
 
-  // Place nodes horizontally left to right (depth = x column, top = y row)
   const placeHorizontal = (node: TreeNode, top: number, depth: number) => {
     node.x = depth * (WIDGET_W + COL_GAP)
     if (node.children.length === 0) {
@@ -384,8 +427,6 @@ export const placeStructureStage = (
 
   const contentW = maxX - minX
   const contentH = maxY - minY
-
-  // Normalize origin to (padX, padY)
   const padX = 40
   const padY = 50
   for (const n of placed) {
@@ -398,14 +439,7 @@ export const placeStructureStage = (
   return {
     nodes: placed,
     edges,
-    bounds: {
-      minX: padX,
-      maxX: padX + contentW,
-      minY: padY,
-      maxY: padY + contentH,
-      contentW,
-      contentH,
-    },
+    bounds: { minX: padX, maxX: padX + contentW, minY: padY, maxY: padY + contentH, contentW, contentH },
   }
 }
 
