@@ -50,6 +50,15 @@ Vite loads `@vitejs/plugin-vue` and `@vitejs/plugin-react` together. Only `src/e
 | Preview | **marked** | Lightweight HTML preview |
 | Storage | **OPFS** | Persistent, origin-private, hierarchical FS in modern browsers |
 
+## Testing / visual UX
+
+| Piece | Choice | Why |
+| --- | --- | --- |
+| E2E | **Playwright** (`@playwright/test`) | Real Chromium; OPFS + shell/graph UX |
+| Location | **`e2e/` only** | Keep tests out of `src/` |
+
+Use headed / UI mode actively when reviewing design (see [e2e.md](./e2e.md)).
+
 ## What we deliberately skipped
 
 - **Pinia / Vuex** — a single `vaultStore` module is enough.

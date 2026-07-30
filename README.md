@@ -19,6 +19,19 @@ bun install
 bun dev
 ```
 
+## E2E / visual UX (Playwright)
+
+Tests live in **`e2e/`** (not under `src/`).
+
+```bash
+bun run test:e2e          # headless
+bun run test:e2e:ui       # interactive UI mode
+bun run test:e2e:headed   # visible browser
+bun run test:e2e:update   # refresh visual baselines
+```
+
+See [`e2e/README.md`](./e2e/README.md) and [`.cortext/e2e.md`](./.cortext/e2e.md).
+
 ## Usage
 
 1. **Create a note** (⌘N) or **Named…** / **Folder…**
@@ -48,7 +61,7 @@ Pushes to `main` → https://meta-secret.github.io/k-thread/
 
 ## Cortex
 
-Design notes (vision, architecture, stack, type safety, deploy): [`.cortext/`](./.cortext/README.md)
+Design notes (vision, architecture, stack, type safety, e2e, deploy): [`.cortext/`](./.cortext/README.md)
 
 ## Taste Skill
 

@@ -19,6 +19,7 @@ This folder is the project’s mental model: why it exists, how it is shaped, wh
 | [editor.md](./editor.md) | BlockNote island + Obsidian dialect |
 | [graph.md](./graph.md) | HUD wires, chip nodes, local/global nav |
 | [deployment.md](./deployment.md) | Bun build, GitHub Actions, Pages |
+| [e2e.md](./e2e.md) | Playwright under `e2e/`; active UI/UX browser review |
 | [taste.md](./taste.md) | Taste Skill (`design-taste-frontend`) install |
 
 ## Quick orientation
