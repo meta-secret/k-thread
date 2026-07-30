@@ -344,8 +344,8 @@ onBeforeUnmount(() => {
   >
     <!-- Top Glassmorphic Toolbar -->
     <header
-      class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 backdrop-blur-md border-b transition-colors duration-200"
-      :class="themeMode === 'dark' ? 'bg-zinc-950/80 border-zinc-800/80' : 'bg-white/80 border-zinc-200/90 shadow-sm'"
+      class="z-10 flex flex-wrap items-center justify-between gap-3 px-5 py-3 backdrop-blur-2xl border-b transition-colors duration-200"
+      :class="themeMode === 'dark' ? 'bg-zinc-950/60 border-zinc-800/40' : 'bg-white/65 border-zinc-200/60 shadow-2xs'"
     >
       <div class="flex items-center gap-3 min-w-0">
         <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.2)]">

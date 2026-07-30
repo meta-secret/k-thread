@@ -120,8 +120,18 @@ const emit = defineEmits<{
   gap: 1.75rem;
   min-height: 0;
   padding: 1.5rem 1.05rem 1.1rem 1.25rem;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(18, 18, 20, 0.08);
   color: var(--kube-ink);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+:deep(.dark) .rail,
+.dark .rail {
+  background: rgba(9, 9, 11, 0.6);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .section-label {
