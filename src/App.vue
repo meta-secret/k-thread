@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FilePlus2, FolderOpen } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
 import GraphView from '@/components/GraphView.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
@@ -32,6 +33,8 @@ const renameId = ref<DocId>('')
 const deleteOpen = ref(false)
 const deleteId = ref<DocId>('')
 const deleteTitle = ref('')
+const deleteFolderOpen = ref(false)
+const deleteFolderPath = ref('')
 
 onMounted(() => {
   void vaultStore.hydrateFromOpfs()
@@ -82,6 +85,11 @@ const openDelete = (id: DocId) => {
   deleteId.value = id
   deleteTitle.value = doc ? doc.title : id
   deleteOpen.value = true
+}
+
+const openDeleteFolder = (folder: string) => {
+  deleteFolderPath.value = folder
+  deleteFolderOpen.value = true
 }
 
 const status = computed(() => vaultStore.state.status)
@@ -210,6 +218,7 @@ const openGraph = () => {
               @create-folder="openFolderDialog"
               @rename="openRename"
               @delete="openDelete"
+              @delete-folder="openDeleteFolder"
             />
           </aside>
         </div>
@@ -257,6 +266,11 @@ const openGraph = () => {
         v-model:open="deleteOpen"
         :note-id="deleteId"
         :note-title="deleteTitle"
+      />
+      <DeleteFolderDialog
+        v-if="deleteFolderPath.length > 0"
+        v-model:open="deleteFolderOpen"
+        :folder-path="deleteFolderPath"
       />
     </div>
   </TooltipProvider>

@@ -21,6 +21,7 @@ import { buildNoteTree, joinPath } from './tree'
 import {
   createFolderInOpfs,
   deleteDocFromOpfs,
+  deleteFolderFromOpfs,
   importVaultToOpfs,
   loadVaultFromOpfs,
   persistIndex,
@@ -217,6 +218,9 @@ const createFolder = async (rawName: string, parent: string = state.activeFolder
   return ok(normalized.value)
 }
 
+const underPath = (id: string, folder: string): boolean =>
+  id === folder || id.startsWith(`${folder}/`)
+
 const deleteNote = async (id: DocId): Promise<Result<true, AppError>> => {
   const indexOf = state.docs.findIndex((d) => d.id === id)
   if (indexOf < 0) {
@@ -235,6 +239,39 @@ const deleteNote = async (id: DocId): Promise<Result<true, AppError>> => {
       const parts = next.id.split('/')
       state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
     }
+  }
+
+  if (state.docs.length === 0) {
+    state.status = VaultStatus.Idle
+    state.message = 'Create a note to begin'
+  } else {
+    markReady(`${state.docs.length} notes`)
+  }
+  persist()
+  return ok(true)
+}
+
+const deleteFolder = async (path: string): Promise<Result<true, AppError>> => {
+  if (path.length === 0) {
+    return err({ kind: 'parse', detail: 'Cannot delete the vault root' })
+  }
+  if (!state.folders.includes(path)) {
+    return err({ kind: 'io', detail: 'Folder not found' })
+  }
+
+  const removed = await deleteFolderFromOpfs(path)
+  if (removed.tag === 'err') return removed
+
+  state.docs = state.docs.filter((d) => !underPath(d.id, path))
+  state.folders = state.folders.filter((f) => !underPath(f, path))
+
+  const active = state.activeId
+  if (active.tag === 'some' && underPath(active.value, path)) {
+    const [next] = state.docs
+    state.activeId = next ? some(next.id) : none
+  }
+  if (state.activeFolder === path || state.activeFolder.startsWith(`${path}/`)) {
+    state.activeFolder = path.includes('/') ? path.split('/').slice(0, -1).join('/') : ''
   }
 
   if (state.docs.length === 0) {
@@ -375,6 +412,7 @@ export const vaultStore = {
   createNote,
   createFolder,
   deleteNote,
+  deleteFolder,
   renameNote,
   updateBody,
   openLocalVault,

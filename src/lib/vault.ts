@@ -117,6 +117,9 @@ export const createFolderInOpfs = async (path: string): Promise<Result<true, App
 export const deleteDocFromOpfs = async (id: string): Promise<Result<true, AppError>> =>
   removePath(pathFromId(id), false)
 
+export const deleteFolderFromOpfs = async (path: string): Promise<Result<true, AppError>> =>
+  removePath(path, true)
+
 export const renameDocInOpfs = async (
   fromId: string,
   toId: string,

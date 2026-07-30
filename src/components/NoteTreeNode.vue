@@ -18,6 +18,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   createFolder: [folder: string]
   rename: [id: DocId]
   delete: [id: DocId]
+  deleteFolder: [folder: string]
 }>()
 
 const padStyle = computed(() => ({ paddingLeft: `${0.5 + props.depth * 0.75}rem` }))
@@ -137,6 +139,7 @@ const folderOpen = computed(() => {
             @create-folder="emit('createFolder', $event)"
             @rename="emit('rename', $event)"
             @delete="emit('delete', $event)"
+            @delete-folder="emit('deleteFolder', $event)"
           />
         </CollapsibleContent>
       </Collapsible>
@@ -153,6 +156,11 @@ const folderOpen = computed(() => {
       <ContextMenuItem @click="emit('createFolder', node.path)">
         <FolderPlus class="size-4" />
         New subfolder…
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem variant="destructive" @click="emit('deleteFolder', node.path)">
+        <Trash2 class="size-4" />
+        Delete folder…
       </ContextMenuItem>
     </ContextMenuContent>
   </ContextMenu>
