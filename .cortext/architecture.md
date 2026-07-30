@@ -15,7 +15,7 @@ There is no remote API layer. Persistence is OPFS; deployment is static files.
 ```
 src/
   types.ts              # Option, Result, ViewMode, VaultStatus, Doc, GraphIndex, AppError
-  main.ts / App.vue     # bootstrap + shell (Structure home, brand return)
+  main.ts / App.vue     # bootstrap + shell (Unified Master Graph, brand return, theme toggle)
   lib/
     opfs.ts             # low-level OPFS read/write/list/remove
     vault.ts            # vault load/import/persist orchestration
@@ -23,10 +23,9 @@ src/
     session.ts          # lastActiveId + lastView (localStorage)
     wikilink.ts         # parse/resolve [[links]], id/path helpers
     graph.ts            # build/serialize/parse index.yaml (wikilinks)
-    graphView.ts        # Links view graph + layout helpers
-    graphHudDraw.ts     # Links pastel pill drawing
-    structureGraph.ts   # hierarchy graph + tidy-tree placement
-    structureDraw.ts    # Structure workflow widget drawing
+    graphView.ts        # wikilink layout helpers
+    structureGraph.ts   # hierarchy + wikilink edges + horizontal Left-to-Right placement
+    structureDraw.ts    # D3 workflow widget cards + animated Bezier strands
     tree.ts             # Files drawer folder tree
     obsidian.ts         # markdown ↔ BlockNote dialect bridge
     markdown.ts         # preview helpers
@@ -37,13 +36,12 @@ src/
     obsidianBlocks.ts   # callouts, frontmatter, comments, fences
   components/
     shell/
-      ToolRail.vue      # View (Note/Links/Files/Preview) + Create + Manage
+      ToolRail.vue      # View (Note/Graph/Files/Preview) + Create + Manage
       EditorStage.vue   # center stage (BlockNote / empty)
       Inspector.vue     # right panel (tags / links / preview)
     NoteSidebar.vue     # tree (Files drawer peek)
-    StructureView.vue   # hierarchy workflow (main / home)
+    StructureView.vue   # Unified Master Graph (hierarchy + wikilinks + hybrid mode)
     BlockNoteEditor.vue # Vue wrapper around React island
-    GraphView.vue       # Links mode (wikilink flowchart)
     *Dialog.vue         # create / rename / delete
     MarkdownPreview.vue # optional HTML preview + link navigate
 ```

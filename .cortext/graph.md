@@ -1,83 +1,46 @@
-# Graph
+# Graph Architecture & Design
 
-k-thread has **two graphs**. They answer different questions and must stay on **separate canvases**.
+k-thread features a **Unified Master Graph Canvas** (`StructureView.vue`) that seamlessly integrates both **External Directory Hierarchy** and **Internal Note [[Wikilinks]]** into a single, cohesive Left-to-Right architectural widget canvas.
 
 ```mermaid
-flowchart TB
-  Structure[Structure_home] -->|click_note| Note[Note_editor]
-  Links[Links_mode] -->|click_note| Note
-  Note -->|brand_or_path_jump| Structure
-  Note -->|rail| Links
+flowchart LR
+  Vault[Vault Root] --> Folders[Directory Folders]
+  Folders --> Notes[Note Cards]
+  Notes -.->|[[wikilinks]]| Notes
 ```
 
-## Why two graphs
+## Unified Master Graph
 
-| Question | Graph |
-| --- | --- |
-| Where am I in the vault? What folders exist? | **Structure** |
-| What notes link to what? | **Links** |
+Instead of splitting directory tree and wikilink network across disconnected views or using generic force-directed graph blobs, k-thread unifies both representations inside the master Left-to-Right graph canvas (`StructureView.vue`).
 
-Mixing folder edges and `[[wikilink]]` edges on one canvas confuses both jobs. Files drawer (⌘B) is a secondary peek — Structure is the primary browser.
+### Top Toolbar Mode Selector
 
-## Structure (main page / home)
+| Mode | Visual Representation | Edge Styling |
+| --- | --- | --- |
+| **Structure** | Directory hierarchy tree (`Vault → Folders → Notes`) | Orange workflow strands (`#f97316`) |
+| **Links** | Note-to-note `[[wikilink]]` network | Glowing cyan/blue strands (`#06b6d4` / `#38bdf8`) |
+| **Combined** | Hybrid mode: folder tree **AND** note `[[wikilinks]]` in one view | Dual-colored animated strands (Orange + Cyan) |
 
-Project hierarchy as a light **workflow** (step widgets, not Links pills):
+## Layout & Aesthetics
 
-```
-Vault → folders → notes
-parent-path edges · top-down tidy tree · charcoal arrows
-```
+- **Left-to-Right Horizontal Flow**: Vault Root at Column 0 → Folders at Column 1+ → Notes at Column 2+.
+- **Architectural Micro-Cards (`196px` × `54px`)**: Clean micro-rounded (`rx = 10`) cards featuring 34×34px icon tile, crisp title, meta subtitle, step ordinal (`#01`, `#02`), and kind tag (`VAULT`, `DIR`, `NOTE`).
+- **Animated Energy Strands**: Glowing animated pulses flow continuously along cubic Bezier wire strands (`stroke-dashoffset` animation). Hovering accelerates flow from 1.2s to 0.5s.
 
-| Aspect | Detail |
-| --- | --- |
-| Default | Vault ready → Structure (refresh / import). Last note remembered for highlight / Note mode — **not** auto-opened. |
-| Edges | Parent folder path only |
-| Nodes | Vault root, folders, notes as white step cards (icon tile + title + meta + index) |
-| Layout | Parent-aligned tidy tree (children under parent — funnel), not flat BFS rows |
-| Click note | Open Note mode |
-| Click folder | Focus / zoom that subtree |
-| Return home | Brand mark (k-thread); path jump from Note header |
-| Modules | `structureGraph.ts`, `structureDraw.ts`, `StructureView.vue` |
+## Ergonomic 1-Click Direct Manipulation
 
-There is **no** “Structure” rail toggle required to show the tree — Structure *is* the main page. Rail View is Note / Links / Files / Preview.
+All popover menus, side drawers, and tiny three-dot `⋮` buttons have been eliminated in favor of instant 1-click direct interaction:
 
-## Links (separate mode)
+| Target | Action | Behavior |
+| --- | --- | --- |
+| **Note Card** | **Single Click** | Opens Note directly in editor |
+| **Folder Card** | **Single Click** | Toggles Collapse / Expand subtree in-place |
+| **Folder Card** | **Double Click** | Focuses subtree (zooms into folder) |
+| **Vault Root** | **Click** | Clears focus back to Whole Vault |
+| **Collapsed Folder** | **Visual Badge** | Displays `▸ EXPAND` orange pill on card edge |
 
-Wikilink dependency graph (former “Graph” view):
+## Modules & File Mapping
 
-```
-Focus → Hop n · pastel pills · Global / Local scope
-```
-
-| Aspect | Detail |
-| --- | --- |
-| Edges | Real `[[wikilinks]]` from `buildIndex` → `index.yaml` |
-| Nodes | One note = one pill; missing targets = hollow + dashed |
-| Layout | Top-down BFS from focus; siblings fan horizontally |
-| Scope | Global vault or Local N-hop neighborhood |
-| Open | ToolRail **Links**; Inspector “Links graph” |
-| Modules | `graph.ts`, `graphView.ts`, `graphHudDraw.ts`, `GraphView.vue` |
-
-## View modes
-
-```ts
-export const ViewMode = {
-  Structure: 'structure', // hierarchy home
-  Note: 'note',           // editor
-  Links: 'links',         // wikilink graph
-} as const
-```
-
-Persisted via `session.ts` (`k-thread:lastView`, `k-thread:lastActiveId`). Legacy `'graph'` migrates to `Links`.
-
-## Interaction (both canvases)
-
-- Hover → brighten connected edges; dim the rest
-- Drag nodes · pan / zoom · filter · reset view
-- Never draw folder edges on the Links canvas, or wikilink edges on Structure
-
-## Out of scope (for now)
-
-- Hybrid “tree always visible + two graphs”
-- Mixed folder + wikilink edges on one canvas
-- Dark / neon graph chrome
+- `src/lib/structureGraph.ts`: Graph model builder supporting `StructureEdgeKind.Hierarchy` and `StructureEdgeKind.Wikilink` edges + Left-to-Right placement math.
+- `src/lib/structureDraw.ts`: D3 SVG renderer for micro-cards, animated Bezier strands, and arrow markers (`#struct-arrow`, `#wikilink-arrow`).
+- `src/components/StructureView.vue`: Master graph component housing canvas backdrop, search, layer mode selector, and zoom controls.
