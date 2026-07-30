@@ -282,6 +282,6 @@ const linkDensity = computed(() => Math.min(100, Math.max(8, props.outlinks.leng
 
 .slash {
   margin-right: 0.15rem;
-  color: #999;
+  color: var(--kube-mute);
 }
 </style>

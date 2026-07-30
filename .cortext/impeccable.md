@@ -1,37 +1,74 @@
 # Impeccable
 
-Design skill from [impeccable.style](https://impeccable.style/) — anti-slop UI vocabulary (`/polish`, `/distill`, `/critique`, `/layout`, …).
+Design skill from [impeccable.style](https://impeccable.style/) — shared vocabulary for agents (`/polish`, `/distill`, `/critique`, …).
 
-## Install location (global only)
-
-**Do not** vendor Impeccable under this repo (no `.cursor/skills/impeccable`, no project hooks).
-
-Installed for this machine at:
-
-```
-~/.cursor/skills/impeccable/
-```
+## Install (global only — do not vendor in this repo)
 
 ```bash
 npx impeccable install --providers=cursor --scope=global
 npx impeccable update
 ```
 
-Requires Cursor Agent Skills enabled. After install, run `/impeccable init` once in chat if you want `PRODUCT.md` / design context files — keep those optional; prefer `.cortext/` for k-thread product truth.
+Skill path on this machine:
 
-## When to use
+```
+~/.cursor/skills/impeccable/
+```
 
-- Shell / landing / graph visual passes
-- `/critique` or `/polish` before shipping UI
-- `/layout` when hierarchy or spacing feels wrong
-- Prefer over inventing a new dark HUD or generic AI chrome
+**Never** copy the skill into `.cursor/skills/impeccable` or `.agents/skills/impeccable` in this project.
 
-## Relation to other notes
+Project wiring that *is* allowed:
 
-| Doc | Role |
+| Path | Role |
 | --- | --- |
-| [design.md](./design.md) | Light shell, no dark UI, graph = GTD flowchart language |
-| [taste.md](./taste.md) | Older Taste Skill (project-local); Impeccable is the preferred design skill |
-| [graph.md](./graph.md) | Graph layout and interaction |
+| `PRODUCT.md` | Product truth (`/impeccable init`) |
+| `DESIGN.md` | Incumbent visual system (`/impeccable document`) |
+| `.impeccable/config.json` | Hook / detector config (shared) |
+| `.impeccable/config.local.json` | Machine consent — **gitignored** |
+| `.cursor/hooks.json` | Cursor pre-write gate → `$HOME/.cursor/skills/impeccable/...` |
 
-Product constraints still win: OPFS, Obsidian dialect, light UI, one note = one graph node.
+## Commands (use in chat)
+
+| Command | Purpose |
+| --- | --- |
+| `/impeccable init` | Capture / refresh `PRODUCT.md` |
+| `/impeccable document` | Scan code → `DESIGN.md` |
+| `/impeccable shape` | Plan UX before code |
+| `/impeccable critique` | Heuristic UX review |
+| `/impeccable audit` | A11y / perf / responsive checks |
+| `/impeccable polish` | Final alignment / consistency pass |
+| `/impeccable distill` | Strip complexity |
+| `/impeccable clarify` | UX copy / labels |
+| `/impeccable layout` | Spacing / hierarchy |
+| `/impeccable typeset` | Typography |
+| `/impeccable colorize` | Strategic color |
+| `/impeccable quieter` / `/bolder` | Tone |
+| `/impeccable harden` | Production edge cases |
+| `/impeccable onboard` | Empty / first-run |
+| `/impeccable animate` / `/delight` | Motion / personality |
+| `/impeccable adapt` | Responsive |
+| `/impeccable optimize` | UI performance |
+| `/impeccable live` | Browser variant iteration |
+| `/impeccable extract` | Tokens → design system |
+| `/impeccable hooks on\|off\|status` | Design detector hook |
+| `/impeccable doctor` | Repair drift |
+
+Manual detector (when hooks quiet):
+
+```bash
+node ~/.cursor/skills/impeccable/scripts/detect.mjs --json src/components src/App.vue src/style.css
+```
+
+## k-thread defaults
+
+- Mode: **Operate** (shell/graph), **Persuade** (landing)
+- Light shell only — see [design.md](./design.md) / root `DESIGN.md`
+- Prefer Impeccable over the legacy Taste Skill ([taste.md](./taste.md))
+
+## First-session checklist
+
+1. Skill installed globally (`npx impeccable install --scope=global`)
+2. Cursor Agent Skills enabled
+3. `PRODUCT.md` + `DESIGN.md` present (done)
+4. Hooks on + `.cursor/hooks.json` points at `$HOME/.cursor/skills/impeccable`
+5. For UI work: `/impeccable polish` / `/critique` / `/layout` as needed

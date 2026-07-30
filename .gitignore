@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Impeccable (skill stays global; local consent is machine-private)
+.impeccable/config.local.json
+.impeccable/cache/
+
 # Playwright
 /test-results/
 /playwright-report/

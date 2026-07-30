@@ -6,6 +6,8 @@ Live app: https://meta-secret.github.io/k-thread/
 
 This folder is the project’s mental model: why it exists, how it is shaped, which tools we chose, and the type-safety rules that keep the codebase small and clear.
 
+Root companions for Impeccable: [`PRODUCT.md`](../PRODUCT.md), [`DESIGN.md`](../DESIGN.md). Skill install stays **global** — see [impeccable.md](./impeccable.md).
+
 ## Map
 
 | Doc | What it covers |

@@ -277,30 +277,30 @@ onBeforeUnmount(() => {
           Local
         </Button>
         <label v-if="scope === GraphScope.Local" class="hops">
-          DEPTH
+          Depth
           <input v-model.number="hops" type="range" min="1" max="3" step="1" />
           <span>{{ hops }}</span>
         </label>
         <span class="sep" />
-        <span class="readout">{{ scopeLabel }} · GRAPH</span>
+        <span class="readout">{{ scopeLabel }} · Graph</span>
       </div>
 
-      <Input v-model="query" class="search" placeholder="FILTER…" autocomplete="off" />
+      <Input v-model="query" class="search" placeholder="Filter notes…" autocomplete="off" />
 
       <div class="actions">
         <Button size="sm" variant="ghost" class="hud-btn" @click="showOrphans = !showOrphans">
           {{ showOrphans ? 'Hide orphans' : 'Show orphans' }}
         </Button>
-        <Button size="sm" variant="outline" class="hud-btn" @click="resetZoom">Reset</Button>
+        <Button size="sm" variant="outline" class="hud-btn" @click="resetZoom">Reset view</Button>
       </div>
     </div>
 
     <div :ref="bindHost" class="canvas" />
 
     <div class="footer">
-      <span class="mono">NODES {{ stageStats.nodes }}</span>
-      <span class="mono">LINKS {{ stageStats.links }}</span>
-      <span class="hint">ONE NOTE = ONE NODE · CLICK FOCUS · DBL OPEN</span>
+      <span class="mono">{{ stageStats.nodes }} nodes</span>
+      <span class="mono">{{ stageStats.links }} links</span>
+      <span class="hint">Click to focus · double-click to open</span>
     </div>
   </div>
 </template>
