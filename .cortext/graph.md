@@ -2,19 +2,19 @@
 
 ## Aesthetic
 
-The graph is a **cyberpunk HUD** inspired by neon UX-flow diagrams (black field, glowing red orthogonal wires, wireframe pills):
+Light **kube** field with flow-diagram wiring (not a dark HUD):
 
 ```
-FOCUS column → linked notes by BFS hop · one pill per note · rounded neon wires
+FOCUS column → linked notes by BFS hop · one pill per note · rounded red wires
 ```
 
-- Near-black field, vignette, faint grid, corner red ticks
+- Cool gray wash + faint grid, corner red ticks
 - **One note = one node** (no mid-edge “TAP / OPEN” action chips)
-- Dark wireframe **pills** with white labels + glowing red port dots
-- **Rounded Manhattan** neon-red strands (`roundedOrthoPath`); missing links dashed
+- Light wireframe **pills**, dark labels, red port dots
+- **Rounded Manhattan** red strands (`roundedOrthoPath`); missing links dashed
 - Staging from focus note via BFS (`buildHudStage`)
 
-Note mode uses a separate **kube** shell. Do not merge the two palettes.
+Stay on the light shell. Do not reintroduce black / neon-on-black graph chrome.
 
 ## Modules
 
@@ -23,13 +23,13 @@ Note mode uses a separate **kube** shell. Do not merge the two palettes.
 | `graph.ts` | Canonical `GraphIndex` from docs → `index.yaml` |
 | `graphView.ts` | Filter/scope + BFS stage + path helpers |
 | `graphHudDraw.ts` | SVG defs, backdrop, pills, wires, focus paint |
-| `GraphView.vue` | D3 zoom/drag wiring + HUD chrome toolbar |
+| `GraphView.vue` | D3 zoom/drag wiring + toolbar chrome |
 
 Keep each file ≤500 lines; split semantically (layout vs draw vs shell).
 
 ## Edge extraction
 
-For each note body, extract `[[wikilinks]]`, resolve against known ids, emit unique `from → to` edges. Unresolved targets stay in `nodes` (hollow/missing stroke; dashed strands).
+For each note body, extract `[[wikilinks]]`, resolve against known ids, emit unique `from → to` edges. Unresolved targets stay in `nodes` (missing stroke; dashed strands).
 
 ## View modes
 
@@ -44,7 +44,3 @@ GraphScope.Local   // N-hop undirected closure around activeId
 - Double-click → `open` note view
 - Hover → brighten neighborhood wires; dim the rest
 - Drag pills · pan/zoom · filter · orphans · reset
-
-## Why D3
-
-Zoom/drag + SVG filters for neon glow without a second graph framework.

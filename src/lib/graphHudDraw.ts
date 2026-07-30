@@ -11,17 +11,18 @@ import {
 } from '@/lib/graphView'
 import type { DocId } from '@/types'
 
-/** Neon HUD palette — matches cyberpunk flow-diagram reference. */
+/** Light kube graph palette — flow-diagram language on a light field (no dark HUD). */
 export const HudPaint = {
-  bg: '#050506',
-  panel: '#0c0c0e',
-  wireframe: 'rgba(255,255,255,0.16)',
-  ink: '#f2f2f4',
-  mute: '#7a7a84',
-  dim: '#3a3a42',
-  red: '#ff2a3a',
-  redDeep: '#c01828',
-  glowSoft: 0.45,
+  bg: '#e4e4e8',
+  wash: '#f4f4f6',
+  panel: '#fafafa',
+  wireframe: 'rgba(18,18,20,0.22)',
+  ink: '#121214',
+  mute: '#6b6b73',
+  dim: '#9a9aa4',
+  red: '#c02323',
+  redDeep: '#9a1a1a',
+  glowSoft: 0.22,
 } as const
 
 export type WireSel = Selection<SVGGElement, HudWire, SVGGElement, unknown>
@@ -43,35 +44,34 @@ export const attachHudDefs = (svg: Selection<SVGSVGElement, unknown, null, undef
   const glow = defs
     .append('filter')
     .attr('id', 'wire-glow')
-    .attr('x', '-80%')
-    .attr('y', '-80%')
-    .attr('width', '260%')
-    .attr('height', '260%')
-  glow.append('feGaussianBlur').attr('stdDeviation', '3.2').attr('result', 'blur')
+    .attr('x', '-60%')
+    .attr('y', '-60%')
+    .attr('width', '220%')
+    .attr('height', '220%')
+  glow.append('feGaussianBlur').attr('stdDeviation', '2.2').attr('result', 'blur')
   const merge = glow.append('feMerge')
   merge.append('feMergeNode').attr('in', 'blur')
-  merge.append('feMergeNode').attr('in', 'SourceGraphic')
 
   const nodeGlow = defs
     .append('filter')
     .attr('id', 'node-glow')
-    .attr('x', '-40%')
-    .attr('y', '-40%')
-    .attr('width', '180%')
-    .attr('height', '180%')
-  nodeGlow.append('feGaussianBlur').attr('stdDeviation', '2.2').attr('result', 'blur')
+    .attr('x', '-30%')
+    .attr('y', '-30%')
+    .attr('width', '160%')
+    .attr('height', '160%')
+  nodeGlow.append('feGaussianBlur').attr('stdDeviation', '1.4').attr('result', 'blur')
   const nMerge = nodeGlow.append('feMerge')
   nMerge.append('feMergeNode').attr('in', 'blur')
   nMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
-  const vignette = defs
+  const wash = defs
     .append('radialGradient')
     .attr('id', 'hud-vignette')
-    .attr('cx', '50%')
+    .attr('cx', '42%')
     .attr('cy', '48%')
     .attr('r', '72%')
-  vignette.append('stop').attr('offset', '0%').attr('stop-color', '#121218').attr('stop-opacity', 0.35)
-  vignette.append('stop').attr('offset', '100%').attr('stop-color', '#000000').attr('stop-opacity', 0.92)
+  wash.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55)
+  wash.append('stop').attr('offset', '100%').attr('stop-color', '#c4c4ca').attr('stop-opacity', 0.35)
 
   return defs
 }
@@ -84,26 +84,26 @@ export const drawHudBackdrop = (
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', HudPaint.bg)
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#hud-vignette)')
 
-  const grid = svg.append('g').attr('class', 'grid').attr('opacity', 0.14)
-  for (let x = 48; x < width; x += 48) {
+  const grid = svg.append('g').attr('class', 'grid').attr('opacity', 0.2)
+  for (let x = 40; x < width; x += 40) {
     grid
       .append('line')
       .attr('x1', x)
       .attr('x2', x)
       .attr('y1', 0)
       .attr('y2', height)
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', 0.5)
+      .attr('stroke', '#121214')
+      .attr('stroke-width', 0.4)
   }
-  for (let y = 48; y < height; y += 48) {
+  for (let y = 40; y < height; y += 40) {
     grid
       .append('line')
       .attr('x1', 0)
       .attr('x2', width)
       .attr('y1', y)
       .attr('y2', y)
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', 0.5)
+      .attr('stroke', '#121214')
+      .attr('stroke-width', 0.4)
   }
 
   const chrome = svg.append('g').attr('class', 'chrome')
@@ -112,16 +112,15 @@ export const drawHudBackdrop = (
       .append('circle')
       .attr('cx', x)
       .attr('cy', y)
-      .attr('r', 3)
+      .attr('r', 2.8)
       .attr('fill', 'none')
       .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 1.2)
-      .attr('filter', 'url(#wire-glow)')
+      .attr('stroke-width', 1.15)
   }
-  mark(18, 18)
-  mark(width - 18, 18)
-  mark(18, height - 18)
-  mark(width - 18, height - 18)
+  mark(16, 16)
+  mark(width - 16, 16)
+  mark(16, height - 16)
+  mark(width - 16, height - 16)
 
   return chrome
 }
@@ -141,7 +140,6 @@ export const drawLayerLabels = (
       .attr('cy', -3)
       .attr('r', 2.4)
       .attr('fill', HudPaint.red)
-      .attr('filter', 'url(#wire-glow)')
     label
       .append('line')
       .attr('x1', -22)
@@ -155,7 +153,7 @@ export const drawLayerLabels = (
       .attr('x', 0)
       .attr('y', 0)
       .attr('text-anchor', 'middle')
-      .attr('fill', HudPaint.ink)
+      .attr('fill', HudPaint.mute)
       .attr('font-size', 10)
       .attr('letter-spacing', '0.22em')
       .attr('font-family', 'ui-monospace, Menlo, monospace')
@@ -163,7 +161,7 @@ export const drawLayerLabels = (
   }
 }
 
-/** One note = one wireframe pill (no separate action chips on edges). */
+/** One note = one pill (no separate action chips on edges). */
 export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
   const { w, h } = sizeOf(d)
   const x0 = -w / 2
@@ -174,15 +172,14 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
 
   g.append('rect')
     .attr('class', 'chip-active')
-    .attr('x', x0 - 6)
-    .attr('y', y0 - 6)
-    .attr('width', w + 12)
-    .attr('height', h + 12)
-    .attr('rx', r + 6)
+    .attr('x', x0 - 5)
+    .attr('y', y0 - 5)
+    .attr('width', w + 10)
+    .attr('height', h + 10)
+    .attr('rx', r + 5)
     .attr('fill', 'none')
     .attr('stroke', HudPaint.red)
-    .attr('stroke-width', 1.4)
-    .attr('filter', 'url(#node-glow)')
+    .attr('stroke-width', 1.25)
     .attr('opacity', 0)
 
   g.append('rect')
@@ -192,8 +189,8 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
     .attr('width', w)
     .attr('height', h)
     .attr('rx', r)
-    .attr('fill', d.kind === 'missing' ? '#101014' : isRoot ? '#141418' : HudPaint.panel)
-    .attr('stroke', isRoot ? 'rgba(255,255,255,0.35)' : HudPaint.wireframe)
+    .attr('fill', d.kind === 'missing' ? '#ececef' : isRoot ? '#ffffff' : HudPaint.panel)
+    .attr('stroke', isRoot ? 'rgba(18,18,20,0.55)' : HudPaint.wireframe)
     .attr('stroke-width', isRoot ? 1.35 : 1.1)
 
   const port = (cx: number, cls: string) => {
@@ -201,11 +198,10 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
       .attr('class', cls)
       .attr('cx', cx)
       .attr('cy', 0)
-      .attr('r', 3.4)
+      .attr('r', 3.2)
       .attr('fill', HudPaint.red)
-      .attr('stroke', '#1a0508')
-      .attr('stroke-width', 1)
-      .attr('filter', 'url(#wire-glow)')
+      .attr('stroke', '#f4f4f6')
+      .attr('stroke-width', 1.1)
   }
   port(x0, 'port-in')
   port(x0 + w, 'port-out')
@@ -216,7 +212,7 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
     .attr('text-anchor', 'middle')
     .attr('fill', HudPaint.mute)
     .attr('font-size', 7)
-    .attr('letter-spacing', '0.14em')
+    .attr('letter-spacing', '0.12em')
     .attr('font-family', 'ui-monospace, Menlo, monospace')
     .text(`${d.code} · L${d.layer}`)
   g.append('text')
@@ -226,7 +222,7 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
     .attr('fill', HudPaint.ink)
     .attr('font-size', 11)
     .attr('font-weight', 650)
-    .attr('letter-spacing', '0.06em')
+    .attr('letter-spacing', '0.04em')
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(title)
 }
@@ -247,7 +243,7 @@ export const updateWires = (wires: WireSel, nodes: Map<DocId, HudNode>) => {
       .attr('class', 'glow')
       .attr('fill', 'none')
       .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 5)
+      .attr('stroke-width', 4)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round')
       .attr('filter', 'url(#wire-glow)')
@@ -259,7 +255,7 @@ export const updateWires = (wires: WireSel, nodes: Map<DocId, HudNode>) => {
       .attr('class', 'strand')
       .attr('fill', 'none')
       .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 1.6)
+      .attr('stroke-width', 1.45)
       .attr('stroke-linecap', 'round')
       .attr('stroke-linejoin', 'round')
       .attr('stroke-dasharray', d.missing || !d.real ? '4 5' : null)
@@ -269,11 +265,12 @@ export const updateWires = (wires: WireSel, nodes: Map<DocId, HudNode>) => {
       .data([from, to])
       .join('circle')
       .attr('class', 'port')
-      .attr('r', 3.6)
+      .attr('r', 3.2)
       .attr('cx', (p) => p.x)
       .attr('cy', (p) => p.y)
       .attr('fill', HudPaint.red)
-      .attr('filter', 'url(#wire-glow)')
+      .attr('stroke', '#f4f4f6')
+      .attr('stroke-width', 1)
   })
 }
 
@@ -292,24 +289,21 @@ export const paintFocus = (wireSel: WireSel, nodeSel: NodeSel, opts: FocusOpts) 
     const hot = isWireHot(d)
     const dim = focusing && !hot
     const g = select(this)
-    g.attr('opacity', dim ? 0.08 : hot ? 1 : 0.42)
+    g.attr('opacity', dim ? 0.08 : hot ? 1 : 0.4)
     g.selectAll<SVGPathElement, string>('path.strand').attr(
       'stroke',
-      hot ? HudPaint.red : d.missing ? HudPaint.dim : HudPaint.redDeep,
+      hot ? HudPaint.red : d.missing ? HudPaint.dim : 'rgba(18,18,20,0.45)',
     )
-    g.selectAll<SVGPathElement, string>('path.glow').attr(
-      'stroke-opacity',
-      hot ? HudPaint.glowSoft : 0.12,
-    )
-    g.selectAll<SVGCircleElement, Point>('circle.port').attr('opacity', hot ? 1 : 0.55)
+    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? HudPaint.glowSoft : 0)
+    g.selectAll<SVGCircleElement, Point>('circle.port').attr('opacity', hot ? 1 : 0.65)
   })
 
-  nodeSel.attr('opacity', (d) => (isDimmed(d.id) ? 0.18 : 1))
+  nodeSel.attr('opacity', (d) => (isDimmed(d.id) ? 0.22 : 1))
   nodeSel.selectAll<SVGRectElement, HudNode>('.chip-body').attr('stroke', (d) => {
     if (d.id === activeId) return HudPaint.red
-    if (d.id === hoveredId) return 'rgba(255,255,255,0.55)'
+    if (d.id === hoveredId) return HudPaint.ink
     if (d.kind === 'missing') return HudPaint.dim
-    if (d.tier === HudTier.Root) return 'rgba(255,255,255,0.35)'
+    if (d.tier === HudTier.Root) return 'rgba(18,18,20,0.55)'
     return HudPaint.wireframe
   })
   nodeSel

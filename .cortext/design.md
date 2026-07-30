@@ -1,15 +1,15 @@
 # Design
 
-## Dual aesthetic
+## Light shell (no dark UI)
 
 | Mode | Look | Role |
 | --- | --- | --- |
 | **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
-| **Graph** | Dark neon HUD — black field, wireframe pills, rounded red wires, glowing ports (`--hud-accent`) | Link navigation |
+| **Graph** | Same light kube field — pills, rounded red wires, port dots (`--hud-accent` as signal) | Link navigation |
 
-Do not paint the editor like the HUD, or the graph like a folder tree.
+Do **not** ship dark / black HUD canvases. Graph language can borrow flow-diagram geometry (rounded orthogonal wires, pills) while staying light.
 
-**Taste pass (design-taste-frontend):** IBM Plex Sans/Mono locked; no purple/teal AI defaults; one red accent for HUD only; landing is brand-first (mark + wordmark + one line + CTAs); shared tokens in `src/style.css` (`--kube-*`, `--hud-*`).
+**Taste pass (design-taste-frontend):** IBM Plex Sans/Mono locked; no purple/teal AI defaults; one red accent as signal; landing is brand-first (mark + wordmark + one line + CTAs); shared tokens in `src/style.css` (`--kube-*`, light `--hud-*`).
 
 ## Product feel
 
@@ -41,7 +41,7 @@ We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v
 | Right 2×2 | Tags / Backlinks / Links / Preview |
 | Footer | brand + note ordinal |
 
-Folder tree is a **Files drawer**, not a permanent primary column. Graph mode is full-bleed HUD.
+Folder tree is a **Files drawer**, not a permanent primary column. Graph mode is full-bleed on the same light shell.
 
 ## Graph UX
 
@@ -65,4 +65,4 @@ Missing targets = hollow chips + dashed strands.
 
 - shadcn-vue / Reka for dialogs and the Files tree primitives
 - Shell chrome (ToolRail, Inspector, stage) is bespoke CSS matching kube
-- Graph chrome is bespoke SVG/CSS matching HUD
+- Graph chrome is bespoke SVG/CSS on the light kube palette

@@ -1,0 +1,12 @@
+---
+description: Do not use dark-mode / black HUD UI for k-thread
+alwaysApply: true
+---
+
+# No dark UI
+
+k-thread stays on the **light kube** shell. Do **not** ship dark backgrounds, black HUD canvases, or neon-on-black graph themes.
+
+- Graph, landing, rails, dialogs: light washes (`--kube-*` / light `--hud-*` aliases)
+- Accent red is fine as a **signal** on light surfaces
+- Prefer the music-player flow language (rounded orthogonal wires, port dots, pills) adapted to light — not cyberpunk black

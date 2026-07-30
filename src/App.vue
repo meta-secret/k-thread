@@ -357,7 +357,6 @@ const openGraph = () => {
 .graph-layout {
   height: 100%;
   min-height: 0;
-  background: var(--hud-bg);
   animation: k-fade-up 380ms ease-out both;
 }
 

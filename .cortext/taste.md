@@ -31,7 +31,7 @@ npx skills experimental_install
 - Escaping generic AI UI defaults (purple gradients, equal card grids, Inter-on-slate)
 - Brief → design-system mapping before shipping UI
 
-Note: the skill’s primary focus is landings / portfolios / redesigns — not dense data dashboards. For k-thread, treat graph HUD and note shell as **redesign** work: audit-first, preserve product constraints (OPFS, Obsidian dialect, dual aesthetic).
+Note: the skill’s primary focus is landings / portfolios / redesigns — not dense data dashboards. For k-thread, treat graph and note shell as **redesign** work: audit-first, preserve product constraints (OPFS, Obsidian dialect, light shell — no dark UI).
 
 ## Related optional skills (not installed)
 

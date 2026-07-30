@@ -314,10 +314,9 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--hud-bg);
-  color: var(--hud-ink);
+  background: transparent;
+  color: var(--kube-ink);
   font-family: var(--font-mono);
-  border: 1px solid var(--hud-line);
 }
 
 .toolbar,
@@ -333,8 +332,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--hud-line);
-  background: color-mix(in srgb, var(--hud-panel) 88%, black);
+  border-bottom: 1px solid var(--kube-line);
+  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
 }
 
 .modes,
@@ -351,7 +350,7 @@ onBeforeUnmount(() => {
   gap: 0.4rem;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-  color: var(--hud-mute);
+  color: var(--kube-mute);
 }
 
 .hops input {
@@ -362,22 +361,21 @@ onBeforeUnmount(() => {
 .sep {
   width: 1px;
   height: 1rem;
-  background: color-mix(in srgb, var(--hud-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--hud-accent) 55%, transparent);
   margin: 0 0.25rem;
 }
 
 .readout {
   font-size: 0.65rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--hud-red);
-  text-shadow: 0 0 12px var(--hud-glow);
 }
 
 .search {
   width: min(220px, 100%);
-  background: #0a0a0c;
-  border-color: var(--hud-line-strong);
-  color: var(--hud-ink);
+  background: #f4f4f6;
+  border-color: var(--kube-line-strong);
+  color: var(--kube-ink);
   font-family: inherit;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
@@ -386,25 +384,6 @@ onBeforeUnmount(() => {
 .hud-btn {
   font-family: inherit;
   letter-spacing: 0.04em;
-  color: var(--hud-ink);
-}
-
-.hud-shell :deep(.hud-btn) {
-  border-color: var(--hud-line-strong);
-  background: transparent;
-  color: var(--hud-ink);
-}
-
-.hud-shell :deep(.hud-btn:hover) {
-  background: rgba(255, 42, 58, 0.12);
-  color: var(--hud-ink);
-}
-
-.hud-shell :deep(button[data-slot='button'].bg-secondary),
-.hud-shell :deep(.hud-btn.bg-secondary) {
-  background: rgba(255, 42, 58, 0.18);
-  color: var(--hud-ink);
-  border-color: color-mix(in srgb, var(--hud-accent) 55%, transparent);
 }
 
 .canvas {
@@ -413,7 +392,6 @@ onBeforeUnmount(() => {
   min-height: 0;
   width: 100%;
   height: 100%;
-  background: var(--hud-bg);
 }
 
 .footer {
@@ -422,20 +400,20 @@ onBeforeUnmount(() => {
   gap: 1rem;
   align-items: center;
   padding: 0.4rem 0.9rem;
-  border-top: 1px solid var(--hud-line);
-  background: color-mix(in srgb, var(--hud-panel) 88%, black);
+  border-top: 1px solid var(--kube-line);
+  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
   font-size: 0.62rem;
   letter-spacing: 0.12em;
-  color: var(--hud-mute);
+  color: var(--kube-mute);
 }
 
 .footer .mono {
-  color: var(--hud-ink);
+  color: var(--kube-ink);
 }
 
 .footer .hint {
   margin-left: auto;
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
 .hud-shell :deep(.hud-svg) {
