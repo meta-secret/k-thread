@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, FilePlus2, FolderOpen } from '@lucide/vue'
+import { FilePlus2, FileText, FolderOpen, GitBranch, Moon, Network, Sun } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
@@ -31,6 +31,17 @@ const filesOpen = ref(false)
 /** Folder subtree Structure should focus after a Note → Structure jump. */
 const structureSeed = ref('')
 
+const appTheme = ref<'light' | 'dark'>(
+  (localStorage.getItem('k-thread-app-theme') as 'light' | 'dark') || 'light',
+)
+
+const toggleAppTheme = () => {
+  appTheme.value = appTheme.value === 'light' ? 'dark' : 'light'
+  localStorage.setItem('k-thread-app-theme', appTheme.value)
+  localStorage.setItem('k-thread-graph-theme', appTheme.value)
+  document.documentElement.classList.toggle('dark', appTheme.value === 'dark')
+}
+
 const renameOpen = ref(false)
 const renameId = ref<DocId>('')
 const deleteOpen = ref(false)
@@ -42,6 +53,7 @@ const deleteFolderPath = ref('')
 onMounted(() => {
   void vaultStore.hydrateFromOpfs()
   window.addEventListener('keydown', onKeydown)
+  document.documentElement.classList.toggle('dark', appTheme.value === 'dark')
 })
 
 onUnmounted(() => {
@@ -161,30 +173,90 @@ const openNoteFromStructure = (id: DocId) => {
 
 <template>
   <TooltipProvider>
-    <div class="app" :class="{ canvas: isCanvas, ready }">
-      <header class="top">
-        <button type="button" class="brand home" title="Project structure" @click="openStructure">
-          <BrandMark :size="28" />
-          <span class="wordmark">k-thread</span>
-        </button>
-        <p class="msg">
-          {{ message }}
-          <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
+    <div class="app" :class="{ canvas: isCanvas, ready, dark: appTheme === 'dark' }">
+      <header
+        class="top flex flex-wrap items-center justify-between px-4 py-2.5 backdrop-blur-md border-b transition-colors duration-200"
+        :class="appTheme === 'dark' ? 'bg-zinc-950/90 border-zinc-800 text-zinc-100' : 'bg-white/90 border-zinc-200 text-zinc-900 shadow-xs'"
+      >
+        <!-- Left: Brand & Main Navigation Tabs -->
+        <div class="flex items-center gap-4 min-w-0">
           <button
-            v-if="view === ViewMode.Note"
             type="button"
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 shadow-2xs transition-colors cursor-pointer ml-2"
-            title="Return to Main Graph (Structure)"
+            class="brand home flex items-center gap-2 font-bold tracking-tight hover:opacity-90 transition-opacity cursor-pointer border-none bg-transparent p-0"
+            title="Project Home"
             @click="openStructure"
           >
-            <ArrowLeft class="w-3.5 h-3.5" />
-            <span>Back to Main Graph</span>
+            <BrandMark :size="26" />
+            <span class="wordmark text-base font-semibold tracking-tight" :class="appTheme === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">k-thread</span>
           </button>
-        </p>
-        <div class="ord mono">
-          <template v-if="ready && noteOrdinal.total > 0">
+
+          <div class="h-4 w-px mx-1" :class="appTheme === 'dark' ? 'bg-zinc-800' : 'bg-zinc-300'" />
+
+          <!-- Main Navigation Menu -->
+          <nav class="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              :variant="view === ViewMode.Structure ? 'secondary' : 'ghost'"
+              class="h-8 text-xs font-semibold px-3 flex items-center gap-1.5 cursor-pointer"
+              :class="view === ViewMode.Structure ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
+              @click="openStructure"
+            >
+              <GitBranch class="w-3.5 h-3.5" />
+              <span>Structure Graph</span>
+            </Button>
+
+            <Button
+              size="sm"
+              :variant="view === ViewMode.Links ? 'secondary' : 'ghost'"
+              class="h-8 text-xs font-semibold px-3 flex items-center gap-1.5 cursor-pointer"
+              :class="view === ViewMode.Links ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
+              @click="openLinks"
+            >
+              <Network class="w-3.5 h-3.5" />
+              <span>Links HUD</span>
+            </Button>
+
+            <Button
+              size="sm"
+              :variant="view === ViewMode.Note ? 'secondary' : 'ghost'"
+              class="h-8 text-xs font-semibold px-3 flex items-center gap-1.5 cursor-pointer"
+              :class="view === ViewMode.Note ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
+              :disabled="active.tag === 'none'"
+              @click="vaultStore.setView(ViewMode.Note)"
+            >
+              <FileText class="w-3.5 h-3.5" />
+              <span>Note Editor</span>
+            </Button>
+          </nav>
+        </div>
+
+        <!-- Center: Status message -->
+        <div class="hidden lg:flex items-center gap-2 text-xs font-mono" :class="appTheme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'">
+          <span>{{ message }}</span>
+          <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
+        </div>
+
+        <!-- Right: Counter & Global Sun/Moon Toggle -->
+        <div class="flex items-center gap-2.5">
+          <div
+            v-if="ready && noteOrdinal.total > 0"
+            class="text-xs font-mono px-2 py-1 rounded border"
+            :class="appTheme === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'"
+          >
             {{ String(noteOrdinal.index).padStart(3, '0') }} / {{ noteOrdinal.total }}
-          </template>
+          </div>
+
+          <!-- Global Dark Mode / Light Mode Toggle Button -->
+          <button
+            type="button"
+            class="flex items-center justify-center p-2 rounded-lg border transition-colors cursor-pointer shadow-2xs"
+            :class="appTheme === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-100'"
+            :title="appTheme === 'dark' ? 'Switch to Entire Page Light Mode' : 'Switch to Entire Page Dark Mode'"
+            @click="toggleAppTheme"
+          >
+            <Sun v-if="appTheme === 'dark'" class="w-4 h-4" />
+            <Moon v-else class="w-4 h-4 text-zinc-700" />
+          </button>
         </div>
       </header>
 
