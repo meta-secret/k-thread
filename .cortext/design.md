@@ -5,9 +5,9 @@
 | Mode | Look | Role |
 | --- | --- | --- |
 | **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
-| **Graph** | Same light kube field — pills, rounded red wires, port dots (`--hud-accent` as signal) | Link navigation |
+| **Graph** | GTD-style flowchart — white field, pastel pills, charcoal arrows | Link navigation |
 
-Do **not** ship dark / black HUD canvases. Graph language can borrow flow-diagram geometry (rounded orthogonal wires, pills) while staying light.
+Do **not** ship dark / black HUD canvases. Graph follows a light flowchart language (pastel pills + thin arrows), not neon HUD chrome.
 
 **Taste pass (design-taste-frontend):** IBM Plex Sans/Mono locked; no purple/teal AI defaults; one red accent as signal; landing is brand-first (mark + wordmark + one line + CTAs); shared tokens in `src/style.css` (`--kube-*`, light `--hud-*`).
 

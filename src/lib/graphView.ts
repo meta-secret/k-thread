@@ -128,8 +128,8 @@ export const folderHue = (folder: string): number => {
   return hash % 360
 }
 
-export const NODE_W = 132
-export const NODE_H = 34
+export const NODE_W = 148
+export const NODE_H = 40
 /** @deprecated use NODE_W — kept for older imports */
 export const HUB_W = NODE_W
 export const HUB_H = NODE_H

@@ -1,29 +1,38 @@
 import { select, type Selection } from 'd3-selection'
 import {
+  folderHue,
+  folderOf,
   HudTier,
   labelOf,
   NODE_H,
   NODE_W,
-  roundedOrthoPath,
+  orthoPath,
   type HudNode,
   type HudWire,
   type Point,
 } from '@/lib/graphView'
 import type { DocId } from '@/types'
 
-/** Light kube graph palette — flow-diagram language on a light field (no dark HUD). */
+/** GTD-style flowchart palette — soft pastels on white, charcoal arrows. */
 export const HudPaint = {
-  bg: '#e4e4e8',
-  wash: '#f4f4f6',
-  panel: '#fafafa',
-  wireframe: 'rgba(18,18,20,0.22)',
-  ink: '#121214',
-  mute: '#6b6b73',
-  dim: '#9a9aa4',
-  red: '#c02323',
-  redDeep: '#9a1a1a',
-  glowSoft: 0.22,
+  bg: '#ffffff',
+  ink: '#3a3a42',
+  mute: '#8a8a96',
+  dim: '#b4b4bc',
+  arrow: '#5a5a64',
+  arrowHot: '#2e2e36',
+  activeRing: '#3a3a42',
 } as const
+
+/** Soft fills like the GTD chart — rotated by folder / layer. */
+const PASTELS = [
+  '#FFE8C8', // peach
+  '#E8E8EC', // gray
+  '#F5D0D8', // pink
+  '#D4F0E0', // mint
+  '#E4DCF5', // lavender
+  '#D6E8F5', // sky
+] as const
 
 export type WireSel = Selection<SVGGElement, HudWire, SVGGElement, unknown>
 export type NodeSel = Selection<SVGGElement, HudNode, SVGGElement, unknown>
@@ -38,40 +47,41 @@ export const portOf = (d: HudNode, side: 'in' | 'out'): Point => {
 export const clipLabel = (text: string, max: number): string =>
   text.length > max ? `${text.slice(0, max - 1)}…` : text
 
+const pastelFor = (d: HudNode): string => {
+  if (d.kind === 'missing') return '#F0F0F2'
+  if (d.tier === HudTier.Root) return PASTELS[0]
+  const hue = folderHue(folderOf(d.id))
+  return PASTELS[(Math.floor(hue / 60) + d.layer) % PASTELS.length] ?? PASTELS[1]
+}
+
 export const attachHudDefs = (svg: Selection<SVGSVGElement, unknown, null, undefined>) => {
   const defs = svg.append('defs')
 
-  const glow = defs
-    .append('filter')
-    .attr('id', 'wire-glow')
-    .attr('x', '-60%')
-    .attr('y', '-60%')
-    .attr('width', '220%')
-    .attr('height', '220%')
-  glow.append('feGaussianBlur').attr('stdDeviation', '2.2').attr('result', 'blur')
-  const merge = glow.append('feMerge')
-  merge.append('feMergeNode').attr('in', 'blur')
+  defs
+    .append('marker')
+    .attr('id', 'arrow-end')
+    .attr('viewBox', '0 0 10 10')
+    .attr('refX', 9)
+    .attr('refY', 5)
+    .attr('markerWidth', 7)
+    .attr('markerHeight', 7)
+    .attr('orient', 'auto-start-reverse')
+    .append('path')
+    .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+    .attr('fill', HudPaint.arrow)
 
-  const nodeGlow = defs
-    .append('filter')
-    .attr('id', 'node-glow')
-    .attr('x', '-30%')
-    .attr('y', '-30%')
-    .attr('width', '160%')
-    .attr('height', '160%')
-  nodeGlow.append('feGaussianBlur').attr('stdDeviation', '1.4').attr('result', 'blur')
-  const nMerge = nodeGlow.append('feMerge')
-  nMerge.append('feMergeNode').attr('in', 'blur')
-  nMerge.append('feMergeNode').attr('in', 'SourceGraphic')
-
-  const wash = defs
-    .append('radialGradient')
-    .attr('id', 'hud-vignette')
-    .attr('cx', '42%')
-    .attr('cy', '48%')
-    .attr('r', '72%')
-  wash.append('stop').attr('offset', '0%').attr('stop-color', '#ffffff').attr('stop-opacity', 0.55)
-  wash.append('stop').attr('offset', '100%').attr('stop-color', '#c4c4ca').attr('stop-opacity', 0.35)
+  defs
+    .append('marker')
+    .attr('id', 'arrow-end-hot')
+    .attr('viewBox', '0 0 10 10')
+    .attr('refX', 9)
+    .attr('refY', 5)
+    .attr('markerWidth', 7)
+    .attr('markerHeight', 7)
+    .attr('orient', 'auto-start-reverse')
+    .append('path')
+    .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+    .attr('fill', HudPaint.arrowHot)
 
   return defs
 }
@@ -82,47 +92,7 @@ export const drawHudBackdrop = (
   height: number,
 ) => {
   svg.append('rect').attr('width', width).attr('height', height).attr('fill', HudPaint.bg)
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#hud-vignette)')
-
-  const grid = svg.append('g').attr('class', 'grid').attr('opacity', 0.2)
-  for (let x = 40; x < width; x += 40) {
-    grid
-      .append('line')
-      .attr('x1', x)
-      .attr('x2', x)
-      .attr('y1', 0)
-      .attr('y2', height)
-      .attr('stroke', '#121214')
-      .attr('stroke-width', 0.4)
-  }
-  for (let y = 40; y < height; y += 40) {
-    grid
-      .append('line')
-      .attr('x1', 0)
-      .attr('x2', width)
-      .attr('y1', y)
-      .attr('y2', y)
-      .attr('stroke', '#121214')
-      .attr('stroke-width', 0.4)
-  }
-
-  const chrome = svg.append('g').attr('class', 'chrome')
-  const mark = (x: number, y: number) => {
-    chrome
-      .append('circle')
-      .attr('cx', x)
-      .attr('cy', y)
-      .attr('r', 2.8)
-      .attr('fill', 'none')
-      .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 1.15)
-  }
-  mark(16, 16)
-  mark(width - 16, 16)
-  mark(16, height - 16)
-  mark(width - 16, height - 16)
-
-  return chrome
+  return svg.append('g').attr('class', 'chrome')
 }
 
 export const drawLayerLabels = (
@@ -133,53 +103,37 @@ export const drawLayerLabels = (
   for (const layer of layers) {
     const sample = nodes.find((n) => n.layer === layer)
     if (!sample) continue
-    const label = chrome.append('g').attr('transform', `translate(${sample.x}, 30)`)
-    label
-      .append('circle')
-      .attr('cx', -28)
-      .attr('cy', -3)
-      .attr('r', 2.4)
-      .attr('fill', HudPaint.red)
-    label
-      .append('line')
-      .attr('x1', -22)
-      .attr('x2', -14)
-      .attr('y1', -3)
-      .attr('y2', -3)
-      .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 1.5)
-    label
+    chrome
       .append('text')
-      .attr('x', 0)
-      .attr('y', 0)
+      .attr('x', sample.x)
+      .attr('y', 28)
       .attr('text-anchor', 'middle')
       .attr('fill', HudPaint.mute)
-      .attr('font-size', 10)
-      .attr('letter-spacing', '0.22em')
-      .attr('font-family', 'ui-monospace, Menlo, monospace')
-      .text(layer === 0 ? 'FOCUS' : `L${layer}`)
+      .attr('font-size', 11)
+      .attr('font-weight', 500)
+      .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
+      .text(layer === 0 ? 'Focus' : `Hop ${layer}`)
   }
 }
 
-/** One note = one pill (no separate action chips on edges). */
+/** One note = one pastel pill (GTD flowchart language). */
 export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d: HudNode) => {
   const { w, h } = sizeOf(d)
   const x0 = -w / 2
   const y0 = -h / 2
   const r = h / 2
-  const isRoot = d.tier === HudTier.Root
-  const title = clipLabel(labelOf(d.id), 14).toUpperCase()
+  const title = clipLabel(labelOf(d.id), 16)
 
   g.append('rect')
     .attr('class', 'chip-active')
-    .attr('x', x0 - 5)
-    .attr('y', y0 - 5)
-    .attr('width', w + 10)
-    .attr('height', h + 10)
-    .attr('rx', r + 5)
+    .attr('x', x0 - 3)
+    .attr('y', y0 - 3)
+    .attr('width', w + 6)
+    .attr('height', h + 6)
+    .attr('rx', r + 3)
     .attr('fill', 'none')
-    .attr('stroke', HudPaint.red)
-    .attr('stroke-width', 1.25)
+    .attr('stroke', HudPaint.activeRing)
+    .attr('stroke-width', 1.5)
     .attr('opacity', 0)
 
   g.append('rect')
@@ -189,40 +143,16 @@ export const drawPill = (g: Selection<SVGGElement, HudNode, null, undefined>, d:
     .attr('width', w)
     .attr('height', h)
     .attr('rx', r)
-    .attr('fill', d.kind === 'missing' ? '#ececef' : isRoot ? '#ffffff' : HudPaint.panel)
-    .attr('stroke', isRoot ? 'rgba(18,18,20,0.55)' : HudPaint.wireframe)
-    .attr('stroke-width', isRoot ? 1.35 : 1.1)
-
-  const port = (cx: number, cls: string) => {
-    g.append('circle')
-      .attr('class', cls)
-      .attr('cx', cx)
-      .attr('cy', 0)
-      .attr('r', 3.2)
-      .attr('fill', HudPaint.red)
-      .attr('stroke', '#f4f4f6')
-      .attr('stroke-width', 1.1)
-  }
-  port(x0, 'port-in')
-  port(x0 + w, 'port-out')
+    .attr('fill', pastelFor(d))
+    .attr('stroke', 'none')
 
   g.append('text')
     .attr('x', 0)
-    .attr('y', -5)
-    .attr('text-anchor', 'middle')
-    .attr('fill', HudPaint.mute)
-    .attr('font-size', 7)
-    .attr('letter-spacing', '0.12em')
-    .attr('font-family', 'ui-monospace, Menlo, monospace')
-    .text(`${d.code} · L${d.layer}`)
-  g.append('text')
-    .attr('x', 0)
-    .attr('y', 9)
+    .attr('y', 5)
     .attr('text-anchor', 'middle')
     .attr('fill', HudPaint.ink)
-    .attr('font-size', 11)
-    .attr('font-weight', 650)
-    .attr('letter-spacing', '0.04em')
+    .attr('font-size', 13)
+    .attr('font-weight', 500)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(title)
 }
@@ -234,43 +164,25 @@ export const updateWires = (wires: WireSel, nodes: Map<DocId, HudNode>) => {
     if (!s || !t) return
     const from = portOf(s, 'out')
     const to = portOf(t, 'in')
-    const path = roundedOrthoPath(from, to, 18)
+    // Nudge target so arrowhead sits just before the pill edge
+    const path = orthoPath(from, { x: to.x - 2, y: to.y })
     const g = select(this)
 
-    g.selectAll<SVGPathElement, string>('path.glow')
-      .data([path])
-      .join('path')
-      .attr('class', 'glow')
-      .attr('fill', 'none')
-      .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 4)
-      .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
-      .attr('filter', 'url(#wire-glow)')
-      .attr('d', (p) => p)
+    g.selectAll<SVGPathElement, string>('path.glow').remove()
+    g.selectAll<SVGCircleElement, Point>('circle.port').remove()
 
     g.selectAll<SVGPathElement, string>('path.strand')
       .data([path])
       .join('path')
       .attr('class', 'strand')
       .attr('fill', 'none')
-      .attr('stroke', HudPaint.red)
-      .attr('stroke-width', 1.45)
+      .attr('stroke', HudPaint.arrow)
+      .attr('stroke-width', 1.35)
       .attr('stroke-linecap', 'round')
-      .attr('stroke-linejoin', 'round')
+      .attr('stroke-linejoin', 'miter')
+      .attr('marker-end', 'url(#arrow-end)')
       .attr('stroke-dasharray', d.missing || !d.real ? '4 5' : null)
       .attr('d', (p) => p)
-
-    g.selectAll<SVGCircleElement, Point>('circle.port')
-      .data([from, to])
-      .join('circle')
-      .attr('class', 'port')
-      .attr('r', 3.2)
-      .attr('cx', (p) => p.x)
-      .attr('cy', (p) => p.y)
-      .attr('fill', HudPaint.red)
-      .attr('stroke', '#f4f4f6')
-      .attr('stroke-width', 1)
   })
 }
 
@@ -289,23 +201,14 @@ export const paintFocus = (wireSel: WireSel, nodeSel: NodeSel, opts: FocusOpts) 
     const hot = isWireHot(d)
     const dim = focusing && !hot
     const g = select(this)
-    g.attr('opacity', dim ? 0.08 : hot ? 1 : 0.4)
-    g.selectAll<SVGPathElement, string>('path.strand').attr(
-      'stroke',
-      hot ? HudPaint.red : d.missing ? HudPaint.dim : 'rgba(18,18,20,0.45)',
-    )
-    g.selectAll<SVGPathElement, string>('path.glow').attr('stroke-opacity', hot ? HudPaint.glowSoft : 0)
-    g.selectAll<SVGCircleElement, Point>('circle.port').attr('opacity', hot ? 1 : 0.65)
+    g.attr('opacity', dim ? 0.12 : hot ? 1 : 0.75)
+    g.selectAll<SVGPathElement, string>('path.strand')
+      .attr('stroke', hot ? HudPaint.arrowHot : d.missing ? HudPaint.dim : HudPaint.arrow)
+      .attr('marker-end', hot ? 'url(#arrow-end-hot)' : 'url(#arrow-end)')
+      .attr('stroke-width', hot ? 1.7 : 1.35)
   })
 
-  nodeSel.attr('opacity', (d) => (isDimmed(d.id) ? 0.22 : 1))
-  nodeSel.selectAll<SVGRectElement, HudNode>('.chip-body').attr('stroke', (d) => {
-    if (d.id === activeId) return HudPaint.red
-    if (d.id === hoveredId) return HudPaint.ink
-    if (d.kind === 'missing') return HudPaint.dim
-    if (d.tier === HudTier.Root) return 'rgba(18,18,20,0.55)'
-    return HudPaint.wireframe
-  })
+  nodeSel.attr('opacity', (d) => (isDimmed(d.id) ? 0.28 : 1))
   nodeSel
     .selectAll<SVGRectElement, HudNode>('rect.chip-active')
     .attr('opacity', (d) => (d.id === activeId ? 1 : 0))

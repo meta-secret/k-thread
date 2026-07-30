@@ -307,16 +307,15 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .hud-shell {
-  --hud-red: var(--hud-accent);
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: transparent;
+  background: #ffffff;
   color: var(--kube-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans, "IBM Plex Sans", "Segoe UI", sans-serif);
 }
 
 .toolbar,
@@ -331,9 +330,9 @@ onBeforeUnmount(() => {
   gap: 0.55rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--kube-line);
-  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid rgba(18, 18, 20, 0.08);
+  background: #ffffff;
 }
 
 .modes,
@@ -355,30 +354,29 @@ onBeforeUnmount(() => {
 
 .hops input {
   width: 70px;
-  accent-color: var(--hud-red);
 }
 
 .sep {
   width: 1px;
   height: 1rem;
-  background: color-mix(in srgb, var(--hud-accent) 55%, transparent);
+  background: rgba(18, 18, 20, 0.12);
   margin: 0 0.25rem;
 }
 
 .readout {
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-  color: var(--hud-red);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--kube-mute);
+  font-weight: 500;
 }
 
 .search {
   width: min(220px, 100%);
   background: #f4f4f6;
-  border-color: var(--kube-line-strong);
+  border-color: rgba(18, 18, 20, 0.12);
   color: var(--kube-ink);
   font-family: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
+  font-size: 0.8rem;
 }
 
 .hud-btn {
@@ -399,11 +397,11 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
-  padding: 0.4rem 0.9rem;
-  border-top: 1px solid var(--kube-line);
-  background: color-mix(in srgb, var(--kube-wash-top) 70%, white);
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  padding: 0.45rem 1rem;
+  border-top: 1px solid rgba(18, 18, 20, 0.08);
+  background: #ffffff;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
   color: var(--kube-mute);
 }
 

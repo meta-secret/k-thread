@@ -2,19 +2,19 @@
 
 ## Aesthetic
 
-Light **kube** field with flow-diagram wiring (not a dark HUD):
+**GTD-style flowchart** on a light field (not a HUD / not dark):
 
 ```
-FOCUS column → linked notes by BFS hop · one pill per note · rounded red wires
+Focus column → linked notes by BFS hop · one pastel pill per note · charcoal arrows
 ```
 
-- Cool gray wash + faint grid, corner red ticks
-- **One note = one node** (no mid-edge “TAP / OPEN” action chips)
-- Light wireframe **pills**, dark labels, red port dots
-- **Rounded Manhattan** red strands (`roundedOrthoPath`); missing links dashed
+- Flat white canvas, generous space
+- Soft **pastel pills** (peach / gray / pink / mint / lavender / sky) by folder + hop
+- Thin **charcoal orthogonal** arrows with triangular heads
+- One note = one node; missing targets = dashed gray links
 - Staging from focus note via BFS (`buildHudStage`)
 
-Stay on the light shell. Do not reintroduce black / neon-on-black graph chrome.
+Stay light. Avoid neon glow, black fields, and cyberpunk chrome.
 
 ## Modules
 
@@ -29,7 +29,7 @@ Keep each file ≤500 lines; split semantically (layout vs draw vs shell).
 
 ## Edge extraction
 
-For each note body, extract `[[wikilinks]]`, resolve against known ids, emit unique `from → to` edges. Unresolved targets stay in `nodes` (missing stroke; dashed strands).
+For each note body, extract `[[wikilinks]]`, resolve against known ids, emit unique `from → to` edges. Unresolved targets stay in `nodes` (muted pill; dashed strands).
 
 ## View modes
 
@@ -42,5 +42,5 @@ GraphScope.Local   // N-hop undirected closure around activeId
 
 - Click → `focusNote` (stay on graph)
 - Double-click → `open` note view
-- Hover → brighten neighborhood wires; dim the rest
+- Hover → brighten neighborhood arrows; dim the rest
 - Drag pills · pan/zoom · filter · orphans · reset
