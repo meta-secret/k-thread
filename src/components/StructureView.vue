@@ -71,7 +71,7 @@ const GraphLayer = {
 } as const
 type GraphLayer = (typeof GraphLayer)[keyof typeof GraphLayer]
 
-const graphLayer = ref<GraphLayer>('combined')
+const graphLayer = ref<GraphLayer>('hierarchy')
 
 const themeMode = computed(() => props.themeMode || 'light')
 

@@ -438,8 +438,17 @@ export const paintStructureFocus = (
 ) => {
   const paint = getPaint(mode)
   wireSel.attr('opacity', (d) => {
-    if (hotId.length === 0) return 0.95
-    return d.from === hotId || d.to === hotId ? 1 : 0.18
+    const isWikilink = d.kind === StructureEdgeKind.Wikilink
+    if (isWikilink) {
+      if (hotId.length > 0) {
+        return d.from === hotId || d.to === hotId ? 1 : 0.04
+      }
+      return 0.12
+    }
+    if (hotId.length > 0) {
+      return d.from === hotId || d.to === hotId ? 1 : 0.2
+    }
+    return 0.95
   })
 
   wireSel.selectAll<SVGPathElement, string>('path.strand-base').attr('stroke', function () {
