@@ -221,6 +221,7 @@ const refreshFocus = () => {
     focusFolder.value,
     props.activeId,
     themeMode.value,
+    graphLayer.value,
   )
 }
 

@@ -242,14 +242,15 @@ export const placeStructureStage = (
     return { nodes: [], edges: [], bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0, contentW: 0, contentH: 0 } }
   }
 
-  // Check if there are any hierarchy edges
-  const hasHierarchy = graph.edges.some((e) => e.kind === StructureEdgeKind.Hierarchy)
+  // Use force layout when wikilinks are present (Links or Combined mode)
+  const hasWikilinks = graph.edges.some((e) => e.kind === StructureEdgeKind.Wikilink)
+  const hasOnlyHierarchy = !hasWikilinks && graph.edges.some((e) => e.kind === StructureEdgeKind.Hierarchy)
 
-  if (!hasHierarchy) {
-    return placeForceLayout(graph)
+  if (hasOnlyHierarchy) {
+    return placeTreeLayout(graph)
   }
 
-  return placeTreeLayout(graph)
+  return placeForceLayout(graph)
 }
 
 /** Force-directed layout for Links mode — handles cycles, bidirectional, many-to-many wikilinks. */
@@ -277,12 +278,12 @@ const placeForceLayout = (
     .force(
       'link',
       forceLink(simLinks)
-        .distance(WIDGET_W * 1.6)
-        .strength(0.7),
+        .distance(WIDGET_W * 0.9)
+        .strength(1.2),
     )
-    .force('charge', forceManyBody().strength(-600))
+    .force('charge', forceManyBody().strength(-350))
     .force('center', forceCenter(400, 300))
-    .force('collide', forceCollide(WIDGET_W * 0.65))
+    .force('collide', forceCollide(WIDGET_W * 0.55))
     .stop()
 
   // Run simulation synchronously (300 ticks is plenty for convergence)

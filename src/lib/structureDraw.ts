@@ -441,11 +441,22 @@ export const paintStructureFocus = (
   focusFolder: string,
   activeNoteId: string,
   mode: ThemeMode = 'light',
+  graphLayer: 'hierarchy' | 'links' | 'combined' = 'hierarchy',
 ) => {
   const paint = getPaint(mode)
+  const linksVisible = graphLayer === 'links' || graphLayer === 'combined'
+
   wireSel.attr('opacity', (d) => {
     const isWikilink = d.kind === StructureEdgeKind.Wikilink
     if (isWikilink) {
+      if (linksVisible) {
+        // In links/combined mode, wikilinks are always visible
+        if (hotId.length > 0) {
+          return d.from === hotId || d.to === hotId ? 1 : 0.5
+        }
+        return 0.85
+      }
+      // In structure mode, ghost traces
       if (hotId.length > 0) {
         return d.from === hotId || d.to === hotId ? 1 : 0.04
       }
@@ -480,7 +491,7 @@ export const paintStructureFocus = (
   wireSel.selectAll<SVGPathElement, string>('path.strand-pulse').attr('opacity', function () {
     const edge = select(this.parentNode as SVGGElement).datum() as StructureEdge
     const hot = hotId.length > 0 && (edge.from === hotId || edge.to === hotId)
-    return hot ? 1 : 0.4
+    return hot ? 1 : linksVisible ? 0.6 : 0.4
   })
 
   nodeSel.attr('opacity', (d) => {
