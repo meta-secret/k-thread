@@ -239,14 +239,69 @@ export const placeStructureStage = (
     byId.set(n.id, { ...n, children: [], subtreeH: WIDGET_H, x: 0, y: 0 })
   }
 
+  // Check if there are any hierarchy edges
+  const hasHierarchy = graph.edges.some((e) => e.kind === StructureEdgeKind.Hierarchy)
+
   const childIds = new Set<string>()
-  for (const e of graph.edges) {
-    if (e.kind !== StructureEdgeKind.Hierarchy) continue
-    const parent = byId.get(e.from)
-    const child = byId.get(e.to)
-    if (!parent || !child) continue
-    parent.children.push(child)
-    childIds.add(child.id)
+
+  if (hasHierarchy) {
+    // Normal tree layout using hierarchy edges
+    for (const e of graph.edges) {
+      if (e.kind !== StructureEdgeKind.Hierarchy) continue
+      const parent = byId.get(e.from)
+      const child = byId.get(e.to)
+      if (!parent || !child) continue
+      parent.children.push(child)
+      childIds.add(child.id)
+    }
+  } else {
+    // Links-only mode: use BFS over wikilink edges to build a spanning tree
+    // Build adjacency (outgoing wikilinks = children for layout)
+    const adj = new Map<string, string[]>()
+    for (const e of graph.edges) {
+      if (e.kind !== StructureEdgeKind.Wikilink) continue
+      if (!byId.has(e.from) || !byId.has(e.to)) continue
+      if (!adj.has(e.from)) adj.set(e.from, [])
+      adj.get(e.from)!.push(e.to)
+    }
+
+    // Find the node with the most connections as BFS root
+    const connectionCount = new Map<string, number>()
+    for (const n of byId.keys()) connectionCount.set(n, 0)
+    for (const e of graph.edges) {
+      if (e.kind !== StructureEdgeKind.Wikilink) continue
+      connectionCount.set(e.from, (connectionCount.get(e.from) || 0) + 1)
+      connectionCount.set(e.to, (connectionCount.get(e.to) || 0) + 1)
+    }
+
+    // Sort nodes by connection count (most connected first)
+    const sortedNodes = [...byId.keys()].sort(
+      (a, b) => (connectionCount.get(b) || 0) - (connectionCount.get(a) || 0),
+    )
+
+    // BFS to assign parent-child for layout
+    const visited = new Set<string>()
+    for (const startId of sortedNodes) {
+      if (visited.has(startId)) continue
+      visited.add(startId)
+
+      const queue = [startId]
+      while (queue.length > 0) {
+        const current = queue.shift()!
+        const neighbors = adj.get(current) || []
+        for (const neighbor of neighbors) {
+          if (visited.has(neighbor)) continue
+          visited.add(neighbor)
+          const parent = byId.get(current)
+          const child = byId.get(neighbor)
+          if (parent && child) {
+            parent.children.push(child)
+            childIds.add(child.id)
+          }
+          queue.push(neighbor)
+        }
+      }
+    }
   }
 
   for (const n of byId.values()) {
@@ -296,10 +351,8 @@ export const placeStructureStage = (
   }
 
   let currentTop = 0
-  const minDepth = Math.min(...graph.nodes.map((n) => n.depth))
   for (const r of roots) {
-    const startDepth = roots.length === graph.nodes.length ? 0 : r.depth - minDepth
-    placeHorizontal(r, currentTop, startDepth)
+    placeHorizontal(r, currentTop, 0)
     currentTop += r.subtreeH + ROW_GAP * 2
   }
 
