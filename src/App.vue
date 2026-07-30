@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { FilePlus2, FileText, FolderOpen, GitBranch, Moon, Network, Sun } from '@lucide/vue'
+import { FilePlus2, FileText, FolderOpen, GitBranch, Moon, Sun } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
-import GraphView from '@/components/GraphView.vue'
 import StructureView from '@/components/StructureView.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
@@ -123,7 +122,6 @@ const status = computed(() => vaultStore.state.status)
 const message = computed(() => vaultStore.state.message)
 const view = computed(() => vaultStore.state.view)
 const tree = vaultStore.tree
-const index = vaultStore.index
 const known = vaultStore.knownIds
 const noteIds = vaultStore.noteIds
 const tags = vaultStore.tags
@@ -153,10 +151,6 @@ const folders = computed(() => vaultStore.state.folders)
 const onSelectFromFiles = (id: DocId) => {
   vaultStore.setActive(id)
   filesOpen.value = false
-}
-
-const openLinks = () => {
-  vaultStore.setView(ViewMode.Links)
 }
 
 const openStructure = () => {
@@ -196,24 +190,13 @@ const openNoteFromStructure = (id: DocId) => {
           <nav class="flex items-center gap-1.5">
             <Button
               size="sm"
-              :variant="view === ViewMode.Structure ? 'secondary' : 'ghost'"
+              :variant="isCanvas ? 'secondary' : 'ghost'"
               class="h-8 text-xs font-semibold px-3 flex items-center gap-1.5 cursor-pointer"
-              :class="view === ViewMode.Structure ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
+              :class="isCanvas ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
               @click="openStructure"
             >
               <GitBranch class="w-3.5 h-3.5" />
-              <span>Structure Graph</span>
-            </Button>
-
-            <Button
-              size="sm"
-              :variant="view === ViewMode.Links ? 'secondary' : 'ghost'"
-              class="h-8 text-xs font-semibold px-3 flex items-center gap-1.5 cursor-pointer"
-              :class="view === ViewMode.Links ? 'bg-orange-600 text-white hover:bg-orange-500 shadow-xs' : appTheme === 'dark' ? 'text-zinc-300 hover:bg-zinc-900' : 'text-zinc-700 hover:bg-zinc-100'"
-              @click="openLinks"
-            >
-              <Network class="w-3.5 h-3.5" />
-              <span>Links HUD</span>
+              <span>Master Graph (Structure & Links)</span>
             </Button>
 
             <Button
@@ -278,7 +261,7 @@ const openNoteFromStructure = (id: DocId) => {
         />
 
         <div class="center">
-          <section v-if="view === ViewMode.Structure" class="graph-layout">
+          <section v-if="view === ViewMode.Structure || view === ViewMode.Links" class="graph-layout">
             <StructureView
               :docs="docs"
               :folders="folders"
@@ -315,19 +298,8 @@ const openNoteFromStructure = (id: DocId) => {
               :outlinks="activeLinks.out"
               :show-preview="showPreview"
               @navigate="vaultStore.openOrCreate"
-              @open-graph="openLinks"
+              @open-graph="openStructure"
               @toggle-preview="showPreview = !showPreview"
-            />
-          </section>
-
-          <section v-else class="graph-layout">
-            <GraphView
-              :index="index"
-              :active-id="activeId"
-              :existing-ids="noteIds"
-              :theme-mode="appTheme"
-              @select="vaultStore.focusNote"
-              @open="vaultStore.openOrCreate"
             />
           </section>
 

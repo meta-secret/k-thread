@@ -1,5 +1,6 @@
 import type { Doc, DocId } from '../types'
 import { folderOf, labelOf } from './graphView'
+import { extractWikilinks, resolveWikilink } from './wikilink'
 
 export const StructureKind = {
   Root: 'root',
@@ -21,9 +22,16 @@ export type StructureNode = {
   childCount?: number
 }
 
+export const StructureEdgeKind = {
+  Hierarchy: 'hierarchy',
+  Wikilink: 'wikilink',
+} as const
+export type StructureEdgeKind = (typeof StructureEdgeKind)[keyof typeof StructureEdgeKind]
+
 export type StructureEdge = {
   from: string
   to: string
+  kind?: StructureEdgeKind
 }
 
 export type StructureGraph = {
@@ -153,9 +161,11 @@ export const buildStructureGraph = (
     edges.push({
       from: parent.length === 0 ? ROOT_ID : `folder:${parent}`,
       to: id,
+      kind: StructureEdgeKind.Hierarchy,
     })
   }
 
+  const noteNodeIds = new Set<string>()
   for (const doc of [...docs].sort((a, b) => a.id.localeCompare(b.id))) {
     if (!inFocus(focusFolder, folderOf(doc.id), doc.id)) continue
     const folder = folderOf(doc.id)
@@ -165,6 +175,7 @@ export const buildStructureGraph = (
 
     const depth = folder.length === 0 ? 1 : folder.split('/').filter((p) => p.length > 0).length + 1
     const id = `note:${doc.id}`
+    noteNodeIds.add(id)
     nodes.push({
       id,
       kind: StructureKind.Note,
@@ -178,7 +189,27 @@ export const buildStructureGraph = (
     edges.push({
       from: folder.length === 0 ? ROOT_ID : `folder:${folder}`,
       to: id,
+      kind: StructureEdgeKind.Hierarchy,
     })
+  }
+
+  // Build Note-to-Note [[wikilink]] edges
+  const knownIds = new Set(docs.map((d) => d.id))
+  for (const doc of docs) {
+    const fromId = `note:${doc.id}`
+    if (!noteNodeIds.has(fromId)) continue
+    const outlinks = extractWikilinks(doc.body)
+    for (const rawTarget of outlinks) {
+      const targetId = resolveWikilink(rawTarget, knownIds)
+      const toId = `note:${targetId}`
+      if (noteNodeIds.has(toId) && fromId !== toId) {
+        edges.push({
+          from: fromId,
+          to: toId,
+          kind: StructureEdgeKind.Wikilink,
+        })
+      }
+    }
   }
 
   return { nodes, edges, rootId: ROOT_ID }

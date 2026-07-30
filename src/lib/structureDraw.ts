@@ -1,5 +1,6 @@
 import { select, type Selection } from 'd3-selection'
 import {
+  StructureEdgeKind,
   StructureKind,
   structurePort,
   WIDGET_H,
@@ -125,8 +126,10 @@ export const attachStructureDefs = (svg: Selection<SVGSVGElement, unknown, null,
       .attr('d', 'M 0 1.5 L 10 5 L 0 8.5 z')
       .attr('fill', fill)
   }
-  marker('struct-arrow', '#8a8a96')
-  marker('struct-arrow-hot', '#f97316')
+  marker('struct-arrow', '#f97316')
+  marker('struct-arrow-hot', '#ff6b00')
+  marker('wikilink-arrow', '#06b6d4')
+  marker('wikilink-arrow-hot', '#38bdf8')
 
   return defs
 }
@@ -373,6 +376,11 @@ export const updateStructureWires = (
     const to = structurePort(t, 'in')
     const path = bezierPath(from, to)
 
+    const isWikilink = d.kind === StructureEdgeKind.Wikilink
+    const baseColor = isWikilink ? (mode === 'dark' ? '#0891b2' : '#06b6d4') : paint.strandDefault
+    const hotColor = isWikilink ? '#38bdf8' : paint.strandHot
+    const arrowUrl = isWikilink ? 'url(#wikilink-arrow)' : 'url(#struct-arrow)'
+
     const group = select(this)
 
     // Base strand line
@@ -382,9 +390,10 @@ export const updateStructureWires = (
       .join('path')
       .attr('class', 'strand-base')
       .attr('fill', 'none')
-      .attr('stroke', paint.strandDefault)
-      .attr('stroke-width', 2)
-      .attr('marker-end', 'url(#struct-arrow)')
+      .attr('stroke', baseColor)
+      .attr('stroke-width', isWikilink ? 1.8 : 2)
+      .attr('stroke-dasharray', isWikilink ? '5 5' : 'none')
+      .attr('marker-end', arrowUrl)
       .attr('d', (p) => p)
 
     // Glowing flow strand line (animated pulse)
@@ -394,7 +403,7 @@ export const updateStructureWires = (
       .join('path')
       .attr('class', 'strand-pulse')
       .attr('fill', 'none')
-      .attr('stroke', paint.strandHot)
+      .attr('stroke', hotColor)
       .attr('stroke-width', 2.2)
       .attr('stroke-dasharray', '8 16')
       .attr('filter', 'url(#orange-glow)')
@@ -420,12 +429,20 @@ export const paintStructureFocus = (
   wireSel.selectAll<SVGPathElement, string>('path.strand-base').attr('stroke', function () {
     const edge = select(this.parentNode as SVGGElement).datum() as StructureEdge
     const hot = hotId.length > 0 && (edge.from === hotId || edge.to === hotId)
+    const isWikilink = edge.kind === StructureEdgeKind.Wikilink
+    if (isWikilink) {
+      return hot ? '#38bdf8' : mode === 'dark' ? '#0891b2' : '#06b6d4'
+    }
     return hot ? paint.strandHot : paint.strandDefault
   })
 
   wireSel.selectAll<SVGPathElement, string>('path.strand-base').attr('marker-end', function () {
     const edge = select(this.parentNode as SVGGElement).datum() as StructureEdge
     const hot = hotId.length > 0 && (edge.from === hotId || edge.to === hotId)
+    const isWikilink = edge.kind === StructureEdgeKind.Wikilink
+    if (isWikilink) {
+      return hot ? 'url(#wikilink-arrow-hot)' : 'url(#wikilink-arrow)'
+    }
     return hot ? 'url(#struct-arrow-hot)' : 'url(#struct-arrow)'
   })
 

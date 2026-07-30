@@ -31,7 +31,7 @@ export const openStructureView = async (page: Page) => {
 
 export const openLinksView = async (page: Page) => {
   await railButton(page, 'Links').click()
-  await expect(page.locator('.hud-shell')).toBeVisible()
+  await expect(page.locator('.structure-shell')).toBeVisible()
 }
 
 /** @deprecated use openLinksView */

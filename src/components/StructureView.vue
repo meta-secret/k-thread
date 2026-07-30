@@ -32,6 +32,7 @@ import {
 import {
   buildStructureGraph,
   placeStructureStage,
+  StructureEdgeKind,
   StructureKind,
   type PlacedStructureNode,
   type StructureEdge,
@@ -63,6 +64,15 @@ const pinnedId = ref('')
 const collapsedFolders = ref<Set<string>>(new Set())
 const stageBounds = ref<{ minX: number; maxX: number; minY: number; maxY: number; contentW: number; contentH: number } | null>(null)
 const hostEl = ref<Option<HTMLElement>>(none)
+
+const GraphLayer = {
+  Hierarchy: 'hierarchy',
+  Links: 'links',
+  Combined: 'combined',
+} as const
+type GraphLayer = (typeof GraphLayer)[keyof typeof GraphLayer]
+
+const graphLayer = ref<GraphLayer>('combined')
 
 const themeMode = computed(() => props.themeMode || 'light')
 
@@ -202,7 +212,13 @@ const rebuild = () => {
   const width = el.clientWidth > 0 ? el.clientWidth : 1100
   const height = el.clientHeight > 0 ? el.clientHeight : 640
 
-  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value, collapsedFolders.value)
+  const fullGraph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value, collapsedFolders.value)
+  const filteredEdges = fullGraph.edges.filter((e) => {
+    if (graphLayer.value === 'hierarchy') return e.kind === StructureEdgeKind.Hierarchy
+    if (graphLayer.value === 'links') return e.kind === StructureEdgeKind.Wikilink
+    return true
+  })
+  const graph = { ...fullGraph, edges: filteredEdges }
   const stage = placeStructureStage(graph, width, height)
   stageBounds.value = stage.bounds
 
@@ -388,7 +404,39 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <div class="h-4 w-px mx-1" :class="themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-300'" />
+        <!-- Graph Layer Mode Segmented Selector -->
+        <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'">
+          <button
+            type="button"
+            class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all cursor-pointer"
+            :class="graphLayer === GraphLayer.Hierarchy ? 'bg-orange-500 text-white shadow-2xs font-semibold' : themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'"
+            title="Display directory folder hierarchy tree only"
+            @click="graphLayer = GraphLayer.Hierarchy"
+          >
+            Structure
+          </button>
+          <button
+            type="button"
+            class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all cursor-pointer flex items-center gap-1"
+            :class="graphLayer === GraphLayer.Links ? 'bg-cyan-600 text-white shadow-2xs font-semibold' : themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'"
+            title="Display note [[wikilink]] connections only"
+            @click="graphLayer = GraphLayer.Links"
+          >
+            <span>Links</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          </button>
+          <button
+            type="button"
+            class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all cursor-pointer flex items-center gap-1"
+            :class="graphLayer === GraphLayer.Combined ? 'bg-gradient-to-r from-orange-500 to-cyan-500 text-white shadow-2xs font-semibold' : themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'"
+            title="Display both folder hierarchy and note [[wikilinks]] in one view"
+            @click="graphLayer = GraphLayer.Combined"
+          >
+            <span>Combined</span>
+          </button>
+        </div>
+
+        <div class="h-4 w-px mx-0.5" :class="themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-300'" />
 
         <Button
           v-if="focusFolder.length > 0"
