@@ -36,11 +36,11 @@ We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v
 
 | Rail | Role |
 | --- | --- |
-| **View** | Structure / Note / Links / Files / Preview |
+| **View** | Note / Links / Files / Preview (Structure is home — brand returns) |
 | **Create** | New note, Named, Folder — secondary |
 | **Manage** | Import, Rename, Delete — tertiary, bottom |
 
-On refresh: restore **last opened note** if remembered; otherwise land on **Structure** — never pick a random vault entry.
+On refresh: land on **Structure** (remembered note is highlighted, not auto-opened). Never pick a random vault entry into the editor.
 
 Files tree is a **drawer peek**, not the primary browser. Structure and Links are separate full canvases.
 

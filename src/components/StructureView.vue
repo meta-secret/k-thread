@@ -97,7 +97,13 @@ const nodeMap = (nodes: readonly PlacedStructureNode[]) => {
 
 const refreshFocus = () => {
   if (wireSel.tag === 'none' || nodeSel.tag === 'none') return
-  paintStructureFocus(wireSel.value, nodeSel.value, hoveredId.value, focusFolder.value)
+  paintStructureFocus(
+    wireSel.value,
+    nodeSel.value,
+    hoveredId.value,
+    focusFolder.value,
+    props.activeId,
+  )
 }
 
 const rebuild = () => {
@@ -127,16 +133,6 @@ const rebuild = () => {
   svgRoot = some(svg)
   attachStructureDefs(svg)
   drawStructureBackdrop(svg, width, height)
-
-  svg
-    .append('text')
-    .attr('x', 28)
-    .attr('y', 36)
-    .attr('fill', '#8a8a96')
-    .attr('font-size', 13)
-    .attr('font-weight', 500)
-    .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
-    .text(focusFolder.value.length > 0 ? `Folder · ${focusFolder.value}` : 'Project structure')
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -213,12 +209,6 @@ const rebuild = () => {
     drawStructureWidget(select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>, d)
   })
 
-  // Highlight active note
-  if (props.activeId.length > 0) {
-    const activeWidget = stage.nodes.find((n) => n.noteId === props.activeId)
-    if (activeWidget) hoveredId.value = activeWidget.id
-  }
-
   wireSel = some(wiresJoined as StructWireSel)
   nodeSel = some(nodesJoined as StructNodeSel)
   updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes))
@@ -246,30 +236,28 @@ onBeforeUnmount(() => {
 <template>
   <div class="structure-shell">
     <div class="toolbar">
-      <div class="modes">
-        <span class="readout">Structure</span>
-        <span class="sep" />
-        <span class="hint-inline">Folders and notes · not wikilinks</span>
+      <div class="heading">
+        <h2 class="title">{{ focusFolder.length > 0 ? focusFolder : 'Project structure' }}</h2>
+        <p class="sub">Folders and notes · click a note to write</p>
       </div>
       <Input v-model="query" class="search" placeholder="Filter notes…" autocomplete="off" />
       <div class="actions">
         <Button
           size="sm"
           variant="ghost"
-          class="struct-btn"
           :disabled="focusFolder.length === 0"
           @click="clearFocusFolder"
         >
           Whole vault
         </Button>
-        <Button size="sm" variant="outline" class="struct-btn" @click="resetZoom">Reset view</Button>
+        <Button size="sm" variant="outline" @click="resetZoom">Reset</Button>
       </div>
     </div>
     <div :ref="bindHost" class="canvas" />
     <div class="footer">
-      <span>{{ stats.nodes }} nodes</span>
+      <span>{{ stats.nodes }} steps</span>
       <span>{{ stats.links }} links</span>
-      <span class="hint">Click a note to open · click a folder to zoom in</span>
+      <span class="hint">Folder → focus subtree · Note → open editor</span>
     </div>
   </div>
 </template>
@@ -280,7 +268,7 @@ onBeforeUnmount(() => {
   grid-template-rows: auto 1fr auto;
   height: 100%;
   min-height: 0;
-  background: #ffffff;
+  background: var(--kube-wash-top);
   color: var(--kube-ink);
   font-family: var(--font-sans, "IBM Plex Sans", "Segoe UI", sans-serif);
 }
@@ -288,19 +276,36 @@ onBeforeUnmount(() => {
 .toolbar,
 .footer {
   z-index: 2;
+  background: color-mix(in srgb, var(--kube-wash-top) 92%, white);
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.75rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.55rem 1rem;
-  border-bottom: 1px solid rgba(18, 18, 20, 0.08);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--kube-line);
 }
 
-.modes,
+.heading {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--kube-mute);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -308,26 +313,10 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-.readout {
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.hint-inline {
-  font-size: 0.72rem;
-  color: var(--kube-mute);
-}
-
-.sep {
-  width: 1px;
-  height: 1rem;
-  background: rgba(18, 18, 20, 0.12);
-}
-
 .search {
   width: min(220px, 100%);
-  background: #f4f4f6;
-  border-color: rgba(18, 18, 20, 0.12);
+  background: var(--card, #fff);
+  border-color: var(--kube-line);
   font-size: 0.8rem;
 }
 
@@ -342,8 +331,8 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
-  padding: 0.45rem 1rem;
-  border-top: 1px solid rgba(18, 18, 20, 0.08);
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid var(--kube-line);
   font-size: 0.7rem;
   color: var(--kube-mute);
 }

@@ -8,7 +8,7 @@ export const waitForAppBoot = async (page: Page) => {
   await expect(page.locator('.landing, .workspace')).toBeVisible()
 }
 
-/** Empty OPFS → landing CTA → kube workspace (Note after create). */
+/** Empty OPFS → landing CTA → workspace (Note after create for writing). */
 export const enterWorkspaceFromLanding = async (page: Page) => {
   await waitForAppBoot(page)
   const landing = page.locator('.landing')
@@ -23,8 +23,9 @@ export const enterWorkspaceFromLanding = async (page: Page) => {
 const railButton = (page: Page, title: string) =>
   page.locator(`.rail button[title="${title}"]`)
 
+/** Structure is home — brand returns from Note/Links. */
 export const openStructureView = async (page: Page) => {
-  await railButton(page, 'Structure').click()
+  await page.locator('button.brand.home').click()
   await expect(page.locator('.structure-shell')).toBeVisible()
 }
 

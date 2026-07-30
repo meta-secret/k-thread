@@ -88,8 +88,9 @@ IBM Plex Sans for UI and note chrome; IBM Plex Mono for ordinals / readouts only
 ## Layout
 
 - Header · workspace (rail + stage [+ inspector]) · footer
-- Rail: **View** (Structure / Note / Links / Files / Preview) → **Create** → **Manage**
-- Structure (home): vault → folders → notes as workflow widgets
+- Structure is the **main page** (no View toggle to reveal it); brand returns home
+- Rail: **View** (Note / Links / Files / Preview) → **Create** → **Manage**
+- Structure widgets: white step cards, icon tile, parent-aligned tree funnel
 - Links: top-down BFS rows (Focus → Hop n) for wikilinks only
 - Files = drawer peek (⌘B), not the primary browser
 

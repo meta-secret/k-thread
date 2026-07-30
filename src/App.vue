@@ -168,10 +168,10 @@ const notePathLabel = computed(() => {
   <TooltipProvider>
     <div class="app" :class="{ canvas: isCanvas, ready }">
       <header class="top">
-        <div class="brand">
+        <button type="button" class="brand home" title="Project structure" @click="openStructure">
           <BrandMark :size="28" />
           <span class="wordmark">k-thread</span>
-        </div>
+        </button>
         <p class="msg">
           {{ message }}
           <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
@@ -360,6 +360,16 @@ const notePathLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.brand:hover .wordmark {
+  color: var(--kube-ink);
 }
 
 .wordmark {

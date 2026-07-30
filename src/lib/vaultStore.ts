@@ -17,7 +17,7 @@ import {
 } from '../types'
 import { buildIndex } from './graph'
 import { noteLinks } from './graphView'
-import { readLastActiveId, readLastView, writeLastActiveId, writeLastView } from './session'
+import { readLastActiveId, writeLastActiveId, writeLastView } from './session'
 import { buildNoteTree, joinPath } from './tree'
 import {
   createFolderInOpfs,
@@ -369,13 +369,9 @@ const openLocalVault = async () => {
   // Prefer remembered note; never surprise-open an arbitrary vault entry.
   const remembered = readLastActiveId()
   const match = remembered.length > 0 ? picked.value.docs.find((d) => d.id === remembered) : undefined
-  if (match) {
-    focusNote(match.id)
-    setView(ViewMode.Note)
-  } else {
-    clearActive()
-    setView(ViewMode.Structure)
-  }
+  if (match) focusNote(match.id)
+  else clearActive()
+  setView(ViewMode.Structure)
 }
 
 const restoreActiveFromSession = (docs: readonly Doc[]) => {
@@ -405,11 +401,9 @@ const hydrateFromOpfs = async () => {
   state.docs = loaded.value.docs
   state.folders = loaded.value.folders
   markReady(`${loaded.value.docs.length} notes restored`)
+  // Remember last note for highlight / Note mode, but land on Structure home.
   restoreActiveFromSession(loaded.value.docs)
-  if (state.activeId.tag === 'some') {
-    const last = readLastView()
-    setView(last === ViewMode.Structure ? ViewMode.Note : last)
-  }
+  setView(ViewMode.Structure)
 }
 
 const setView = (view: ViewModeT) => {

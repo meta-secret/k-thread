@@ -5,7 +5,6 @@ import {
   FileText,
   FolderOpen,
   FolderPlus,
-  FolderTree,
   Network,
   PanelLeft,
   Pencil,
@@ -42,17 +41,9 @@ const emit = defineEmits<{
         <button
           type="button"
           class="icon-btn"
-          :class="{ on: view === ViewMode.Structure }"
-          title="Structure"
-          @click="emit('setView', ViewMode.Structure)"
-        >
-          <FolderTree class="size-4" :stroke-width="1.5" />
-        </button>
-        <button
-          type="button"
-          class="icon-btn"
           :class="{ on: view === ViewMode.Note && !filesOpen }"
           title="Note"
+          :disabled="!hasActive"
           @click="emit('setView', ViewMode.Note)"
         >
           <StickyNote class="size-4" :stroke-width="1.5" />
