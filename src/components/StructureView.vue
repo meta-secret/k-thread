@@ -4,14 +4,17 @@ import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
 import {
+  ArrowRight,
   Crosshair,
   FileText,
+  Folder,
   GitBranch,
   Maximize2,
   Moon,
   RefreshCw,
   Search,
   Sun,
+  X,
   ZoomIn,
   ZoomOut,
 } from '@lucide/vue'
@@ -52,6 +55,7 @@ const emit = defineEmits<{
 const query = ref('')
 const focusFolder = ref('')
 const hoveredId = ref('')
+const pinnedId = ref('')
 const hostEl = ref<Option<HTMLElement>>(none)
 
 /** Theme mode: defaults to 'light' to align with main page shell, toggleable to 'dark'. */
@@ -82,17 +86,27 @@ let resizeObserver: Option<ResizeObserver> = none
 const dragOffsets = new Map<string, { x: number; y: number }>()
 const stats = ref({ nodes: 0, links: 0 })
 
-const selectedNode = computed<PlacedStructureNode | null>(() => {
-  if (!hoveredId.value && !props.activeId) return null
-  const targetId = hoveredId.value || `note:${props.activeId}`
+// The node currently being inspected (pinned, hovered, or active note)
+const inspectorNode = computed<PlacedStructureNode | null>(() => {
+  const targetId = pinnedId.value || hoveredId.value || (props.activeId ? `note:${props.activeId}` : '')
+  if (!targetId) return null
   const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value)
   const stage = placeStructureStage(graph, 1100, 640)
   return stage.nodes.find((n) => n.id === targetId || n.noteId === props.activeId) ?? null
 })
 
+// Sub-notes under the currently inspected folder node
+const folderChildrenDocs = computed(() => {
+  if (!inspectorNode.value || inspectorNode.value.kind !== StructureKind.Folder) return []
+  const path = inspectorNode.value.folderPath
+  if (!path) return []
+  const prefix = `${path}/`
+  return props.docs.filter((d) => d.id.startsWith(prefix) || d.id === path).slice(0, 4)
+})
+
 const selectedDoc = computed(() => {
-  if (!selectedNode.value || !selectedNode.value.noteId) return null
-  return props.docs.find((d) => d.id === selectedNode.value?.noteId) ?? null
+  if (!inspectorNode.value || !inspectorNode.value.noteId) return null
+  return props.docs.find((d) => d.id === inspectorNode.value?.noteId) ?? null
 })
 
 const filteredDocs = computed(() => {
@@ -133,6 +147,13 @@ const zoomOut = () => {
 
 const clearFocusFolder = () => {
   focusFolder.value = ''
+  pinnedId.value = ''
+  rebuild()
+}
+
+const focusInspectedFolder = () => {
+  if (!inspectorNode.value || inspectorNode.value.kind !== StructureKind.Folder) return
+  focusFolder.value = inspectorNode.value.folderPath
   rebuild()
 }
 
@@ -142,12 +163,16 @@ const nodeMap = (nodes: readonly PlacedStructureNode[]) => {
   return map
 }
 
+const activeFocusTarget = computed(() => {
+  return hoveredId.value || pinnedId.value || ''
+})
+
 const refreshFocus = () => {
   if (wireSel.tag === 'none' || nodeSel.tag === 'none') return
   paintStructureFocus(
     wireSel.value,
     nodeSel.value,
-    hoveredId.value,
+    activeFocusTarget.value,
     focusFolder.value,
     props.activeId,
     themeMode.value,
@@ -181,6 +206,12 @@ const rebuild = () => {
   svgRoot = some(svg)
   attachStructureDefs(svg)
   drawStructureBackdrop(svg, width, height, themeMode.value)
+
+  // Clicking backdrop unpins selection
+  svg.on('click', () => {
+    pinnedId.value = ''
+    refreshFocus()
+  })
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
@@ -231,25 +262,19 @@ const rebuild = () => {
     })
     .on('click', (event, d) => {
       event.stopPropagation()
+      pinnedId.value = d.id
+      refreshFocus()
       if (d.kind === StructureKind.Note && d.noteId.length > 0) {
         emit('focusNote', d.noteId)
-        emit('openNote', d.noteId)
-        return
-      }
-      if (d.kind === StructureKind.Folder) {
-        focusFolder.value = d.folderPath
-        rebuild()
-        return
-      }
-      if (d.kind === StructureKind.Root) {
-        focusFolder.value = ''
-        rebuild()
       }
     })
     .on('dblclick', (event, d) => {
       event.stopPropagation()
       if (d.kind === StructureKind.Note && d.noteId.length > 0) {
         emit('openNote', d.noteId)
+      } else if (d.kind === StructureKind.Folder) {
+        focusFolder.value = d.folderPath
+        rebuild()
       }
     })
 
@@ -341,7 +366,7 @@ onBeforeUnmount(() => {
         <!-- Theme Toggle (Light / Dark) -->
         <button
           type="button"
-          class="flex items-center justify-center p-2 rounded-lg border transition-colors"
+          class="flex items-center justify-center p-2 rounded-lg border transition-colors cursor-pointer"
           :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-xs'"
           :title="themeMode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
           @click="toggleTheme"
@@ -353,7 +378,7 @@ onBeforeUnmount(() => {
         <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'">
           <button
             type="button"
-            class="p-1.5 rounded transition-colors"
+            class="p-1.5 rounded transition-colors cursor-pointer"
             :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Zoom In"
             @click="zoomIn"
@@ -362,7 +387,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="p-1.5 rounded transition-colors"
+            class="p-1.5 rounded transition-colors cursor-pointer"
             :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Zoom Out"
             @click="zoomOut"
@@ -371,7 +396,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="p-1.5 rounded transition-colors"
+            class="p-1.5 rounded transition-colors cursor-pointer"
             :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Reset View"
             @click="resetZoom"
@@ -386,46 +411,128 @@ onBeforeUnmount(() => {
     <div class="relative z-0 min-h-0 w-full h-full overflow-hidden">
       <div :ref="bindHost" class="w-full h-full" />
 
-      <!-- Floating Interactive Inspector Card -->
+      <!-- Floating Interactive Inspector Card (Flawless UX & Pin Support) -->
       <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
         <div
-          v-if="selectedNode"
-          class="absolute bottom-4 right-4 z-20 w-80 rounded-xl backdrop-blur-xl border p-4 text-xs shadow-2xl transition-colors duration-200"
-          :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800/90' : 'bg-white/95 border-zinc-200 shadow-xl'"
+          v-if="inspectorNode"
+          class="absolute bottom-5 right-5 z-30 w-96 rounded-2xl backdrop-blur-2xl border p-4.5 text-xs shadow-2xl transition-colors duration-200"
+          :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800/90 shadow-black/80' : 'bg-white/95 border-zinc-200 shadow-zinc-400/20'"
         >
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-mono text-[10px] uppercase tracking-widest text-orange-500 font-semibold flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-              Node Inspector
-            </span>
-            <span class="font-mono text-[10px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">#{String(selectedNode.index).padStart(2, '0')}</span>
+          <!-- Header Bar -->
+          <div class="flex items-center justify-between pb-3 border-b" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200'">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+              <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-500">
+                Node Inspector
+              </span>
+              <span
+                class="font-mono text-[10px] px-1.5 py-0.5 rounded border"
+                :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'"
+              >
+                #{{ String(inspectorNode.index).padStart(2, '0') }}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              class="p-1 rounded-md transition-colors cursor-pointer"
+              :class="themeMode === 'dark' ? 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'"
+              title="Close Inspector"
+              @click="pinnedId = ''"
+            >
+              <X class="w-4 h-4" />
+            </button>
           </div>
 
-          <h3 class="font-semibold text-sm m-0 truncate" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
-            {{ selectedNode.title }}
-          </h3>
-          <p class="m-0 mt-0.5 truncate text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
-            {{ selectedNode.meta }}
-          </p>
+          <!-- Body Content -->
+          <div class="mt-3.5 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <h3 class="font-semibold text-base m-0 leading-tight" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
+                  {{ inspectorNode.title }}
+                </h3>
+                <p class="m-0 mt-1 text-[11.5px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
+                  {{ inspectorNode.meta }}
+                </p>
+              </div>
 
-          <div class="mt-3 pt-2.5 border-t" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200'">
-            <p
-              class="font-mono text-[10.5px] line-clamp-3 p-2 rounded border"
-              :class="themeMode === 'dark' ? 'bg-zinc-900/80 text-zinc-300 border-zinc-800' : 'bg-zinc-50 text-zinc-700 border-zinc-200'"
-            >
-              {{ selectedDoc?.body || '(Empty note content)' }}
-            </p>
-            <div class="mt-2.5 flex items-center justify-between">
-              <span class="text-[10px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">Click node to edit note</span>
-              <Button
-                size="sm"
-                class="h-7 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium px-2.5"
-                @click="emit('openNote', selectedNode.noteId as DocId)"
+              <!-- Node Kind Icon Badge -->
+              <div
+                class="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl border"
+                :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-600'"
               >
-                <FileText class="w-3 h-3 mr-1" />
-                Open Note
-              </Button>
+                <Folder v-if="inspectorNode.kind === StructureKind.Folder" class="w-4 h-4" />
+                <GitBranch v-else-if="inspectorNode.kind === StructureKind.Root" class="w-4 h-4" />
+                <FileText v-else class="w-4 h-4" />
+              </div>
             </div>
+
+            <!-- FOLDER NODE INSPECTOR CONTENT -->
+            <template v-if="inspectorNode.kind === StructureKind.Folder">
+              <div class="rounded-xl p-3 border space-y-2" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-mono text-zinc-500 uppercase tracking-wider">Subtree Breakdown</span>
+                  <span class="font-mono font-medium text-orange-500">{{ folderChildrenDocs.length }} Direct Notes</span>
+                </div>
+
+                <div v-if="folderChildrenDocs.length > 0" class="space-y-1 pt-1">
+                  <div
+                    v-for="child in folderChildrenDocs"
+                    :key="child.id"
+                    class="flex items-center justify-between p-1.5 rounded-lg border transition-colors cursor-pointer group"
+                    :class="themeMode === 'dark' ? 'bg-zinc-950/60 border-zinc-800/60 hover:border-orange-500/40' : 'bg-white border-zinc-200 hover:border-orange-300 shadow-2xs'"
+                    @click="emit('openNote', child.id as DocId)"
+                  >
+                    <span class="truncate font-medium text-xs group-hover:text-orange-500 transition-colors">
+                      {{ child.title }}
+                    </span>
+                    <ArrowRight class="w-3 h-3 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                  </div>
+                </div>
+                <p v-else class="text-[11px] text-zinc-400 italic m-0">No nested notes inside this folder</p>
+              </div>
+
+              <!-- Folder Actions -->
+              <div class="flex items-center gap-2 pt-1">
+                <Button
+                  size="sm"
+                  class="flex-1 h-8 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-xs cursor-pointer"
+                  @click="focusInspectedFolder"
+                >
+                  <Crosshair class="w-3.5 h-3.5 mr-1.5" />
+                  Focus Subtree
+                </Button>
+              </div>
+            </template>
+
+            <!-- NOTE NODE INSPECTOR CONTENT -->
+            <template v-else-if="inspectorNode.kind === StructureKind.Note && selectedDoc">
+              <div class="rounded-xl p-3 border space-y-2" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-mono text-zinc-500 uppercase tracking-wider">Note Content Snippet</span>
+                  <span class="font-mono text-zinc-400">{{ selectedDoc.body.length }} chars</span>
+                </div>
+
+                <p
+                  class="font-mono text-[11px] leading-relaxed line-clamp-4 m-0 p-2 rounded border"
+                  :class="themeMode === 'dark' ? 'bg-zinc-950/80 text-zinc-300 border-zinc-800' : 'bg-white text-zinc-700 border-zinc-200'"
+                >
+                  {{ selectedDoc.body || '(Empty note content)' }}
+                </p>
+              </div>
+
+              <!-- Note Actions -->
+              <div class="flex items-center gap-2 pt-1">
+                <Button
+                  size="sm"
+                  class="flex-1 h-8 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold shadow-xs cursor-pointer"
+                  @click="emit('openNote', inspectorNode.noteId as DocId)"
+                >
+                  <FileText class="w-3.5 h-3.5 mr-1.5" />
+                  Open Note in Editor
+                </Button>
+              </div>
+            </template>
           </div>
         </div>
       </transition>
@@ -454,7 +561,7 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-4 text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">
         <span class="flex items-center gap-1">
           <Crosshair class="w-3 h-3 text-orange-500" />
-          <span>Click folder to focus subtree</span>
+          <span>Click node to select & inspect</span>
         </span>
         <span>·</span>
         <span>Double-click note to write</span>
