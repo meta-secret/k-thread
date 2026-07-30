@@ -91,19 +91,21 @@ export const createCalloutBlock = createReactBlockSpec(
         body,
       }
     },
-    toExternalHTML: (props): ReactElement => {
-      const foldMark =
-        props.block.props.fold === 'folded' ? '-' : props.block.props.fold === 'open' ? '+' : ''
-      const title =
-        props.block.props.title.length > 0 ? ` ${props.block.props.title}` : ''
-      const header = `> [!${props.block.props.calloutType}]${foldMark}${title}`
-      const body = props.block.props.body
-        .split('\n')
-        .map((line: string) => `> ${line}`)
-        .join('\n')
-      const md = body.length > 0 ? `${header}\n${body}` : header
-      return rawExport(md)
-    },
+    toExternalHTML: (props): ReactElement =>
+      createElement(
+        'div',
+        {
+          'data-obsidian-callout': 'true',
+          'data-type': props.block.props.calloutType,
+          'data-title': props.block.props.title,
+          'data-fold': props.block.props.fold,
+        },
+        createElement(
+          'div',
+          { 'data-obsidian-callout-body': 'true' },
+          props.block.props.body,
+        ),
+      ),
     render: (props): ReactElement =>
       createElement(
         'div',

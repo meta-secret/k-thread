@@ -95,9 +95,17 @@ onBeforeUnmount(() => {
 }
 
 .blocknote-host .bn-editor {
-  padding-inline: clamp(1.25rem, 4vw, 2.5rem);
-  padding-block: 1.5rem 2rem;
+  padding-inline: clamp(1rem, 3vw, 1.75rem);
+  padding-block: 0.85rem 1.25rem;
   color: #141414;
+}
+
+.blocknote-host .bn-block-outer {
+  margin: 0;
+}
+
+.blocknote-host .bn-block {
+  margin: 0.15rem 0;
 }
 
 .blocknote-host .obsidian-wikilink {
@@ -170,12 +178,14 @@ onBeforeUnmount(() => {
 .blocknote-host .obsidian-plugin-editor,
 .blocknote-host .obsidian-callout-body {
   width: 100%;
-  min-height: 5rem;
+  min-height: 2.5rem;
+  max-height: 14rem;
+  field-sizing: content;
   border: 0;
   resize: vertical;
-  padding: 0.75rem;
-  background: var(--card);
-  color: var(--foreground);
+  padding: 0.55rem 0.75rem;
+  background: rgba(255, 255, 255, 0.55);
+  color: #141414;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   line-height: 1.45;

@@ -70,6 +70,13 @@ const escAttr = (value: string): string =>
 const escHtml = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+const decodeHtml = (value: string): string =>
+  value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+
 type FenceToken = { id: string; html: string }
 
 const extractFences = (markdown: string): { text: string; fences: FenceToken[] } => {
@@ -104,6 +111,26 @@ const restoreFences = (text: string, fences: FenceToken[]): string => {
   return out
 }
 
+const isCalloutMarkdown = (text: string): boolean =>
+  /^>\s*\[![A-Za-z0-9_-]+\]/m.test(text.trim())
+
+/** Recover callouts that were wrongly persisted inside code fences. */
+const unwrapCalloutFences = (markdown: string): string =>
+  markdown.replace(/^```[^\n`]*\n([\s\S]*?)^```\s*$/gm, (full, body: string) => {
+    const trimmed = body.replace(/\n$/, '')
+    return isCalloutMarkdown(trimmed) ? `${trimmed}\n` : full
+  })
+
+const calloutToHtml = (
+  type: string,
+  foldMark: string,
+  title: string,
+  bodyLines: string[],
+): string => {
+  const fold = foldMark === '-' ? 'folded' : foldMark === '+' ? 'open' : 'none'
+  return `<div data-obsidian-callout="true" data-type="${escAttr(type.toLowerCase())}" data-title="${escAttr(title)}" data-fold="${fold}"><div data-obsidian-callout-body>${escHtml(bodyLines.join('\n'))}</div></div>`
+}
+
 const transformCallouts = (markdown: string): string => {
   const lines = markdown.split('\n')
   const out: string[] = []
@@ -118,9 +145,8 @@ const transformCallouts = (markdown: string): string => {
       continue
     }
 
-    const type = (start[1] ?? 'note').toLowerCase()
+    const type = start[1] ?? 'note'
     const foldMark = start[2] ?? ''
-    const fold = foldMark === '-' ? 'folded' : foldMark === '+' ? 'open' : 'none'
     const title = (start[3] ?? '').trim()
     const bodyLines: string[] = []
     i += 1
@@ -131,13 +157,34 @@ const transformCallouts = (markdown: string): string => {
       i += 1
     }
 
-    out.push(
-      `<div data-obsidian-callout="true" data-type="${escAttr(type)}" data-title="${escAttr(title)}" data-fold="${fold}"><div data-obsidian-callout-body>${escHtml(bodyLines.join('\n'))}</div></div>`,
-    )
+    out.push(calloutToHtml(type, foldMark, title, bodyLines))
   }
 
   return out.join('\n')
 }
+
+const htmlCalloutsToMarkdown = (markdown: string): string =>
+  markdown.replace(
+    /<div[^>]*data-obsidian-callout="true"[^>]*>\s*<div[^>]*data-obsidian-callout-body[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi,
+    (full, bodyRaw: string) => {
+      const typeMatch = full.match(/data-type="([^"]*)"/i)
+      const titleMatch = full.match(/data-title="([^"]*)"/i)
+      const foldMatch = full.match(/data-fold="([^"]*)"/i)
+      const type = decodeHtml(typeMatch?.[1] ?? 'note') || 'note'
+      const title = decodeHtml(titleMatch?.[1] ?? '')
+      const foldRaw = foldMatch?.[1] ?? 'none'
+      const foldMark = foldRaw === 'folded' ? '-' : foldRaw === 'open' ? '+' : ''
+      const body = decodeHtml(bodyRaw)
+      const titlePart = title.length > 0 ? ` ${title}` : ''
+      const header = `> [!${type}]${foldMark}${titlePart}`
+      if (body.length === 0) return `${header}\n\n`
+      const quoted = body
+        .split('\n')
+        .map((line) => `> ${line}`)
+        .join('\n')
+      return `${header}\n${quoted}\n\n`
+    },
+  )
 
 const transformBlockComments = (markdown: string): string =>
   markdown.replace(/^%%\s*\n([\s\S]*?)^%%\s*$/gm, (_full, body: string) => {
@@ -175,7 +222,9 @@ const extractFrontmatter = (
  */
 export const prepareObsidianMarkdown = (markdown: string): string => {
   const { frontmatterHtml, body } = extractFrontmatter(markdown)
-  const { text: withoutFences, fences } = extractFences(body)
+  // Unwrap before fence extraction so corrupt callout-in-code saves recover.
+  const recovered = unwrapCalloutFences(body)
+  const { text: withoutFences, fences } = extractFences(recovered)
 
   let out = withoutFences
   out = transformBlockComments(out)
@@ -207,25 +256,21 @@ export const prepareObsidianMarkdown = (markdown: string): string => {
   return `${frontmatterHtml}${out}`
 }
 
-const decodeHtml = (value: string): string =>
-  value
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-
 /** Clean BlockNote markdown export back toward Obsidian dialects. */
 export const finalizeObsidianMarkdown = (markdown: string): string => {
   let out = markdown
     .replace(/<mark[^>]*data-obsidian-highlight[^>]*>(.*?)<\/mark>/gis, '==$1==')
     .replace(/<mark[^>]*class="[^"]*obsidian-highlight[^"]*"[^>]*>(.*?)<\/mark>/gis, '==$1==')
 
-  // Custom blocks export as <pre data-obsidian-raw> or fenced obsidian-raw.
+  out = htmlCalloutsToMarkdown(out)
+
+  // Legacy: custom blocks exported as <pre data-obsidian-raw> or fenced obsidian-raw.
   out = out.replace(
     /<pre[^>]*data-obsidian-raw="true"[^>]*>\s*<code>([\s\S]*?)<\/code>\s*<\/pre>/gi,
     (_full, body: string) => `${decodeHtml(body)}\n\n`,
   )
   out = out.replace(/```obsidian-raw\n([\s\S]*?)\n```/g, (_full, body: string) => `${body}\n\n`)
+  out = unwrapCalloutFences(out)
 
   out = out.replace(
     /<div[^>]*data-obsidian-frontmatter="true"[^>]*>\s*<pre>([\s\S]*?)<\/pre>\s*<\/div>/gi,

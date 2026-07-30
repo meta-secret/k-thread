@@ -71,16 +71,22 @@ export function BlockNoteApp(props: BlockNoteAppProps): ReactElement {
   useEffect(() => {
     let cancelled = false
     ready.current = false
-    const prepared = prepareObsidianMarkdown(markdownRef.current)
+    const original = markdownRef.current
+    const prepared = prepareObsidianMarkdown(original)
     const blocks = editor.tryParseMarkdownToBlocks(prepared)
     if (cancelled) return
     editor.replaceBlocks(editor.document, blocks)
+    // Heal callouts that were previously persisted as code fences.
+    if (/```[\s\S]*?>\s*\[!/.test(original) || /data-obsidian-raw[\s\S]*?>\s*\[!/.test(original)) {
+      const healed = finalizeObsidianMarkdown(editor.blocksToMarkdownLossy(editor.document))
+      if (healed !== original) props.onChange(healed)
+    }
     ready.current = true
     lastKey.current = props.docKey
     return () => {
       cancelled = true
     }
-  }, [editor, props.docKey])
+  }, [editor, props.docKey, props.onChange])
 
   return createElement(
     View,

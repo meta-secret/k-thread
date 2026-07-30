@@ -144,26 +144,22 @@ const emit = defineEmits<{
   z-index: 1;
   display: grid;
   min-height: 0;
-  place-items: stretch center;
-  padding: 1.25rem 1.5rem 0.5rem;
+  place-items: stretch stretch;
+  padding: 0.5rem 0.75rem 0;
 }
 
 .sheet {
-  width: min(720px, 100%);
+  width: 100%;
   height: 100%;
   min-height: 0;
   display: grid;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.22);
-  border: 1px solid rgba(20, 20, 20, 0.08);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 30px 60px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .sheet.split {
-  width: min(1040px, 100%);
   grid-template-columns: 1fr;
   grid-template-rows: 1fr 1fr;
 }
@@ -182,14 +178,15 @@ const emit = defineEmits<{
 }
 
 .pane.preview {
-  border-top: 1px solid rgba(20, 20, 20, 0.08);
-  background: rgba(255, 255, 255, 0.18);
+  border-top: 1px solid rgba(20, 20, 20, 0.1);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
 }
 
 @media (min-width: 1100px) {
   .pane.preview {
     border-top: none;
-    border-left: 1px solid rgba(20, 20, 20, 0.08);
+    border-left: 1px solid rgba(20, 20, 20, 0.1);
   }
 }
 
