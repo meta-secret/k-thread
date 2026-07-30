@@ -14,7 +14,7 @@ This folder is the project’s mental model: why it exists, how it is shaped, wh
 | [architecture.md](./architecture.md) | Layers, modules, data flow |
 | [design.md](./design.md) | Dual aesthetic: kube note shell + HUD graph |
 | [stack.md](./stack.md) | Frameworks, TypeScript tooling, motivations |
-| [type-safety.md](./type-safety.md) | No `null`/`undefined`; `Option` / `Result` / const unions |
+| [type-safety.md](./type-safety.md) | ≤500 LOC/file (semantic splits); no `null`/`undefined`; `Option` / `Result` / const unions |
 | [storage.md](./storage.md) | OPFS vault, folders, `index.yaml` |
 | [editor.md](./editor.md) | BlockNote island + Obsidian dialect |
 | [graph.md](./graph.md) | HUD wires, chip nodes, local/global nav |

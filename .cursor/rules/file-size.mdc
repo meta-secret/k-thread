@@ -1,0 +1,15 @@
+---
+description: Hard ≤500 LOC limit for TS/Vue/Svelte/components; semantic splits only
+globs: "**/*.{ts,tsx,vue,svelte,js,jsx}"
+alwaysApply: true
+---
+
+# File size hard rule (≤500 lines)
+
+Source of truth: [`.cortext/type-safety.md`](../../.cortext/type-safety.md).
+
+- **No** `.ts` / `.tsx` / `.vue` / `.svelte` / component file may exceed **500 lines**.
+- Over limit → **must split** before finishing the change.
+- Splits must be **semantic** (responsibility, cohesion, clear names, small public API) — **not** mechanical cuts, `*2.ts` dumps, or mid-function chops.
+- Prefer extracting layout vs render, parse vs IO, subcomponents, focused types modules.
+- Do not grow an already-oversized file; shrink or split in the same change.
