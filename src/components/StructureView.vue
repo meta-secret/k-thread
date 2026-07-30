@@ -443,201 +443,197 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <!-- Main Stage Layout Container (Flex split: Left Canvas + Right Docked Panel) -->
-    <div class="relative z-0 min-h-0 w-full h-full flex overflow-hidden">
-      <!-- Left SVG Canvas Area -->
-      <div class="relative flex-1 min-w-0 h-full overflow-hidden">
-        <div :ref="bindHost" class="w-full h-full" />
+    <!-- Main Stage Layout Container (Full Width Canvas with Contextual Overlay) -->
+    <div class="relative z-0 min-h-0 w-full h-full overflow-hidden">
+      <!-- Full Width SVG Canvas Area -->
+      <div :ref="bindHost" class="w-full h-full" />
 
-        <!-- Prominent Top-Left Canvas Scope Navigator Widget -->
-        <div
-          class="absolute top-5 left-5 z-20 flex items-center gap-3.5 p-2 pl-3.5 pr-4 rounded-xl backdrop-blur-xl border shadow-xl transition-all duration-200"
-          :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800 shadow-black/70 text-zinc-100' : 'bg-white/95 border-zinc-200 shadow-zinc-400/20 text-zinc-900'"
-        >
-          <div class="flex items-center gap-2.5">
-            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.25)]">
-              <Home v-if="focusFolder.length === 0" class="w-4 h-4" />
-              <FolderTree v-else class="w-4 h-4 text-orange-500" />
-            </div>
-            <div class="flex flex-col min-w-0">
-              <span class="text-[10px] font-mono font-semibold uppercase tracking-wider text-orange-500">
-                {{ focusFolder.length > 0 ? 'FOCUSED SUBTREE' : 'WHOLE VAULT ROOT' }}
-              </span>
-              <span class="text-xs font-semibold truncate max-w-[210px]">
-                {{ focusFolder.length > 0 ? focusFolder : 'All Vault Notes & Folders' }}
-              </span>
-            </div>
+      <!-- Prominent Top-Left Canvas Scope Navigator Widget -->
+      <div
+        class="absolute top-5 left-5 z-20 flex items-center gap-3.5 p-2 pl-3.5 pr-4 rounded-xl backdrop-blur-xl border shadow-xl transition-all duration-200"
+        :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800 shadow-black/70 text-zinc-100' : 'bg-white/95 border-zinc-200 shadow-zinc-400/20 text-zinc-900'"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.25)]">
+            <Home v-if="focusFolder.length === 0" class="w-4 h-4" />
+            <FolderTree v-else class="w-4 h-4 text-orange-500" />
           </div>
-
-          <div class="flex items-center gap-1.5 ml-1">
-            <Button
-              size="sm"
-              variant="outline"
-              class="h-8 px-2.5 text-xs font-medium border-zinc-300 dark:border-zinc-700 shadow-2xs cursor-pointer"
-              title="Fit graph to screen"
-              @click="fitToScreen"
-            >
-              <Maximize2 class="w-3.5 h-3.5 mr-1 text-orange-500" />
-              Fit Screen
-            </Button>
-
-            <Button
-              v-if="focusFolder.length > 0"
-              size="sm"
-              class="h-8 px-3 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
-              title="Return to Whole Vault Root"
-              @click="clearFocusFolder"
-            >
-              <RotateCcw class="w-3.5 h-3.5" />
-              <span>Whole Vault</span>
-            </Button>
+          <div class="flex flex-col min-w-0">
+            <span class="text-[10px] font-mono font-semibold uppercase tracking-wider text-orange-500">
+              {{ focusFolder.length > 0 ? 'FOCUSED SUBTREE' : 'WHOLE VAULT ROOT' }}
+            </span>
+            <span class="text-xs font-semibold truncate max-w-[210px]">
+              {{ focusFolder.length > 0 ? focusFolder : 'All Vault Notes & Folders' }}
+            </span>
           </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 ml-1">
+          <Button
+            size="sm"
+            variant="outline"
+            class="h-8 px-2.5 text-xs font-medium border-zinc-300 dark:border-zinc-700 shadow-2xs cursor-pointer"
+            title="Fit graph to screen"
+            @click="fitToScreen"
+          >
+            <Maximize2 class="w-3.5 h-3.5 mr-1 text-orange-500" />
+            Fit Screen
+          </Button>
+
+          <Button
+            v-if="focusFolder.length > 0"
+            size="sm"
+            class="h-8 px-3 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+            title="Return to Whole Vault Root"
+            @click="clearFocusFolder"
+          >
+            <RotateCcw class="w-3.5 h-3.5" />
+            <span>Whole Vault</span>
+          </Button>
         </div>
       </div>
 
-      <!-- Dedicated Right Docked Inspector Drawer (No Canvas Overlap!) -->
+      <!-- Contextual Smart Inspector Popover Card (Top-Right Canvas Floating Overlay) -->
       <transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-x-full w-0"
-        enter-to-class="opacity-100 translate-x-0 w-88 sm:w-96"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-from-class="opacity-100 translate-x-0 w-88 sm:w-96"
-        leave-to-class="opacity-0 translate-x-full w-0"
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-2 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-2 scale-95"
       >
-        <aside
+        <div
           v-if="inspectorNode"
-          class="z-20 w-88 sm:w-96 h-full border-l backdrop-blur-2xl p-4.5 overflow-y-auto flex flex-col justify-between shrink-0 transition-colors duration-200"
-          :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800/90 text-zinc-100 shadow-2xl' : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-lg'"
+          class="absolute top-5 right-5 z-30 w-80 sm:w-84 max-h-[85vh] rounded-2xl backdrop-blur-2xl border p-4 text-xs shadow-2xl overflow-y-auto transition-colors duration-200"
+          :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800/90 text-zinc-100 shadow-black/80' : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-zinc-400/20'"
         >
-          <div>
-            <!-- Header Bar -->
-            <div class="flex items-center justify-between pb-3 border-b" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200'">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
-                <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-500">
-                  Node Inspector
-                </span>
-                <span
-                  class="font-mono text-[10px] px-1.5 py-0.5 rounded border"
-                  :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'"
-                >
-                  #{{ String(inspectorNode.index).padStart(2, '0') }}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                class="p-1 rounded-md transition-colors cursor-pointer"
-                :class="themeMode === 'dark' ? 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'"
-                title="Close Inspector"
-                @click="pinnedId = ''"
+          <!-- Header Bar -->
+          <div class="flex items-center justify-between pb-2.5 border-b" :class="themeMode === 'dark' ? 'border-zinc-800/80' : 'border-zinc-200'">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
+              <span class="font-mono text-[11px] font-semibold uppercase tracking-wider text-orange-500">
+                Node Inspector
+              </span>
+              <span
+                class="font-mono text-[10px] px-1.5 py-0.5 rounded border"
+                :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'"
               >
-                <X class="w-4 h-4" />
-              </button>
+                #{{ String(inspectorNode.index).padStart(2, '0') }}
+              </span>
             </div>
 
-            <!-- Body Content -->
-            <div class="mt-4 space-y-4">
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <h3 class="font-semibold text-base m-0 leading-tight" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
-                    {{ inspectorNode.title }}
-                  </h3>
-                  <p class="m-0 mt-1 text-[11.5px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
-                    {{ inspectorNode.meta }}
-                  </p>
-                </div>
+            <button
+              type="button"
+              class="p-1 rounded-md transition-colors cursor-pointer"
+              :class="themeMode === 'dark' ? 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'"
+              title="Close Inspector"
+              @click="pinnedId = ''"
+            >
+              <X class="w-4 h-4" />
+            </button>
+          </div>
 
-                <!-- Node Kind Icon Badge -->
-                <div
-                  class="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl border"
-                  :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-600'"
-                >
-                  <Folder v-if="inspectorNode.kind === StructureKind.Folder" class="w-4 h-4" />
-                  <GitBranch v-else-if="inspectorNode.kind === StructureKind.Root" class="w-4 h-4" />
-                  <FileText v-else class="w-4 h-4" />
-                </div>
+          <!-- Body Content -->
+          <div class="mt-3 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <h3 class="font-semibold text-sm m-0 leading-tight" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
+                  {{ inspectorNode.title }}
+                </h3>
+                <p class="m-0 mt-0.5 text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
+                  {{ inspectorNode.meta }}
+                </p>
               </div>
 
-              <!-- FOLDER NODE INSPECTOR CONTENT -->
-              <template v-if="inspectorNode.kind === StructureKind.Folder">
-                <div class="rounded-xl p-3.5 border space-y-2.5" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
-                  <div class="flex items-center justify-between text-[11px]">
-                    <span class="font-mono text-zinc-500 uppercase tracking-wider">Subtree Breakdown</span>
-                    <span class="font-mono font-medium text-orange-500">{{ folderChildrenDocs.length }} Direct Notes</span>
-                  </div>
-
-                  <div v-if="folderChildrenDocs.length > 0" class="space-y-1.5 pt-1">
-                    <div
-                      v-for="child in folderChildrenDocs"
-                      :key="child.id"
-                      class="flex items-center justify-between p-2 rounded-lg border transition-colors cursor-pointer group"
-                      :class="themeMode === 'dark' ? 'bg-zinc-950/60 border-zinc-800/60 hover:border-orange-500/40' : 'bg-white border-zinc-200 hover:border-orange-300 shadow-2xs'"
-                      @click="emit('openNote', child.id as DocId)"
-                    >
-                      <span class="truncate font-medium text-xs group-hover:text-orange-500 transition-colors">
-                        {{ child.title }}
-                      </span>
-                      <ArrowRight class="w-3.5 h-3.5 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
-                    </div>
-                  </div>
-                  <p v-else class="text-[11px] text-zinc-400 italic m-0">No nested notes inside this folder</p>
-                </div>
-
-                <!-- Folder Actions -->
-                <div class="flex items-center gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    class="flex-1 h-9 text-xs font-medium border-zinc-300 dark:border-zinc-700 cursor-pointer"
-                    @click="toggleFolderCollapse(inspectorNode.folderPath)"
-                  >
-                    <ChevronRight v-if="collapsedFolders.has(inspectorNode.folderPath)" class="w-3.5 h-3.5 mr-1 text-orange-500" />
-                    <ChevronDown v-else class="w-3.5 h-3.5 mr-1 text-orange-500" />
-                    <span>{{ collapsedFolders.has(inspectorNode.folderPath) ? 'Expand Subtree' : 'Collapse Subtree' }}</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    class="flex-1 h-9 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-xs cursor-pointer"
-                    @click="focusInspectedFolder"
-                  >
-                    <Crosshair class="w-3.5 h-3.5 mr-1.5" />
-                    Focus Subtree
-                  </Button>
-                </div>
-              </template>
-
-              <!-- NOTE NODE INSPECTOR CONTENT -->
-              <template v-else-if="inspectorNode.kind === StructureKind.Note && selectedDoc">
-                <div class="rounded-xl p-3.5 border space-y-2.5" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
-                  <div class="flex items-center justify-between text-[11px]">
-                    <span class="font-mono text-zinc-500 uppercase tracking-wider">Note Content Snippet</span>
-                    <span class="font-mono text-zinc-400">{{ selectedDoc.body.length }} chars</span>
-                  </div>
-
-                  <p
-                    class="font-mono text-[11.5px] leading-relaxed line-clamp-6 m-0 p-2.5 rounded-lg border"
-                    :class="themeMode === 'dark' ? 'bg-zinc-950/80 text-zinc-300 border-zinc-800' : 'bg-white text-zinc-700 border-zinc-200'"
-                  >
-                    {{ selectedDoc.body || '(Empty note content)' }}
-                  </p>
-                </div>
-
-                <!-- Note Actions -->
-                <div class="flex items-center gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    class="flex-1 h-9 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold shadow-xs cursor-pointer"
-                    @click="emit('openNote', inspectorNode.noteId as DocId)"
-                  >
-                    <FileText class="w-3.5 h-3.5 mr-1.5" />
-                    Open Note in Editor
-                  </Button>
-                </div>
-              </template>
+              <!-- Node Kind Icon Badge -->
+              <div
+                class="flex items-center justify-center shrink-0 w-8 h-8 rounded-xl border"
+                :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-600'"
+              >
+                <Folder v-if="inspectorNode.kind === StructureKind.Folder" class="w-3.5 h-3.5" />
+                <GitBranch v-else-if="inspectorNode.kind === StructureKind.Root" class="w-3.5 h-3.5" />
+                <FileText v-else class="w-3.5 h-3.5" />
+              </div>
             </div>
+
+            <!-- FOLDER NODE INSPECTOR CONTENT -->
+            <template v-if="inspectorNode.kind === StructureKind.Folder">
+              <div class="rounded-xl p-2.5 border space-y-2" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
+                <div class="flex items-center justify-between text-[10.5px]">
+                  <span class="font-mono text-zinc-500 uppercase tracking-wider">Subtree Breakdown</span>
+                  <span class="font-mono font-medium text-orange-500">{{ folderChildrenDocs.length }} Direct Notes</span>
+                </div>
+
+                <div v-if="folderChildrenDocs.length > 0" class="space-y-1 pt-0.5">
+                  <div
+                    v-for="child in folderChildrenDocs"
+                    :key="child.id"
+                    class="flex items-center justify-between p-1.5 rounded-lg border transition-colors cursor-pointer group"
+                    :class="themeMode === 'dark' ? 'bg-zinc-950/60 border-zinc-800/60 hover:border-orange-500/40' : 'bg-white border-zinc-200 hover:border-orange-300 shadow-2xs'"
+                    @click="emit('openNote', child.id as DocId)"
+                  >
+                    <span class="truncate font-medium text-xs group-hover:text-orange-500 transition-colors">
+                      {{ child.title }}
+                    </span>
+                    <ArrowRight class="w-3 h-3 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-1.5" />
+                  </div>
+                </div>
+                <p v-else class="text-[10.5px] text-zinc-400 italic m-0">No nested notes inside this folder</p>
+              </div>
+
+              <!-- Folder Actions -->
+              <div class="flex items-center gap-1.5 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  class="flex-1 h-8 text-[11px] font-medium border-zinc-300 dark:border-zinc-700 cursor-pointer"
+                  @click="toggleFolderCollapse(inspectorNode.folderPath)"
+                >
+                  <ChevronRight v-if="collapsedFolders.has(inspectorNode.folderPath)" class="w-3 h-3 mr-1 text-orange-500" />
+                  <ChevronDown v-else class="w-3 h-3 mr-1 text-orange-500" />
+                  <span>{{ collapsedFolders.has(inspectorNode.folderPath) ? 'Expand' : 'Collapse' }}</span>
+                </Button>
+                <Button
+                  size="sm"
+                  class="flex-1 h-8 text-[11px] bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-xs cursor-pointer"
+                  @click="focusInspectedFolder"
+                >
+                  <Crosshair class="w-3 h-3 mr-1" />
+                  Focus Subtree
+                </Button>
+              </div>
+            </template>
+
+            <!-- NOTE NODE INSPECTOR CONTENT -->
+            <template v-else-if="inspectorNode.kind === StructureKind.Note && selectedDoc">
+              <div class="rounded-xl p-2.5 border space-y-2" :class="themeMode === 'dark' ? 'bg-zinc-900/70 border-zinc-800' : 'bg-zinc-50 border-zinc-200'">
+                <div class="flex items-center justify-between text-[10.5px]">
+                  <span class="font-mono text-zinc-500 uppercase tracking-wider">Content Snippet</span>
+                  <span class="font-mono text-zinc-400">{{ selectedDoc.body.length }} chars</span>
+                </div>
+
+                <p
+                  class="font-mono text-[11px] leading-relaxed line-clamp-4 m-0 p-2 rounded-lg border"
+                  :class="themeMode === 'dark' ? 'bg-zinc-950/80 text-zinc-300 border-zinc-800' : 'bg-white text-zinc-700 border-zinc-200'"
+                >
+                  {{ selectedDoc.body || '(Empty note content)' }}
+                </p>
+              </div>
+
+              <!-- Note Actions -->
+              <div class="pt-1">
+                <Button
+                  size="sm"
+                  class="w-full h-8 text-[11.5px] bg-orange-600 hover:bg-orange-500 text-white font-semibold shadow-xs cursor-pointer"
+                  @click="emit('openNote', inspectorNode.noteId as DocId)"
+                >
+                  <FileText class="w-3.5 h-3.5 mr-1.5" />
+                  Open Note in Editor
+                </Button>
+              </div>
+            </template>
           </div>
-        </aside>
+        </div>
       </transition>
     </div>
 
