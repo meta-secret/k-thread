@@ -8,10 +8,13 @@ import {
   Crosshair,
   FileText,
   Folder,
+  FolderTree,
   GitBranch,
+  Home,
   Maximize2,
   Moon,
   RefreshCw,
+  RotateCcw,
   Search,
   Sun,
   X,
@@ -410,6 +413,38 @@ onBeforeUnmount(() => {
     <!-- Main SVG Canvas Stage -->
     <div class="relative z-0 min-h-0 w-full h-full overflow-hidden">
       <div :ref="bindHost" class="w-full h-full" />
+
+      <!-- Prominent Top-Left Canvas Scope Navigator Widget -->
+      <div
+        class="absolute top-5 left-5 z-20 flex items-center gap-3.5 p-2 pl-3.5 pr-4 rounded-xl backdrop-blur-xl border shadow-xl transition-all duration-200"
+        :class="themeMode === 'dark' ? 'bg-zinc-950/90 border-zinc-800 shadow-black/70 text-zinc-100' : 'bg-white/95 border-zinc-200 shadow-zinc-400/20 text-zinc-900'"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.25)]">
+            <Home v-if="focusFolder.length === 0" class="w-4 h-4" />
+            <FolderTree v-else class="w-4 h-4 text-orange-500" />
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-[10px] font-mono font-semibold uppercase tracking-wider text-orange-500">
+              {{ focusFolder.length > 0 ? 'FOCUSED SUBTREE' : 'WHOLE VAULT ROOT' }}
+            </span>
+            <span class="text-xs font-semibold truncate max-w-[210px]">
+              {{ focusFolder.length > 0 ? focusFolder : 'All Vault Notes & Folders' }}
+            </span>
+          </div>
+        </div>
+
+        <Button
+          v-if="focusFolder.length > 0"
+          size="sm"
+          class="h-8 px-3 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer ml-1 flex items-center gap-1.5 transition-all"
+          title="Return to Whole Vault Root"
+          @click="clearFocusFolder"
+        >
+          <RotateCcw class="w-3.5 h-3.5" />
+          <span>Whole Vault</span>
+        </Button>
+      </div>
 
       <!-- Floating Interactive Inspector Card (Flawless UX & Pin Support) -->
       <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
