@@ -135,14 +135,15 @@ const bindHost = (el: Element | ComponentPublicInstance | null) => {
 const fitToScreen = () => {
   if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none' || !stageBounds.value) return
   const b = stageBounds.value
-  if (b.contentW <= 0 || b.contentH <= 0) return
-
   const el = hostEl.value.tag === 'some' ? hostEl.value.value : null
   const width = el && el.clientWidth > 0 ? el.clientWidth : 1100
   const height = el && el.clientHeight > 0 ? el.clientHeight : 640
 
-  const scale = Math.min(1.0, Math.min((width - 90) / b.contentW, (height - 130) / b.contentH))
-  const tx = (width - b.contentW * scale) / 2 - b.minX * scale
+  const padRight = inspectorNode.value ? 340 : 0
+  const availWidth = Math.max(300, width - padRight)
+
+  const scale = Math.min(1.0, Math.min((availWidth - 90) / b.contentW, (height - 130) / b.contentH))
+  const tx = (availWidth - b.contentW * scale) / 2 - b.minX * scale
   const ty = (height - b.contentH * scale) / 2 - b.minY * scale + 15
 
   const transform = zoomIdentity.translate(tx, ty).scale(scale)
@@ -323,6 +324,11 @@ watch(
   () => [props.docs, props.folders, props.activeId, query.value, focusFolder.value, themeMode.value],
   () => rebuild(),
   { deep: true },
+)
+
+watch(
+  () => pinnedId.value,
+  () => fitToScreen(),
 )
 
 onMounted(() => {
