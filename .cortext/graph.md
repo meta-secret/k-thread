@@ -23,7 +23,8 @@ Instead of splitting directory tree and wikilink network across disconnected vie
 
 ## Layout & Aesthetics
 
-- **Left-to-Right Horizontal Flow**: Vault Root at Column 0 → Folders at Column 1+ → Notes at Column 2+.
+- **Left-to-Right Horizontal Flow**: Vault Root at Column 0 → Folders at Column 1+ → Notes at Column 2+. In `Links` mode, depth columns are normalized starting at Column 0 to eliminate phantom empty folder spaces.
+- **Smooth Arc Bezier Curves**: Backwards right-to-left `[[wikilink]]` strands curve in a smooth, elegant arc above/below nodes (`to.x < from.x`), eliminating overshooting loops and node clipping.
 - **Architectural Micro-Cards (`196px` × `54px`)**: Clean micro-rounded (`rx = 10`) cards featuring 34×34px icon tile, crisp title, meta subtitle, step ordinal (`#01`, `#02`), and kind tag (`VAULT`, `DIR`, `NOTE`).
 - **Animated Energy Strands**: Glowing animated pulses flow continuously along cubic Bezier wire strands (`stroke-dashoffset` animation). Hovering accelerates flow from 1.2s to 0.5s.
 
