@@ -258,37 +258,37 @@ export const drawStructureWidget = (
     .attr('filter', `url(#${paint.shadowId})`)
 
   // Left icon tile box
-  const ix = x0 + 14
-  const iy = y0 + (WIDGET_H - 52) / 2
+  const ix = x0 + 10
+  const iy = y0 + (WIDGET_H - 42) / 2
   g.append('rect')
     .attr('x', ix)
     .attr('y', iy)
-    .attr('width', 52)
-    .attr('height', 52)
-    .attr('rx', 10)
+    .attr('width', 42)
+    .attr('height', 42)
+    .attr('rx', 8)
     .attr('fill', style.bg)
     .attr('stroke', style.stroke)
     .attr('stroke-width', 1)
 
-  drawIconGlyph(g, d, ix + 26, iy + 26, style.icon)
+  drawIconGlyph(g, d, ix + 21, iy + 21, style.icon)
 
   // Ordinal step badge (e.g. "01", "02")
   g.append('text')
-    .attr('x', x0 + WIDGET_W - 14)
-    .attr('y', y0 + 22)
+    .attr('x', x0 + WIDGET_W - 10)
+    .attr('y', y0 + 20)
     .attr('text-anchor', 'end')
     .attr('fill', paint.inkOrdinal)
-    .attr('font-size', 11)
+    .attr('font-size', 10)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace')
     .attr('letter-spacing', '0.06em')
     .text(String(d.index).padStart(2, '0'))
 
   // Kind badge tag (e.g. "VAULT", "DIR", "NOTE")
-  const badgeW = 44
-  const badgeH = 16
-  const bx = x0 + WIDGET_W - 14 - badgeW - 24
-  const by = y0 + 10
+  const badgeW = 38
+  const badgeH = 15
+  const bx = x0 + WIDGET_W - 10 - badgeW - 20
+  const by = y0 + 9
   const isRoot = d.kind === StructureKind.Root
 
   g.append('rect')
@@ -303,35 +303,56 @@ export const drawStructureWidget = (
 
   g.append('text')
     .attr('x', bx + badgeW / 2)
-    .attr('y', by + 11)
+    .attr('y', by + 10)
     .attr('text-anchor', 'middle')
     .attr('fill', isRoot ? '#ea580c' : paint.inkMuted)
-    .attr('font-size', 9)
+    .attr('font-size', 8.5)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Mono", monospace')
     .attr('letter-spacing', '0.05em')
     .text(badgeText(d.kind))
 
   // Node Title
-  const title = d.title.length > 17 ? `${d.title.slice(0, 16)}…` : d.title
+  const maxTitleLen = 14
+  const title = d.title.length > maxTitleLen ? `${d.title.slice(0, maxTitleLen - 1)}…` : d.title
   g.append('text')
-    .attr('x', ix + 64)
-    .attr('y', y0 + 42)
+    .attr('x', ix + 50)
+    .attr('y', y0 + 34)
     .attr('fill', paint.inkPrimary)
-    .attr('font-size', 14)
+    .attr('font-size', 12.5)
     .attr('font-weight', 600)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(title)
 
   // Node Subtitle / Meta
-  const meta = d.meta.length > 26 ? `${d.meta.slice(0, 25)}…` : d.meta
+  const maxMetaLen = 22
+  const meta = d.meta.length > maxMetaLen ? `${d.meta.slice(0, maxMetaLen - 1)}…` : d.meta
   g.append('text')
-    .attr('x', ix + 64)
-    .attr('y', y0 + 62)
-    .attr('fill', paint.inkMuted)
-    .attr('font-size', 11)
+    .attr('x', ix + 50)
+    .attr('y', y0 + 52)
+    .attr('fill', d.isCollapsed ? paint.accentOrange : paint.inkMuted)
+    .attr('font-size', 10)
+    .attr('font-weight', d.isCollapsed ? 600 : 400)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(meta)
+
+  // Collapse indicator dot if collapsed
+  if (d.isCollapsed) {
+    g.append('circle')
+      .attr('cx', x0 + WIDGET_W - 10)
+      .attr('cy', y0 + WIDGET_H - 14)
+      .attr('r', 5)
+      .attr('fill', paint.accentOrange)
+
+    g.append('text')
+      .attr('x', x0 + WIDGET_W - 10)
+      .attr('y', y0 + WIDGET_H - 11.5)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#ffffff')
+      .attr('font-size', 8)
+      .attr('font-weight', 800)
+      .text('+')
+  }
 
   // Connection port dots on top & bottom card edges
   for (const side of ['in', 'out'] as const) {
@@ -339,7 +360,7 @@ export const drawStructureWidget = (
     g.append('circle')
       .attr('cx', p.x)
       .attr('cy', p.y)
-      .attr('r', 4)
+      .attr('r', 3.5)
       .attr('fill', paint.portBg)
       .attr('stroke', paint.portBorder)
       .attr('stroke-width', 1.5)

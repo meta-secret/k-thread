@@ -5,6 +5,8 @@ import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
 import {
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
   Crosshair,
   FileText,
   Folder,
@@ -59,6 +61,8 @@ const query = ref('')
 const focusFolder = ref('')
 const hoveredId = ref('')
 const pinnedId = ref('')
+const collapsedFolders = ref<Set<string>>(new Set())
+const stageBounds = ref<{ minX: number; maxX: number; minY: number; maxY: number; contentW: number; contentH: number } | null>(null)
 const hostEl = ref<Option<HTMLElement>>(none)
 
 /** Theme mode: defaults to 'light' to align with main page shell, toggleable to 'dark'. */
@@ -93,7 +97,7 @@ const stats = ref({ nodes: 0, links: 0 })
 const inspectorNode = computed<PlacedStructureNode | null>(() => {
   const targetId = pinnedId.value || hoveredId.value || (props.activeId ? `note:${props.activeId}` : '')
   if (!targetId) return null
-  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value)
+  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value, collapsedFolders.value)
   const stage = placeStructureStage(graph, 1100, 640)
   return stage.nodes.find((n) => n.id === targetId || n.noteId === props.activeId) ?? null
 })
@@ -133,10 +137,23 @@ const bindHost = (el: Element | ComponentPublicInstance | null) => {
   rebuild()
 }
 
-const resetZoom = () => {
-  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
-  svgRoot.value.transition().duration(350).call(zoomBehavior.value.transform, zoomIdentity)
+const fitToScreen = () => {
+  if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none' || !stageBounds.value) return
+  const b = stageBounds.value
+  if (b.contentW <= 0 || b.contentH <= 0) return
+
+  const el = hostEl.value.tag === 'some' ? hostEl.value.value : null
+  const width = el && el.clientWidth > 0 ? el.clientWidth : 1100
+  const height = el && el.clientHeight > 0 ? el.clientHeight : 640
+
+  const scale = Math.min(1.0, Math.min((width - 90) / b.contentW, (height - 130) / b.contentH))
+  const tx = (width - b.contentW * scale) / 2 - b.minX * scale
+  const ty = (height - b.contentH * scale) / 2 - b.minY * scale + 15
+
+  const transform = zoomIdentity.translate(tx, ty).scale(scale)
+  svgRoot.value.transition().duration(450).call(zoomBehavior.value.transform, transform)
 }
+
 
 const zoomIn = () => {
   if (svgRoot.tag === 'none' || zoomBehavior.tag === 'none') return
@@ -151,6 +168,17 @@ const zoomOut = () => {
 const clearFocusFolder = () => {
   focusFolder.value = ''
   pinnedId.value = ''
+  rebuild()
+}
+
+const toggleFolderCollapse = (folderPath: string) => {
+  const next = new Set(collapsedFolders.value)
+  if (next.has(folderPath)) {
+    next.delete(folderPath)
+  } else {
+    next.add(folderPath)
+  }
+  collapsedFolders.value = next
   rebuild()
 }
 
@@ -188,8 +216,10 @@ const rebuild = () => {
   const width = el.clientWidth > 0 ? el.clientWidth : 1100
   const height = el.clientHeight > 0 ? el.clientHeight : 640
 
-  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value)
+  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value, collapsedFolders.value)
   const stage = placeStructureStage(graph, width, height)
+  stageBounds.value = stage.bounds
+
   for (const n of stage.nodes) {
     const off = dragOffsets.get(n.id)
     if (off) {
@@ -218,7 +248,7 @@ const rebuild = () => {
 
   const root = svg.append('g').attr('class', 'viewport')
   const zb = zoom<SVGSVGElement, unknown>()
-    .scaleExtent([0.2, 3])
+    .scaleExtent([0.15, 3])
     .on('zoom', (event) => {
       root.attr('transform', event.transform.toString())
     })
@@ -269,6 +299,8 @@ const rebuild = () => {
       refreshFocus()
       if (d.kind === StructureKind.Note && d.noteId.length > 0) {
         emit('focusNote', d.noteId)
+      } else if (d.kind === StructureKind.Folder) {
+        toggleFolderCollapse(d.folderPath)
       }
     })
     .on('dblclick', (event, d) => {
@@ -289,6 +321,7 @@ const rebuild = () => {
   nodeSel = some(nodesJoined as StructNodeSel)
   updateStructureWires(wiresJoined as StructWireSel, nodeMap(stage.nodes), themeMode.value)
   refreshFocus()
+  fitToScreen()
 }
 
 watch(
@@ -383,6 +416,15 @@ onBeforeUnmount(() => {
             type="button"
             class="p-1.5 rounded transition-colors cursor-pointer"
             :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
+            title="Fit to Screen"
+            @click="fitToScreen"
+          >
+            <Maximize2 class="w-3.5 h-3.5 text-orange-500" />
+          </button>
+          <button
+            type="button"
+            class="p-1.5 rounded transition-colors cursor-pointer"
+            :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
             title="Zoom In"
             @click="zoomIn"
           >
@@ -396,15 +438,6 @@ onBeforeUnmount(() => {
             @click="zoomOut"
           >
             <ZoomOut class="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            class="p-1.5 rounded transition-colors cursor-pointer"
-            :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'"
-            title="Reset View"
-            @click="resetZoom"
-          >
-            <Maximize2 class="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -434,16 +467,29 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <Button
-          v-if="focusFolder.length > 0"
-          size="sm"
-          class="h-8 px-3 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer ml-1 flex items-center gap-1.5 transition-all"
-          title="Return to Whole Vault Root"
-          @click="clearFocusFolder"
-        >
-          <RotateCcw class="w-3.5 h-3.5" />
-          <span>Whole Vault</span>
-        </Button>
+        <div class="flex items-center gap-1.5 ml-1">
+          <Button
+            size="sm"
+            variant="outline"
+            class="h-8 px-2.5 text-xs font-medium border-zinc-300 dark:border-zinc-700 shadow-2xs cursor-pointer"
+            title="Fit graph to screen"
+            @click="fitToScreen"
+          >
+            <Maximize2 class="w-3.5 h-3.5 mr-1 text-orange-500" />
+            Fit Screen
+          </Button>
+
+          <Button
+            v-if="focusFolder.length > 0"
+            size="sm"
+            class="h-8 px-3 text-xs bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 transition-all"
+            title="Return to Whole Vault Root"
+            @click="clearFocusFolder"
+          >
+            <RotateCcw class="w-3.5 h-3.5" />
+            <span>Whole Vault</span>
+          </Button>
+        </div>
       </div>
 
       <!-- Floating Interactive Inspector Card (Flawless UX & Pin Support) -->
@@ -531,6 +577,16 @@ onBeforeUnmount(() => {
               <div class="flex items-center gap-2 pt-1">
                 <Button
                   size="sm"
+                  variant="outline"
+                  class="flex-1 h-8 text-xs font-medium border-zinc-300 dark:border-zinc-700 cursor-pointer"
+                  @click="toggleFolderCollapse(inspectorNode.folderPath)"
+                >
+                  <ChevronRight v-if="collapsedFolders.has(inspectorNode.folderPath)" class="w-3.5 h-3.5 mr-1 text-orange-500" />
+                  <ChevronDown v-else class="w-3.5 h-3.5 mr-1 text-orange-500" />
+                  <span>{{ collapsedFolders.has(inspectorNode.folderPath) ? 'Expand Subtree' : 'Collapse Subtree' }}</span>
+                </Button>
+                <Button
+                  size="sm"
                   class="flex-1 h-8 text-xs bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-xs cursor-pointer"
                   @click="focusInspectedFolder"
                 >
@@ -596,7 +652,7 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-4 text-[11px]" :class="themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400'">
         <span class="flex items-center gap-1">
           <Crosshair class="w-3 h-3 text-orange-500" />
-          <span>Click node to select & inspect</span>
+          <span>Click folder to collapse/expand · Double-click to focus</span>
         </span>
         <span>·</span>
         <span>Double-click note to write</span>
