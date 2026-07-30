@@ -14,11 +14,9 @@ import {
   GitBranch,
   Home,
   Maximize2,
-  Moon,
   RefreshCw,
   RotateCcw,
   Search,
-  Sun,
   X,
   ZoomIn,
   ZoomOut,
@@ -45,12 +43,18 @@ import {
 } from '@/lib/structureGraph'
 import { none, some, type Doc, type DocId, type Option } from '@/types'
 
-const props = defineProps<{
-  docs: readonly Doc[]
-  folders: readonly string[]
-  activeId: DocId | ''
-  seedFolder?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    docs: readonly Doc[]
+    folders: readonly string[]
+    activeId: DocId | ''
+    seedFolder?: string
+    themeMode?: ThemeMode
+  }>(),
+  {
+    themeMode: 'light',
+  },
+)
 
 const emit = defineEmits<{
   openNote: [id: DocId]
@@ -65,16 +69,7 @@ const collapsedFolders = ref<Set<string>>(new Set())
 const stageBounds = ref<{ minX: number; maxX: number; minY: number; maxY: number; contentW: number; contentH: number } | null>(null)
 const hostEl = ref<Option<HTMLElement>>(none)
 
-/** Theme mode: defaults to 'light' to align with main page shell, toggleable to 'dark'. */
-const themeMode = ref<ThemeMode>(
-  (localStorage.getItem('k-thread-graph-theme') as ThemeMode) || 'light',
-)
-
-const toggleTheme = () => {
-  themeMode.value = themeMode.value === 'light' ? 'dark' : 'light'
-  localStorage.setItem('k-thread-graph-theme', themeMode.value)
-  rebuild()
-}
+const themeMode = computed(() => props.themeMode || 'light')
 
 watch(
   () => props.seedFolder ?? '',
@@ -399,17 +394,6 @@ onBeforeUnmount(() => {
           Whole Vault
         </Button>
 
-        <!-- Theme Toggle (Light / Dark) -->
-        <button
-          type="button"
-          class="flex items-center justify-center p-2 rounded-lg border transition-colors cursor-pointer"
-          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-xs'"
-          :title="themeMode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
-          @click="toggleTheme"
-        >
-          <Sun v-if="themeMode === 'dark'" class="w-3.5 h-3.5" />
-          <Moon v-else class="w-3.5 h-3.5" />
-        </button>
 
         <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'">
           <button

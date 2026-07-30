@@ -284,6 +284,7 @@ const openNoteFromStructure = (id: DocId) => {
               :folders="folders"
               :active-id="activeId"
               :seed-folder="structureSeed"
+              :theme-mode="appTheme"
               @focus-note="vaultStore.focusNote"
               @open-note="openNoteFromStructure"
             />
@@ -324,6 +325,7 @@ const openNoteFromStructure = (id: DocId) => {
               :index="index"
               :active-id="activeId"
               :existing-ids="noteIds"
+              :theme-mode="appTheme"
               @select="vaultStore.focusNote"
               @open="vaultStore.openOrCreate"
             />

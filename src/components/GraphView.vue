@@ -3,7 +3,7 @@ import 'd3-transition'
 import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
-import { Maximize2, Moon, Network, Search, Sun, ZoomIn, ZoomOut } from '@lucide/vue'
+import { Maximize2, Network, Search, ZoomIn, ZoomOut } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,11 +29,17 @@ import {
 import type { ThemeMode } from '@/lib/structureDraw'
 import { none, some, type DocId, type GraphIndex, type Option } from '@/types'
 
-const props = defineProps<{
-  index: GraphIndex
-  activeId: DocId | ''
-  existingIds: readonly DocId[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    index: GraphIndex
+    activeId: DocId | ''
+    existingIds: readonly DocId[]
+    themeMode?: ThemeMode
+  }>(),
+  {
+    themeMode: 'light',
+  },
+)
 
 const emit = defineEmits<{
   select: [id: DocId]
@@ -46,15 +52,7 @@ const showOrphans = ref(true)
 const query = ref('')
 const hoveredId = ref<DocId | ''>('')
 
-const themeMode = ref<ThemeMode>(
-  (localStorage.getItem('k-thread-graph-theme') as ThemeMode) || 'light',
-)
-
-const toggleTheme = () => {
-  themeMode.value = themeMode.value === 'light' ? 'dark' : 'light'
-  localStorage.setItem('k-thread-graph-theme', themeMode.value)
-  rebuild()
-}
+const themeMode = computed(() => props.themeMode || 'light')
 
 const hostEl = ref<Option<HTMLElement>>(none)
 let zoomBehavior: Option<ZoomBehavior<SVGSVGElement, unknown>> = none
@@ -348,16 +346,6 @@ onBeforeUnmount(() => {
           {{ showOrphans ? 'Hide Orphans' : 'Show Orphans' }}
         </Button>
 
-        <button
-          type="button"
-          class="flex items-center justify-center p-2 rounded-lg border transition-colors"
-          :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-amber-400 hover:bg-zinc-800' : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100 shadow-xs'"
-          :title="themeMode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
-          @click="toggleTheme"
-        >
-          <Sun v-if="themeMode === 'dark'" class="w-3.5 h-3.5" />
-          <Moon v-else class="w-3.5 h-3.5" />
-        </button>
 
         <div class="flex items-center rounded-lg border p-0.5" :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xs'">
           <button type="button" class="p-1.5 rounded transition-colors" :class="themeMode === 'dark' ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'" title="Zoom In" @click="zoomIn">
