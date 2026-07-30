@@ -12,12 +12,7 @@ const textFromPre = (el: HTMLElement): string => {
   return pre ? pre.textContent ?? '' : el.textContent ?? ''
 }
 
-const rawExport = (markdown: string): ReactElement =>
-  createElement(
-    'pre',
-    { 'data-obsidian-raw': 'true' },
-    createElement('code', null, markdown),
-  )
+
 
 export const createFrontmatterBlock = createReactBlockSpec(
   {
@@ -34,7 +29,11 @@ export const createFrontmatterBlock = createReactBlockSpec(
       return { yaml: textFromPre(element) }
     },
     toExternalHTML: (props): ReactElement =>
-      rawExport(`---\n${props.block.props.yaml}\n---`),
+      createElement(
+        'div',
+        { 'data-obsidian-frontmatter': 'true' },
+        createElement('pre', null, props.block.props.yaml),
+      ),
     render: (props): ReactElement =>
       createElement(
         'div',
@@ -176,7 +175,11 @@ export const createCommentBlock = createReactBlockSpec(
       return { body: textFromPre(element) }
     },
     toExternalHTML: (props): ReactElement =>
-      rawExport(`%%\n${props.block.props.body}\n%%`),
+      createElement(
+        'div',
+        { 'data-obsidian-comment-block': 'true' },
+        createElement('pre', null, props.block.props.body),
+      ),
     render: (props): ReactElement =>
       createElement(
         'div',
@@ -216,7 +219,14 @@ export const createPluginCodeBlock = createReactBlockSpec(
       }
     },
     toExternalHTML: (props): ReactElement =>
-      rawExport(`\`\`\`${props.block.props.lang}\n${props.block.props.code}\n\`\`\``),
+      createElement(
+        'div',
+        {
+          'data-obsidian-plugin': 'true',
+          'data-lang': props.block.props.lang,
+        },
+        createElement('pre', null, props.block.props.code),
+      ),
     render: (props): ReactElement =>
       createElement(
         'div',

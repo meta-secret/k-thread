@@ -264,6 +264,22 @@ export const finalizeObsidianMarkdown = (markdown: string): string => {
 
   out = htmlCalloutsToMarkdown(out)
 
+  // Plugin blocks (dataview, templater, tasks, etc.) back to ```lang
+  out = out.replace(
+    /<div[^>]*data-obsidian-plugin="true"[^>]*data-lang="([^"]*)"[^>]*>\s*<pre>([\s\S]*?)<\/pre>\s*<\/div>/gi,
+    (_full, lang: string, body: string) => `\`\`\`${decodeHtml(lang)}\n${decodeHtml(body)}\n\`\`\`\n\n`,
+  )
+  out = out.replace(
+    /&lt;div[^&]*data-obsidian-plugin=&quot;true&quot;[^&]*data-lang=&quot;([^&]*)&quot;[^&]*&gt;\s*&lt;pre&gt;([\s\S]*?)&lt;\/pre&gt;\s*&lt;\/div&gt;/gi,
+    (_full, lang: string, body: string) => `\`\`\`${decodeHtml(lang)}\n${decodeHtml(body)}\n\`\`\`\n\n`,
+  )
+
+  // Comment blocks back to %%
+  out = out.replace(
+    /<div[^>]*data-obsidian-comment-block="true"[^>]*>\s*<pre>([\s\S]*?)<\/pre>\s*<\/div>/gi,
+    (_full, body: string) => `%%\n${decodeHtml(body)}\n%%\n\n`,
+  )
+
   // Legacy: custom blocks exported as <pre data-obsidian-raw> or fenced obsidian-raw.
   out = out.replace(
     /<pre[^>]*data-obsidian-raw="true"[^>]*>\s*<code>([\s\S]*?)<\/code>\s*<\/pre>/gi,
