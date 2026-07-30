@@ -218,7 +218,7 @@ const drawIconGlyph = (
   g.append('line').attr('x1', cx - 4).attr('y1', cy + 2).attr('x2', cx + 2).attr('y2', cy + 2).attr('stroke', color).attr('stroke-width', 1.4)
 }
 
-/** Draw high-tech sleek widget node card. */
+/** Draw high-tech sleek widget node card with on-node management buttons. */
 export const drawStructureWidget = (
   g: Selection<SVGGElement, PlacedStructureNode, null, undefined>,
   d: PlacedStructureNode,
@@ -257,25 +257,25 @@ export const drawStructureWidget = (
     .attr('stroke-width', 1.2)
     .attr('filter', `url(#${paint.shadowId})`)
 
-  // Left icon tile box (34x34px)
+  // Left icon tile box (36x36px)
   const ix = x0 + 10
-  const iy = y0 + 11
+  const iy = y0 + 14
   g.append('rect')
     .attr('x', ix)
     .attr('y', iy)
-    .attr('width', 34)
-    .attr('height', 34)
+    .attr('width', 36)
+    .attr('height', 36)
     .attr('rx', 7)
     .attr('fill', style.bg)
     .attr('stroke', style.stroke)
     .attr('stroke-width', 1)
 
-  drawIconGlyph(g, d, ix + 17, iy + 17, style.icon)
+  drawIconGlyph(g, d, ix + 18, iy + 18, style.icon)
 
   // Ordinal step badge (e.g. "01", "02")
   g.append('text')
     .attr('x', x0 + WIDGET_W - 10)
-    .attr('y', y0 + 19)
+    .attr('y', y0 + 18)
     .attr('text-anchor', 'end')
     .attr('fill', paint.inkOrdinal)
     .attr('font-size', 9.5)
@@ -288,7 +288,7 @@ export const drawStructureWidget = (
   const badgeW = 34
   const badgeH = 13
   const bx = x0 + WIDGET_W - 10 - badgeW - 16
-  const by = y0 + 9
+  const by = y0 + 8
   const isRoot = d.kind === StructureKind.Root
 
   g.append('rect')
@@ -313,10 +313,10 @@ export const drawStructureWidget = (
     .text(badgeText(d.kind))
 
   // Node Title
-  const maxTitleLen = 14
+  const maxTitleLen = 13
   const title = d.title.length > maxTitleLen ? `${d.title.slice(0, maxTitleLen - 1)}…` : d.title
   g.append('text')
-    .attr('x', ix + 42)
+    .attr('x', ix + 44)
     .attr('y', y0 + 26)
     .attr('fill', paint.inkPrimary)
     .attr('font-size', 12)
@@ -325,33 +325,95 @@ export const drawStructureWidget = (
     .text(title)
 
   // Node Subtitle / Meta
-  const maxMetaLen = 20
+  const maxMetaLen = 14
   const meta = d.meta.length > maxMetaLen ? `${d.meta.slice(0, maxMetaLen - 1)}…` : d.meta
   g.append('text')
-    .attr('x', ix + 42)
-    .attr('y', y0 + 41)
+    .attr('x', ix + 44)
+    .attr('y', y0 + 40)
     .attr('fill', d.isCollapsed ? paint.accentOrange : paint.inkMuted)
     .attr('font-size', 9.5)
     .attr('font-weight', d.isCollapsed ? 600 : 400)
     .attr('font-family', '"IBM Plex Sans", "Segoe UI", sans-serif')
     .text(meta)
 
-  // Collapse indicator dot if collapsed
-  if (d.isCollapsed) {
-    g.append('circle')
-      .attr('cx', x0 + WIDGET_W - 10)
-      .attr('cy', y0 + WIDGET_H - 12)
-      .attr('r', 4.5)
+  // ON-NODE MANAGEMENT BUTTONS (Directly part of the node!)
+  if (d.kind === StructureKind.Folder) {
+    // 1. Collapse / Expand Button Group
+    const btnCollapseG = g.append('g').attr('class', 'btn-collapse').style('cursor', 'pointer')
+    const cw = 54
+    const ch = 18
+    const cx = x0 + WIDGET_W - 104
+    const cy = y0 + 38
+
+    btnCollapseG.append('rect')
+      .attr('x', cx)
+      .attr('y', cy)
+      .attr('width', cw)
+      .attr('height', ch)
+      .attr('rx', 4)
+      .attr('fill', d.isCollapsed ? 'rgba(249,115,22,0.18)' : mode === 'dark' ? '#18181b' : '#f4f4f5')
+      .attr('stroke', d.isCollapsed ? '#f97316' : mode === 'dark' ? '#27272a' : '#e4e4e7')
+      .attr('stroke-width', 0.9)
+
+    btnCollapseG.append('text')
+      .attr('x', cx + cw / 2)
+      .attr('y', cy + 12.5)
+      .attr('text-anchor', 'middle')
+      .attr('fill', d.isCollapsed ? paint.accentOrange : paint.inkPrimary)
+      .attr('font-size', 8.5)
+      .attr('font-weight', 600)
+      .attr('font-family', '"IBM Plex Sans", sans-serif')
+      .text(d.isCollapsed ? '▸ Expand' : '▾ Collapse')
+
+    // 2. Focus Subtree Button Group
+    const btnFocusG = g.append('g').attr('class', 'btn-focus').style('cursor', 'pointer')
+    const fw = 42
+    const fh = 18
+    const fx = x0 + WIDGET_W - 46
+    const fy = y0 + 38
+
+    btnFocusG.append('rect')
+      .attr('x', fx)
+      .attr('y', fy)
+      .attr('width', fw)
+      .attr('height', fh)
+      .attr('rx', 4)
       .attr('fill', paint.accentOrange)
 
-    g.append('text')
-      .attr('x', x0 + WIDGET_W - 10)
-      .attr('y', y0 + WIDGET_H - 9.5)
+    btnFocusG.append('text')
+      .attr('x', fx + fw / 2)
+      .attr('y', fy + 12.5)
       .attr('text-anchor', 'middle')
       .attr('fill', '#ffffff')
-      .attr('font-size', 7.5)
-      .attr('font-weight', 800)
-      .text('+')
+      .attr('font-size', 8.5)
+      .attr('font-weight', 600)
+      .attr('font-family', '"IBM Plex Sans", sans-serif')
+      .text('⌖ Focus')
+  } else if (d.kind === StructureKind.Note) {
+    // Open Note Button Group
+    const btnOpenG = g.append('g').attr('class', 'btn-open-note').style('cursor', 'pointer')
+    const ow = 46
+    const oh = 18
+    const ox = x0 + WIDGET_W - 50
+    const oy = y0 + 38
+
+    btnOpenG.append('rect')
+      .attr('x', ox)
+      .attr('y', oy)
+      .attr('width', ow)
+      .attr('height', oh)
+      .attr('rx', 4)
+      .attr('fill', paint.accentOrange)
+
+    btnOpenG.append('text')
+      .attr('x', ox + ow / 2)
+      .attr('y', oy + 12.5)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#ffffff')
+      .attr('font-size', 8.5)
+      .attr('font-weight', 600)
+      .attr('font-family', '"IBM Plex Sans", sans-serif')
+      .text('✎ Open')
   }
 
   // Connection port dots on left & right card edges

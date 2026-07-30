@@ -4,11 +4,7 @@ import { drag } from 'd3-drag'
 import { select, type Selection } from 'd3-selection'
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom'
 import {
-  ChevronDown,
-  ChevronRight,
   Crosshair,
-  FileText,
-  Folder,
   FolderTree,
   GitBranch,
   Home,
@@ -16,7 +12,6 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
-  X,
   ZoomIn,
   ZoomOut,
 } from '@lucide/vue'
@@ -87,28 +82,6 @@ let resizeObserver: Option<ResizeObserver> = none
 const dragOffsets = new Map<string, { x: number; y: number }>()
 const stats = ref({ nodes: 0, links: 0 })
 
-// The node explicitly clicked/pinned by user for inspection
-const inspectorNode = computed<PlacedStructureNode | null>(() => {
-  if (!pinnedId.value) return null
-  const graph = buildStructureGraph(filteredDocs.value, props.folders, focusFolder.value, collapsedFolders.value)
-  const stage = placeStructureStage(graph, 1100, 640)
-  return stage.nodes.find((n) => n.id === pinnedId.value) ?? null
-})
-
-// Sub-notes under the currently inspected folder node
-const folderChildrenDocs = computed(() => {
-  if (!inspectorNode.value || inspectorNode.value.kind !== StructureKind.Folder) return []
-  const path = inspectorNode.value.folderPath
-  if (!path) return []
-  const prefix = `${path}/`
-  return props.docs.filter((d) => d.id.startsWith(prefix) || d.id === path).slice(0, 4)
-})
-
-const selectedDoc = computed(() => {
-  if (!inspectorNode.value || !inspectorNode.value.noteId) return null
-  return props.docs.find((d) => d.id === inspectorNode.value?.noteId) ?? null
-})
-
 const filteredDocs = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (q.length === 0) return props.docs
@@ -137,11 +110,8 @@ const fitToScreen = () => {
   const width = el && el.clientWidth > 0 ? el.clientWidth : 1100
   const height = el && el.clientHeight > 0 ? el.clientHeight : 640
 
-  const padRight = inspectorNode.value ? 340 : 0
-  const availWidth = Math.max(300, width - padRight)
-
-  const scale = Math.min(1.0, Math.min((availWidth - 90) / b.contentW, (height - 130) / b.contentH))
-  const tx = (availWidth - b.contentW * scale) / 2 - b.minX * scale
+  const scale = Math.min(1.0, Math.min((width - 90) / b.contentW, (height - 130) / b.contentH))
+  const tx = (width - b.contentW * scale) / 2 - b.minX * scale
   const ty = (height - b.contentH * scale) / 2 - b.minY * scale + 15
 
   const transform = zoomIdentity.translate(tx, ty).scale(scale)
@@ -176,11 +146,7 @@ const toggleFolderCollapse = (folderPath: string) => {
   rebuild()
 }
 
-const focusInspectedFolder = () => {
-  if (!inspectorNode.value || inspectorNode.value.kind !== StructureKind.Folder) return
-  focusFolder.value = inspectorNode.value.folderPath
-  rebuild()
-}
+
 
 const nodeMap = (nodes: readonly PlacedStructureNode[]) => {
   const map = new Map<string, PlacedStructureNode>()
@@ -308,7 +274,26 @@ const rebuild = () => {
     })
 
   nodesJoined.each(function (d) {
-    drawStructureWidget(select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>, d, themeMode.value)
+    const sel = select(this) as Selection<SVGGElement, PlacedStructureNode, null, undefined>
+    drawStructureWidget(sel, d, themeMode.value)
+
+    sel.select('.btn-collapse').on('click', (event) => {
+      event.stopPropagation()
+      toggleFolderCollapse(d.folderPath)
+    })
+
+    sel.select('.btn-focus').on('click', (event) => {
+      event.stopPropagation()
+      focusFolder.value = d.folderPath
+      rebuild()
+    })
+
+    sel.select('.btn-open-note').on('click', (event) => {
+      event.stopPropagation()
+      if (d.noteId.length > 0) {
+        emit('openNote', d.noteId)
+      }
+    })
   })
 
   wireSel = some(wiresJoined as StructWireSel)
@@ -481,113 +466,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Bottom Floating Contextual Action Dock Bar (Triggered ONLY on Node Click) -->
-      <transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 translate-y-4 scale-95"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 translate-y-4 scale-95"
-      >
-        <div
-          v-if="inspectorNode"
-          class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-auto max-w-[92vw] sm:max-w-2xl rounded-2xl backdrop-blur-2xl border p-3 pl-4 pr-3.5 text-xs shadow-2xl transition-colors duration-200 flex flex-col sm:flex-row items-center gap-3.5"
-          :class="themeMode === 'dark' ? 'bg-zinc-950/95 border-zinc-800/90 text-zinc-100 shadow-black/90' : 'bg-white/95 border-zinc-200 text-zinc-900 shadow-zinc-400/30'"
-        >
-          <!-- Left: Node Badge & Title Meta -->
-          <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="flex items-center justify-center shrink-0 w-8 h-8 rounded-xl border"
-              :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-600'"
-            >
-              <Folder v-if="inspectorNode.kind === StructureKind.Folder" class="w-3.5 h-3.5" />
-              <GitBranch v-else-if="inspectorNode.kind === StructureKind.Root" class="w-3.5 h-3.5" />
-              <FileText v-else class="w-3.5 h-3.5" />
-            </div>
 
-            <div class="flex flex-col min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="font-semibold text-xs truncate max-w-[160px]" :class="themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'">
-                  {{ inspectorNode.title }}
-                </span>
-                <span
-                  class="font-mono text-[9px] px-1 py-0.2 rounded border"
-                  :class="themeMode === 'dark' ? 'bg-zinc-900 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'"
-                >
-                  #{{ String(inspectorNode.index).padStart(2, '0') }}
-                </span>
-              </div>
-              <span class="text-[10.5px] truncate max-w-[160px]" :class="themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-500'">
-                {{ inspectorNode.meta }}
-              </span>
-            </div>
-          </div>
-
-          <div class="hidden sm:block w-px h-6" :class="themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-200'" />
-
-          <!-- Center: Content Snippet Preview (for Notes) or Child Notes (for Folders) -->
-          <div v-if="inspectorNode.kind === StructureKind.Note && selectedDoc" class="flex-1 min-w-0 max-w-xs">
-            <p
-              class="font-mono text-[10.5px] leading-tight truncate m-0 px-2.5 py-1.5 rounded-lg border"
-              :class="themeMode === 'dark' ? 'bg-zinc-900/80 text-zinc-300 border-zinc-800' : 'bg-zinc-50 text-zinc-700 border-zinc-200'"
-            >
-              {{ selectedDoc.body || '(Empty note content)' }}
-            </p>
-          </div>
-
-          <div v-else-if="inspectorNode.kind === StructureKind.Folder" class="flex items-center gap-1.5 min-w-0">
-            <span class="font-mono text-[10.5px] text-orange-500 font-medium">
-              {{ folderChildrenDocs.length }} Direct Notes
-            </span>
-          </div>
-
-          <!-- Right: Actions & Close Button -->
-          <div class="flex items-center gap-2 shrink-0 ml-auto">
-            <Button
-              v-if="inspectorNode.kind === StructureKind.Folder"
-              size="sm"
-              variant="outline"
-              class="h-8 px-2.5 text-[11px] font-medium border-zinc-300 dark:border-zinc-700 cursor-pointer"
-              @click="toggleFolderCollapse(inspectorNode.folderPath)"
-            >
-              <ChevronRight v-if="collapsedFolders.has(inspectorNode.folderPath)" class="w-3 h-3 mr-1 text-orange-500" />
-              <ChevronDown v-else class="w-3 h-3 mr-1 text-orange-500" />
-              <span>{{ collapsedFolders.has(inspectorNode.folderPath) ? 'Expand' : 'Collapse' }}</span>
-            </Button>
-
-            <Button
-              v-if="inspectorNode.kind === StructureKind.Folder"
-              size="sm"
-              class="h-8 px-3 text-[11px] bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-xs cursor-pointer"
-              @click="focusInspectedFolder"
-            >
-              <Crosshair class="w-3 h-3 mr-1" />
-              Focus
-            </Button>
-
-            <Button
-              v-else-if="inspectorNode.kind === StructureKind.Note"
-              size="sm"
-              class="h-8 px-3.5 text-[11.5px] bg-orange-600 hover:bg-orange-500 text-white font-semibold shadow-xs cursor-pointer flex items-center gap-1.5"
-              @click="emit('openNote', inspectorNode.noteId as DocId)"
-            >
-              <FileText class="w-3.5 h-3.5" />
-              <span>Open Note</span>
-            </Button>
-
-            <button
-              type="button"
-              class="p-1.5 rounded-lg transition-colors cursor-pointer ml-1"
-              :class="themeMode === 'dark' ? 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100'"
-              title="Close Inspector"
-              @click="pinnedId = ''"
-            >
-              <X class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </transition>
     </div>
 
     <!-- Bottom Legend Bar -->

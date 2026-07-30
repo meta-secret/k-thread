@@ -34,8 +34,8 @@ export type StructureGraph = {
 
 export const ROOT_ID = '__vault__'
 
-export const WIDGET_W = 200
-export const WIDGET_H = 56
+export const WIDGET_W = 216
+export const WIDGET_H = 64
 const COL_GAP = 54
 const ROW_GAP = 18
 
