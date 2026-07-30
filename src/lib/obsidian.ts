@@ -82,14 +82,14 @@ type FenceToken = { id: string; html: string }
 const extractFences = (markdown: string): { text: string; fences: FenceToken[] } => {
   const fences: FenceToken[] = []
   const text = markdown.replace(
-    /^```([^\n`]*)\n([\s\S]*?)^```\s*$/gm,
+    /```([^\n`]*)\r?\n([\s\S]*?)```/g,
     (_full, langRaw: string, body: string) => {
       const lang = langRaw.trim().split(/\s+/)[0] ?? ''
       const id = `@@FENCE_${fences.length}@@`
       if (isPluginFenceLang(lang)) {
         fences.push({
           id,
-          html: `<div data-obsidian-plugin="true" data-lang="${escAttr(lang)}"><pre>${escHtml(body.replace(/\n$/, ''))}</pre></div>`,
+          html: `<div data-obsidian-plugin="true" data-lang="${escAttr(lang)}"><pre>${escHtml(body.replace(/\r?\n$/, ''))}</pre></div>`,
         })
       } else {
         fences.push({

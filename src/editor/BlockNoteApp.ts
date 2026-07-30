@@ -31,6 +31,7 @@ export type BlockNoteAppProps = {
   markdown: string
   noteIds: readonly string[]
   tags: readonly string[]
+  themeMode?: 'light' | 'dark'
   onChange: (markdown: string) => void
   onNavigate: (target: string) => void
 }
@@ -100,18 +101,24 @@ export function BlockNoteApp(props: BlockNoteAppProps): ReactElement {
   const editor = useCreateBlockNote({ schema }, []) as ObsidianEditor
   const ready = useRef(false)
   const lastKey = useRef('')
+  const themeMode = props.themeMode || 'light'
   const portalEl = useMemo(() => {
     if (typeof document === 'undefined') return undefined
     const existing = document.getElementById('k-thread-bn-portal')
-    if (existing) return existing
+    if (existing) {
+      existing.className = `bn-mantine bn-root ${themeMode} k-thread-bn-portal`
+      existing.setAttribute('data-mantine-color-scheme', themeMode)
+      existing.setAttribute('data-color-scheme', themeMode)
+      return existing
+    }
     const el = document.createElement('div')
     el.id = 'k-thread-bn-portal'
-    el.className = 'bn-mantine bn-root light k-thread-bn-portal'
-    el.setAttribute('data-mantine-color-scheme', 'light')
-    el.setAttribute('data-color-scheme', 'light')
+    el.className = `bn-mantine bn-root ${themeMode} k-thread-bn-portal`
+    el.setAttribute('data-mantine-color-scheme', themeMode)
+    el.setAttribute('data-color-scheme', themeMode)
     document.body.appendChild(el)
     return el
-  }, [])
+  }, [themeMode])
 
   useEffect(() => {
     let cancelled = false
@@ -137,7 +144,7 @@ export function BlockNoteApp(props: BlockNoteAppProps): ReactElement {
     View,
     {
       editor,
-      theme: 'light',
+      theme: themeMode,
       className: 'k-thread-blocknote',
       slashMenu: false,
       emojiPicker: false,

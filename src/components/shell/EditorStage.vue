@@ -15,6 +15,7 @@ defineProps<{
   linkCount: number
   showPreview: boolean
   known: ReadonlySet<DocId>
+  themeMode?: 'light' | 'dark'
 }>()
 
 const emit = defineEmits<{
@@ -60,6 +61,7 @@ const emit = defineEmits<{
                 :model-value="body"
                 :note-ids="noteIds"
                 :tags="tags"
+                :theme-mode="themeMode"
                 @update:model-value="emit('update:modelValue', $event)"
                 @navigate="emit('navigate', $event)"
               />

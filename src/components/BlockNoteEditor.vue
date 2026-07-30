@@ -10,6 +10,7 @@ const props = defineProps<{
   docKey: string
   noteIds: readonly string[]
   tags: readonly string[]
+  themeMode?: 'light' | 'dark'
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +31,7 @@ const render = () => {
       markdown: props.modelValue,
       noteIds: props.noteIds,
       tags: props.tags,
+      themeMode: props.themeMode || 'light',
       onChange: (markdown: string) => emit('update:modelValue', markdown),
       onNavigate: (target: string) => emit('navigate', target),
     }),
@@ -55,7 +57,7 @@ const bindHost = (el: unknown) => {
 }
 
 watch(
-  () => props.docKey,
+  () => [props.docKey, props.themeMode] as const,
   () => {
     render()
   },
@@ -189,7 +191,7 @@ onBeforeUnmount(() => {
   border: 0;
   resize: vertical;
   padding: 0.55rem 0.75rem;
-  background: rgba(255, 255, 255, 0.55);
+  background: color-mix(in oklch, var(--muted) 35%, transparent);
   color: var(--kube-ink, inherit);
   font-family: var(--font-mono);
   font-size: 0.85rem;

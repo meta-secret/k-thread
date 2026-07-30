@@ -285,6 +285,7 @@ const openNoteFromStructure = (id: DocId) => {
               :link-count="linkCount"
               :show-preview="showPreview"
               :known="known"
+              :theme-mode="appTheme"
               @update:model-value="vaultStore.updateBody"
               @navigate="vaultStore.openOrCreate"
               @create-untitled="vaultStore.createUntitled(activeFolder)"
