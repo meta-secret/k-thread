@@ -1,0 +1,14 @@
+---
+description: Always commit and push coherent work; never ask for permission
+alwaysApply: true
+---
+
+# Always commit & push
+
+When a coherent chunk of work is done (feature, fix, docs/rules, e2e, etc.):
+
+1. **Commit** with a concise message (follow existing git commit style / HEREDOC).
+2. **Push** to `origin` immediately (`git push -u origin HEAD` when needed).
+3. **Do not ask** “want me to commit/push?” — just do it.
+
+Still follow git safety: no force-push to main/master, no config changes, no skipping hooks, no committing secrets. If there is nothing to commit, skip silently.
