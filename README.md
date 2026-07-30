@@ -3,9 +3,10 @@
 Local-first Obsidian-style notes in the browser.
 
 - **Vue 3 + TypeScript + Bun + Vite**
+- **shadcn-vue** UI
 - **No server** — static app for GitHub Pages
-- **OPFS** storage for the vault after import
-- **Open a local Obsidian folder** via the File System Access API
+- **Create notes in-app** (Notion/Obsidian-style) or import a vault
+- **OPFS** storage
 - **`[[wikilinks]]`** with click-through / create-missing notes
 - **Graph view** driven by a generated `index.yaml`
 
@@ -25,16 +26,11 @@ bun run build
 ## Usage
 
 1. Open the app (Chrome/Edge recommended for OPFS + directory picker).
-2. Click **Create a note** (or press �
-
-1. Open the app (Chrome/Edge recommended for OPFS + directory picker).
-2. Click **Create a note** (or press ⌘N / Ctrl+N) — like Notion/Obsidian.
-3. Or **Named…** (⇧⌘N) to create `Projects/Ideas`-style paths.
+2. Click **Create a note** (or press ⌘N / Ctrl+N).
+3. Or **Named…** (⇧⌘N) for paths like `Projects/Ideas`.
 4. Optionally **Import vault** to load an existing Obsidian folder into OPFS.
 5. Edit in CodeMirror; preview resolves `[[wikilinks]]`.
 6. Open **Graph** for the dependency view (`index.yaml` in OPFS).
-
-UI is built with [shadcn-vue](https://www.shadcn-vue.com/).
 
 ## `index.yaml`
 
@@ -51,4 +47,3 @@ edges:
 ## Deploy
 
 Pushes to `main` deploy to GitHub Pages at `/k-thread/`.
-Enable **Settings → Pages → GitHub Actions** once on the repo.
