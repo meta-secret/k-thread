@@ -61,6 +61,7 @@ watch(
   },
 )
 
+// Refresh suggestion data without tearing down the editor on every keystroke.
 watch(
   () => [props.noteIds, props.tags] as const,
   () => {
@@ -85,6 +86,10 @@ onBeforeUnmount(() => {
 <style>
 .blocknote-host {
   background: transparent;
+}
+
+.blocknote-host .bn-inline-content {
+  white-space: pre-wrap;
 }
 
 .blocknote-host .bn-container,

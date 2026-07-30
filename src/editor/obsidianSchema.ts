@@ -95,6 +95,21 @@ export const tagSuggestionItems = (
       ])
     },
   }))
+  // BlockNote closes suggestion menus that return zero items; keep a seed entry.
+  if (items.length === 0) {
+    return [
+      {
+        title: '#tag',
+        subtext: 'Type to create a tag',
+        onItemClick: () => {
+          editor.insertInlineContent([
+            { type: 'obsidianTag', props: { tag: 'tag' } },
+            ' ',
+          ])
+        },
+      },
+    ]
+  }
   return filterSuggestionItems(items, query)
 }
 

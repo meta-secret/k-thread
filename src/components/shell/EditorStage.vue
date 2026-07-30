@@ -152,7 +152,7 @@ const emit = defineEmits<{
   height: 100%;
   min-height: 0;
   display: grid;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -172,7 +172,7 @@ const emit = defineEmits<{
 
 .pane {
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   background: transparent;
 }
 

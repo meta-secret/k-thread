@@ -109,6 +109,23 @@
   --sidebar-ring: var(--kube-ink);
 }
 
+/* BlockNote suggestion menus mount outside the overflow-clipped editor */
+.k-thread-bn-portal {
+  position: relative;
+  z-index: 1200;
+}
+
+.k-thread-bn-portal .bn-suggestion-menu,
+body > [data-floating-ui-portal] .bn-suggestion-menu {
+  background-color: var(--bn-colors-menu-background, #fff);
+  border: 1px solid rgba(18, 18, 20, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(18, 18, 20, 0.14);
+  color: var(--bn-colors-menu-text, #3f3f3f);
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
