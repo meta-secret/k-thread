@@ -236,7 +236,12 @@ const rebuild = () => {
     if (graphLayer.value === 'links') return e.kind === StructureEdgeKind.Wikilink
     return true
   })
-  const graph = { ...fullGraph, edges: filteredEdges }
+  // In links mode, only show Note nodes (drop Root/Folder orphans)
+  const filteredNodes =
+    graphLayer.value === 'links'
+      ? fullGraph.nodes.filter((n) => n.kind === StructureKind.Note)
+      : fullGraph.nodes
+  const graph = { ...fullGraph, nodes: filteredNodes, edges: filteredEdges }
   const stage = placeStructureStage(graph, width, height)
   stageNodes.value = stage.nodes
   stageBounds.value = stage.bounds
