@@ -4,6 +4,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import DeleteFolderDialog from '@/components/DeleteFolderDialog.vue'
 import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
 import GraphView from '@/components/GraphView.vue'
+import StructureView from '@/components/StructureView.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
 import RenameNoteDialog from '@/components/RenameNoteDialog.vue'
@@ -27,6 +28,8 @@ const dialogKind = ref<CreateKind>(CreateKind.Note)
 const dialogFolder = ref('')
 const showPreview = ref(false)
 const filesOpen = ref(false)
+/** Folder subtree Structure should focus after a Note → Structure jump. */
+const structureSeed = ref('')
 
 const renameOpen = ref(false)
 const renameId = ref<DocId>('')
@@ -45,17 +48,14 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
 })
 
-// Vault restored but nothing remembered → open Files so the user chooses (no random note).
+// Vault ready, no note → Structure home (browse hierarchy; no random note / forced Files).
 watch(
-  () =>
-    [
-      vaultStore.state.status,
-      vaultStore.state.activeId.tag,
-      vaultStore.state.view,
-    ] as const,
-  ([statusNow, activeTag, viewNow]) => {
-    if (statusNow === VaultStatus.Ready && activeTag === 'none' && viewNow === ViewMode.Note) {
-      filesOpen.value = true
+  () => [vaultStore.state.status, vaultStore.state.activeId.tag] as const,
+  ([statusNow, activeTag]) => {
+    if (statusNow === VaultStatus.Ready && activeTag === 'none') {
+      if (vaultStore.state.view === ViewMode.Note) {
+        vaultStore.setView(ViewMode.Structure)
+      }
     }
   },
 )
@@ -132,21 +132,41 @@ const linkCount = computed(
   () => activeLinks.value.out.length + activeLinks.value.back.length,
 )
 const ready = computed(() => status.value === VaultStatus.Ready)
-const isGraph = computed(() => view.value === ViewMode.Graph)
+const isCanvas = computed(
+  () => view.value === ViewMode.Structure || view.value === ViewMode.Links,
+)
+const docs = computed(() => vaultStore.state.docs)
+const folders = computed(() => vaultStore.state.folders)
 
 const onSelectFromFiles = (id: DocId) => {
   vaultStore.setActive(id)
   filesOpen.value = false
 }
 
-const openGraph = () => {
-  vaultStore.setView(ViewMode.Graph)
+const openLinks = () => {
+  vaultStore.setView(ViewMode.Links)
 }
+
+const openStructure = () => {
+  structureSeed.value = activeFolder.value
+  vaultStore.setView(ViewMode.Structure)
+}
+
+const openNoteFromStructure = (id: DocId) => {
+  structureSeed.value = ''
+  vaultStore.setActive(id)
+}
+
+const notePathLabel = computed(() => {
+  if (active.value.tag === 'none') return ''
+  const folder = activeFolder.value
+  return folder.length > 0 ? folder : 'Vault'
+})
 </script>
 
 <template>
   <TooltipProvider>
-    <div class="app" :class="{ graph: isGraph, ready }">
+    <div class="app" :class="{ canvas: isCanvas, ready }">
       <header class="top">
         <div class="brand">
           <BrandMark :size="28" />
@@ -155,6 +175,15 @@ const openGraph = () => {
         <p class="msg">
           {{ message }}
           <span v-if="activeFolder.length > 0"> · {{ activeFolder }}</span>
+          <button
+            v-if="view === ViewMode.Note && active.tag === 'some'"
+            type="button"
+            class="path-jump"
+            :title="`Show in Structure · ${notePathLabel}`"
+            @click="openStructure"
+          >
+            {{ notePathLabel }} · Structure
+          </button>
         </p>
         <div class="ord mono">
           <template v-if="ready && noteOrdinal.total > 0">
@@ -181,7 +210,18 @@ const openGraph = () => {
         />
 
         <div class="center">
-          <section v-if="view === ViewMode.Note" class="note-layout">
+          <section v-if="view === ViewMode.Structure" class="graph-layout">
+            <StructureView
+              :docs="docs"
+              :folders="folders"
+              :active-id="activeId"
+              :seed-folder="structureSeed"
+              @focus-note="vaultStore.focusNote"
+              @open-note="openNoteFromStructure"
+            />
+          </section>
+
+          <section v-else-if="view === ViewMode.Note" class="note-layout">
             <EditorStage
               :has-active="active.tag === 'some'"
               :doc-key="docKey"
@@ -205,7 +245,7 @@ const openGraph = () => {
               :outlinks="activeLinks.out"
               :show-preview="showPreview"
               @navigate="vaultStore.openOrCreate"
-              @open-graph="openGraph"
+              @open-graph="openLinks"
               @toggle-preview="showPreview = !showPreview"
             />
           </section>
@@ -330,15 +370,32 @@ const openGraph = () => {
 }
 
 .msg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--kube-mute);
+}
+
+.path-jump {
+  border: 1px solid var(--kube-line-strong);
+  background: transparent;
+  color: var(--kube-ink);
+  padding: 0.15rem 0.45rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.path-jump:hover {
+  background: var(--kube-ink);
+  color: #f4f4f6;
 }
 
 .ord {

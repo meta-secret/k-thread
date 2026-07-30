@@ -36,9 +36,10 @@ src/
       ToolRail.vue      # kube left rail (modes + tools)
       EditorStage.vue   # center stage (BlockNote / empty cube)
       Inspector.vue     # right panel (tags / links / preview)
-    NoteSidebar.vue     # tree (Files drawer)
+    NoteSidebar.vue     # tree (Files drawer peek)
+    StructureView.vue   # hierarchy workflow (main / home)
     BlockNoteEditor.vue # Vue wrapper around React island
-    GraphView.vue       # D3 HUD graph (chips + wire bundles)
+    GraphView.vue       # Links mode (wikilink flowchart)
     *Dialog.vue         # create / rename / delete
     MarkdownPreview.vue # optional HTML preview + link navigate
 ```
@@ -51,7 +52,8 @@ flowchart LR
   Store --> OPFS[(OPFS vault/)]
   Store --> Index[index.yaml]
   Store --> Editor[BlockNote island]
-  Store --> Graph[D3 GraphView]
+  Store --> Structure[StructureView]
+  Store --> Links[GraphView Links]
   Import[File System Access] --> Vault[vault.ts] --> OPFS
   Editor -->|markdown body| Store
   Store -->|wikilinks| Index
@@ -59,19 +61,21 @@ flowchart LR
 
 1. On boot, `hydrateFromOpfs()` loads markdown + folders into `vaultStore`.
 2. Edits update `Doc.body` and persist via `saveDoc` → OPFS.
-3. `buildIndex(docs, folders)` recomputes nodes/edges from `[[wikilinks]]`.
+3. `buildIndex(docs, folders)` recomputes wikilink edges; Structure uses folders/docs hierarchy only.
 4. Index is written to `index.yaml` alongside notes.
-5. Graph and sidebar derive from store computeds — no second source of truth.
+5. Structure, Links, and sidebar derive from store computeds — no second source of truth.
+6. Default surface when ready with no note: **Structure**.
 
 ## State ownership
 
 | Concern | Owner |
 | --- | --- |
 | Docs, folders, active note, view mode | `vaultStore.state` |
-| Graph index | `computed` from docs (`buildIndex`) |
+| Wikilink index | `computed` from docs (`buildIndex`) |
+| Structure graph | local to `StructureView` via `structureGraph.ts` |
 | Sidebar tree | `computed` (`buildNoteTree`) |
 | Editor document | React island; synced through Vue props/events |
-| Graph simulation | local to `GraphView.vue` (D3); selection emits upward |
+| Links layout | local to `GraphView.vue` (D3); selection emits upward |
 
 ## Boundaries
 

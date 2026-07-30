@@ -1,35 +1,42 @@
 # Graph
 
-## Aesthetic
+Two separate canvases — never mixed in one view.
 
-**GTD-style flowchart** on a white field:
+## Structure (main / home)
+
+Project hierarchy as a light **workflow**:
 
 ```
-Focus (top) → Hop 1 row → Hop 2 row · pastel pills · charcoal arrows down
+Vault → folders → notes · widget cards · charcoal arrows down
 ```
 
-- Flat white canvas, generous vertical rhythm
-- Soft **pastel pills** (peach focus; mint / lavender / sky / pink by folder)
-- Thin **charcoal orthogonal** arrows with triangular heads, parent → child
-- One note = one node; missing targets = dashed gray links
-- Layout: BFS hop = **row** (top-down), siblings fan horizontally
+- Default when the vault is ready and no note is open
+- Edges = parent folder paths only (not wikilinks)
+- Click note → Note mode; click folder → zoom subtree
+- Modules: `structureGraph.ts`, `structureDraw.ts`, `StructureView.vue`
 
-Stay light. Avoid neon glow, black fields, left→right “spine” wires through a column.
+## Links (separate mode)
 
-## Modules
+Wikilink graph (former “Graph” view):
 
-| Layer | Responsibility |
-| --- | --- |
-| `graph.ts` | Canonical `GraphIndex` from docs → `index.yaml` |
-| `graphView.ts` | Filter/scope + BFS stage + path helpers |
-| `graphHudDraw.ts` | SVG defs, backdrop, pills, wires, focus paint |
-| `GraphView.vue` | D3 zoom/drag wiring + toolbar chrome |
+```
+Focus → Hop n · pastel pills · Global / Local scope
+```
 
-Keep each file ≤500 lines.
+- Edges = `[[wikilinks]]` from `index.yaml`
+- Modules: `graphView.ts`, `graphHudDraw.ts`, `GraphView.vue`
 
-## Interaction
+## View modes
 
-- Click → `focusNote` (stay on graph)
-- Double-click → `open` note view
-- Hover → brighten neighborhood arrows; dim the rest
-- Drag pills · pan/zoom · filter · orphans · reset
+```ts
+ViewMode.Structure  // hierarchy home
+ViewMode.Note       // editor
+ViewMode.Links      // wikilink graph
+```
+
+Files tree drawer (⌘B) remains a secondary peek.
+
+## Interaction (both canvases)
+
+- Click → focus / open as defined above
+- Drag · pan/zoom · filter · reset

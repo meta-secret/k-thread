@@ -7,8 +7,9 @@ export const err = <E>(error: E) => ({ tag: 'err' as const, error })
 export type Result<T, E> = { tag: 'ok'; value: T } | { tag: 'err'; error: E }
 
 export const ViewMode = {
+  Structure: 'structure',
   Note: 'note',
-  Graph: 'graph',
+  Links: 'links',
 } as const
 export type ViewMode = (typeof ViewMode)[keyof typeof ViewMode]
 

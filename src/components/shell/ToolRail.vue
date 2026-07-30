@@ -5,6 +5,7 @@ import {
   FileText,
   FolderOpen,
   FolderPlus,
+  FolderTree,
   Network,
   PanelLeft,
   Pencil,
@@ -35,18 +36,17 @@ const emit = defineEmits<{
 
 <template>
   <aside class="rail">
-    <!-- Primary: where am I / what am I looking at -->
     <div class="nav">
       <div class="section-label">View</div>
       <div class="nav-row">
         <button
           type="button"
           class="icon-btn"
-          :class="{ on: filesOpen }"
-          title="Files"
-          @click="emit('toggleFiles')"
+          :class="{ on: view === ViewMode.Structure }"
+          title="Structure"
+          @click="emit('setView', ViewMode.Structure)"
         >
-          <PanelLeft class="size-4" :stroke-width="1.5" />
+          <FolderTree class="size-4" :stroke-width="1.5" />
         </button>
         <button
           type="button"
@@ -60,11 +60,20 @@ const emit = defineEmits<{
         <button
           type="button"
           class="icon-btn"
-          :class="{ on: view === ViewMode.Graph }"
-          title="Graph"
-          @click="emit('setView', ViewMode.Graph)"
+          :class="{ on: view === ViewMode.Links }"
+          title="Links"
+          @click="emit('setView', ViewMode.Links)"
         >
           <Network class="size-4" :stroke-width="1.5" />
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          :class="{ on: filesOpen }"
+          title="Files"
+          @click="emit('toggleFiles')"
+        >
+          <PanelLeft class="size-4" :stroke-width="1.5" />
         </button>
         <button
           type="button"
@@ -79,7 +88,6 @@ const emit = defineEmits<{
       </div>
     </div>
 
-    <!-- Secondary: create — compact, not the first thing in the eye path -->
     <div class="create">
       <div class="section-label">Create</div>
       <button type="button" class="tool primary" @click="emit('createUntitled')">
@@ -96,7 +104,6 @@ const emit = defineEmits<{
       </button>
     </div>
 
-    <!-- Tertiary: manage -->
     <div class="manage">
       <div class="section-label">Manage</div>
       <button type="button" class="tool" @click="emit('importVault')">

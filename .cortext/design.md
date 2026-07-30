@@ -4,8 +4,9 @@
 
 | Mode | Look | Role |
 | --- | --- | --- |
+| **Structure** | Light workflow widgets — vault → folders → notes | Main nav / home |
 | **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
-| **Graph** | GTD-style flowchart — white field, pastel pills, charcoal arrows | Link navigation |
+| **Links** | GTD-style flowchart — pastel pills, charcoal arrows | Wikilink navigation |
 
 Do **not** ship dark / black HUD canvases. Graph follows a light flowchart language (pastel pills + thin arrows), not neon HUD chrome.
 
@@ -25,35 +26,44 @@ We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v
 ## Note shell (kube map)
 
 ```
-┌─ header (brand · status · ordinal) ─────────────────┐
-│ ToolRail │ EditorStage (grid) │ Inspector           │
-│ View →   │ BlockNote / empty  │ tags·links·preview  │
-│ Create → │ (no surprise note) │                     │
-│ Manage   │                    │                     │
-└─ footer (k-thread · index) ── Files drawer overlay ─┘
+┌─ header (brand · status · [Structure jump]) ────────┐
+│ ToolRail │ Structure | Note+Inspector | Links       │
+│ View →   │ (home)    │ BlockNote      │ wikilinks   │
+│ Create → │           │                │             │
+│ Manage   │           │                │             │
+└─ footer ────────────── Files drawer (⌘B peek) ──────┘
 ```
 
 | Rail | Role |
 | --- | --- |
-| **View** | Files / Note / Graph / Preview — primary orientation |
+| **View** | Structure / Note / Links / Files / Preview |
 | **Create** | New note, Named, Folder — secondary |
 | **Manage** | Import, Rename, Delete — tertiary, bottom |
 
-On refresh: restore **last opened note** from `localStorage`, or show the empty stage — never pick a random vault entry.
+On refresh: restore **last opened note** if remembered; otherwise land on **Structure** — never pick a random vault entry.
 
-Folder tree is a **Files drawer**, not a permanent primary column. Graph mode is full-bleed on the same light shell.
+Files tree is a **drawer peek**, not the primary browser. Structure and Links are separate full canvases.
 
-## Graph UX
+## Structure UX (main)
 
 | Action | Behavior |
 | --- | --- |
-| Click chip | Focus note; stay on graph |
+| Click note widget | Open note in editor |
+| Click folder | Focus subtree |
+| Click vault root | Clear folder focus |
+| Hover | Brighten arrows; dim rest |
+| Drag / pan / zoom | Reposition and navigate |
+
+## Links UX (separate)
+
+| Action | Behavior |
+| --- | --- |
+| Click chip | Focus note; stay on Links |
 | Double-click | Open note in editor |
 | Hover | Brighten wire bundles; dim rest |
-| Drag / pan / zoom | Reposition and navigate canvas |
 | Global / Local | Full vault vs N-hop neighborhood |
 
-Missing targets = hollow chips + dashed strands.
+Missing wikilink targets = hollow chips + dashed strands.
 
 ## Editor UX
 

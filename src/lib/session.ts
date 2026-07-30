@@ -24,11 +24,15 @@ export const writeLastActiveId = (id: DocId | '') => {
 export const readLastView = (): ViewModeT => {
   try {
     const value = localStorage.getItem(VIEW_KEY)
-    if (value === ViewMode.Graph || value === ViewMode.Note) return value
+    if (value === ViewMode.Structure || value === ViewMode.Note || value === ViewMode.Links) {
+      return value
+    }
+    // Migrate legacy 'graph' → Links
+    if (value === 'graph') return ViewMode.Links
   } catch {
     /* private mode */
   }
-  return ViewMode.Note
+  return ViewMode.Structure
 }
 
 export const writeLastView = (view: ViewModeT) => {

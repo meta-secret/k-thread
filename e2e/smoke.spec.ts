@@ -2,8 +2,9 @@ import { test, expect } from '@playwright/test'
 import {
   createUntitledNote,
   enterWorkspaceFromLanding,
-  openGraphView,
+  openLinksView,
   openNoteView,
+  openStructureView,
   waitForAppBoot,
 } from './helpers/app'
 
@@ -15,13 +16,16 @@ test.describe('smoke', () => {
     await expect(page.getByRole('button', { name: 'Create a note' })).toBeVisible()
   })
 
-  test('creates a note and switches note ↔ graph', async ({ page }) => {
+  test('creates a note and switches structure ↔ links ↔ note', async ({ page }) => {
     await enterWorkspaceFromLanding(page)
     await expect(page.locator('.editor-stage, .bn-editor, [contenteditable="true"]').first()).toBeVisible({
       timeout: 15_000,
     })
 
-    await openGraphView(page)
+    await openStructureView(page)
+    await expect(page.locator('.structure-svg, .structure-shell svg').first()).toBeVisible()
+
+    await openLinksView(page)
     await expect(page.locator('svg').first()).toBeVisible()
 
     await openNoteView(page)

@@ -11,7 +11,7 @@ The name sits under the [meta-secret](https://github.com/meta-secret) org: a pla
 1. **Local-first** — create, edit, rename, delete notes without a backend.
 2. **Obsidian dialect** — `[[wikilinks]]`, embeds, tags, highlights, callouts, frontmatter, comments; plugin fences preserved for interop.
 3. **Hierarchy** — folders are real OPFS directories (`Projects/Alpha.md`), not flat fake paths.
-4. **Graph** — dependency graph from wikilinks, persisted as `index.yaml`, visualized with D3.
+4. **Two graphs** — Structure (folder hierarchy, main home) and Links (wikilinks via `index.yaml` + D3); never mixed on one canvas.
 5. **Import** — load an existing Obsidian vault via the File System Access API into OPFS.
 6. **Minimal surface** — prefer a few strong libraries over bespoke frameworks; keep app code lean.
 7. **Type clarity** — prohibit `null`/`undefined` in app domain types; prefer tagged unions and const “enums”.

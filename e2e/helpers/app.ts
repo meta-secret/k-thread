@@ -8,7 +8,7 @@ export const waitForAppBoot = async (page: Page) => {
   await expect(page.locator('.landing, .workspace')).toBeVisible()
 }
 
-/** Empty OPFS → landing CTA → kube workspace. */
+/** Empty OPFS → landing CTA → kube workspace (Note after create). */
 export const enterWorkspaceFromLanding = async (page: Page) => {
   await waitForAppBoot(page)
   const landing = page.locator('.landing')
@@ -17,15 +17,27 @@ export const enterWorkspaceFromLanding = async (page: Page) => {
   }
   await expect(page.locator('.app.ready')).toBeVisible()
   await expect(page.locator('.workspace')).toBeVisible()
+  await expect(page.locator('.note-layout')).toBeVisible()
 }
 
-export const openGraphView = async (page: Page) => {
-  await page.getByRole('button', { name: 'Graph', exact: true }).click()
-  await expect(page.locator('.graph-layout')).toBeVisible()
+const railButton = (page: Page, title: string) =>
+  page.locator(`.rail button[title="${title}"]`)
+
+export const openStructureView = async (page: Page) => {
+  await railButton(page, 'Structure').click()
+  await expect(page.locator('.structure-shell')).toBeVisible()
 }
+
+export const openLinksView = async (page: Page) => {
+  await railButton(page, 'Links').click()
+  await expect(page.locator('.hud-shell')).toBeVisible()
+}
+
+/** @deprecated use openLinksView */
+export const openGraphView = openLinksView
 
 export const openNoteView = async (page: Page) => {
-  await page.getByRole('button', { name: 'Note', exact: true }).click()
+  await railButton(page, 'Note').click()
   await expect(page.locator('.note-layout')).toBeVisible()
 }
 

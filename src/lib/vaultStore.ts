@@ -49,7 +49,7 @@ const state = reactive<State>({
   folders: [],
   activeId: none,
   activeFolder: '',
-  view: ViewMode.Note,
+  view: ViewMode.Structure,
 })
 
 const knownIds = computed(() => new Set(state.docs.map((d) => d.id)))
@@ -366,13 +366,16 @@ const openLocalVault = async () => {
   state.folders = picked.value.folders
   markReady(`${picked.value.docs.length} notes loaded`)
   state.activeFolder = ''
-  state.view = ViewMode.Note
-  writeLastView(ViewMode.Note)
   // Prefer remembered note; never surprise-open an arbitrary vault entry.
   const remembered = readLastActiveId()
   const match = remembered.length > 0 ? picked.value.docs.find((d) => d.id === remembered) : undefined
-  if (match) focusNote(match.id)
-  else clearActive()
+  if (match) {
+    focusNote(match.id)
+    setView(ViewMode.Note)
+  } else {
+    clearActive()
+    setView(ViewMode.Structure)
+  }
 }
 
 const restoreActiveFromSession = (docs: readonly Doc[]) => {
@@ -382,6 +385,7 @@ const restoreActiveFromSession = (docs: readonly Doc[]) => {
     return
   }
   clearActive()
+  setView(ViewMode.Structure)
 }
 
 const hydrateFromOpfs = async () => {
@@ -400,9 +404,12 @@ const hydrateFromOpfs = async () => {
   }
   state.docs = loaded.value.docs
   state.folders = loaded.value.folders
-  state.view = readLastView()
   markReady(`${loaded.value.docs.length} notes restored`)
   restoreActiveFromSession(loaded.value.docs)
+  if (state.activeId.tag === 'some') {
+    const last = readLastView()
+    setView(last === ViewMode.Structure ? ViewMode.Note : last)
+  }
 }
 
 const setView = (view: ViewModeT) => {

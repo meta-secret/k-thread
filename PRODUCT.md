@@ -55,8 +55,9 @@ Browser-native OPFS vault with hierarchical folders and Obsidian dialect round-t
 1. Local files are the truth — OPFS hierarchy over fake flat stores.
 2. Obsidian dialect is a bridge, not a plugin marketplace.
 3. One note = one graph node; edges are real wikilinks only.
-4. Orient before act — View first, Create second, Manage last.
-5. Never surprise-open a random note on refresh; restore last or empty + Files.
+4. Orient before act — Structure home, then Note / Links; Create secondary, Manage last.
+5. Never surprise-open a random note on refresh; restore last note or land on Structure.
+6. Two graphs stay separate: Structure = folders/files; Links = wikilinks.
 
 ## Accessibility & Inclusion
 

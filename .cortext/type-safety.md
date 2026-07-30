@@ -81,8 +81,9 @@ TypeScript `enum` is avoided (`erasableSyntaxOnly`). Pattern:
 
 ```ts
 export const ViewMode = {
+  Structure: 'structure',
   Note: 'note',
-  Graph: 'graph',
+  Links: 'links',
 } as const
 export type ViewMode = (typeof ViewMode)[keyof typeof ViewMode]
 ```

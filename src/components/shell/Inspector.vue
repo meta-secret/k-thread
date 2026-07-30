@@ -85,7 +85,7 @@ const linkDensity = computed(() => Math.min(100, Math.max(8, props.outlinks.leng
       </div>
     </div>
 
-    <button type="button" class="graph-jump" @click="emit('openGraph')">Graph focus</button>
+    <button type="button" class="graph-jump" @click="emit('openGraph')">Links graph</button>
 
     <div class="body">
       <template v-if="panel === Panel.Tags">

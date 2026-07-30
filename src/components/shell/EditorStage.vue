@@ -62,7 +62,7 @@ const emit = defineEmits<{
           </div>
         </div>
         <p class="empty-gauge">No note open</p>
-        <p class="empty-copy">Open Files to pick a note, or create one</p>
+        <p class="empty-copy">Open Structure to browse the vault, or create a note</p>
         <button type="button" class="empty-cta" @click="emit('createUntitled')">
           <FilePlus2 class="size-3.5" />
           New note

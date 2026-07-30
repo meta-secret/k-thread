@@ -88,9 +88,10 @@ IBM Plex Sans for UI and note chrome; IBM Plex Mono for ordinals / readouts only
 ## Layout
 
 - Header · workspace (rail + stage [+ inspector]) · footer
-- Rail: **View** → **Create** → **Manage** (bottom)
-- Files = drawer overlay, not a permanent column
-- Graph: top-down BFS rows (Focus → Hop n), siblings fan horizontally
+- Rail: **View** (Structure / Note / Links / Files / Preview) → **Create** → **Manage**
+- Structure (home): vault → folders → notes as workflow widgets
+- Links: top-down BFS rows (Focus → Hop n) for wikilinks only
+- Files = drawer peek (⌘B), not the primary browser
 
 ## Elevation & Depth
 
@@ -105,20 +106,21 @@ Tight radii on chrome (`~4px`). Graph notes are full pills. Icon buttons are squ
 - **ToolRail** — View icons, Create list, Manage list
 - **EditorStage** — BlockNote or empty “No note open” CTA
 - **Inspector** — Tags / Backlinks / Links / Preview
-- **GraphView** — pastel pills + orthogonal arrows
+- **StructureView** — hierarchy workflow widgets (main nav)
+- **GraphView** — Links mode pastel pills + orthogonal arrows
 - **Landing** — BrandMark, wordmark, one line, three CTAs
 
 ## Do's and Don'ts
 
 **Do**
 
-- Keep light shell; restore last note or empty + Files
-- One note = one graph node; real wikilink edges only
+- Keep light shell; Structure as home when no note; restore last note when remembered
+- Keep Structure edges (folders) separate from Links edges (wikilinks)
 - Prefer Impeccable commands for visual passes
 
 **Don't**
 
 - Dark / black graph canvases or neon-on-black wires
-- Mid-edge “OPEN / TAP” action nodes
+- Mix folder hierarchy and wikilinks on one canvas
 - Surprise-open a random vault note on refresh
 - Purple AI gradients, Inter-on-slate defaults, card grids as structure

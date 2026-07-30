@@ -282,7 +282,7 @@ onBeforeUnmount(() => {
           <span>{{ hops }}</span>
         </label>
         <span class="sep" />
-        <span class="readout">{{ scopeLabel }} · Graph</span>
+        <span class="readout">{{ scopeLabel }} · Links</span>
       </div>
 
       <Input v-model="query" class="search" placeholder="Filter notes…" autocomplete="off" />
