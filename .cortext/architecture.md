@@ -4,9 +4,9 @@
 
 k-thread is a **single-page application** with three concerns:
 
-1. **Shell** — Vue 3 UI (sidebar, dialogs, view switching).
-2. **Domain** — vault, wikilinks, graph index, tree (pure TypeScript under `src/lib`).
-3. **Islands** — BlockNote (React) for editing; D3 for the graph canvas.
+1. **Shell** — Vue 3 UI (rail, dialogs, Structure / Note / Links switching).
+2. **Domain** — vault, wikilinks, graph index, tree, structure model (pure TypeScript under `src/lib`).
+3. **Islands** — BlockNote (React) for editing; D3 for Structure + Links canvases.
 
 There is no remote API layer. Persistence is OPFS; deployment is static files.
 
@@ -15,15 +15,19 @@ There is no remote API layer. Persistence is OPFS; deployment is static files.
 ```
 src/
   types.ts              # Option, Result, ViewMode, VaultStatus, Doc, GraphIndex, AppError
-  main.ts / App.vue     # bootstrap + shell
+  main.ts / App.vue     # bootstrap + shell (Structure home, brand return)
   lib/
     opfs.ts             # low-level OPFS read/write/list/remove
     vault.ts            # vault load/import/persist orchestration
     vaultStore.ts       # reactive store (Vue reactive + computed)
+    session.ts          # lastActiveId + lastView (localStorage)
     wikilink.ts         # parse/resolve [[links]], id/path helpers
-    graph.ts            # build/serialize/parse index.yaml
-    graphView.ts        # local/global view graph helpers
-    tree.ts             # sidebar folder tree
+    graph.ts            # build/serialize/parse index.yaml (wikilinks)
+    graphView.ts        # Links view graph + layout helpers
+    graphHudDraw.ts     # Links pastel pill drawing
+    structureGraph.ts   # hierarchy graph + tidy-tree placement
+    structureDraw.ts    # Structure workflow widget drawing
+    tree.ts             # Files drawer folder tree
     obsidian.ts         # markdown ↔ BlockNote dialect bridge
     markdown.ts         # preview helpers
   editor/
@@ -33,8 +37,8 @@ src/
     obsidianBlocks.ts   # callouts, frontmatter, comments, fences
   components/
     shell/
-      ToolRail.vue      # kube left rail (modes + tools)
-      EditorStage.vue   # center stage (BlockNote / empty cube)
+      ToolRail.vue      # View (Note/Links/Files/Preview) + Create + Manage
+      EditorStage.vue   # center stage (BlockNote / empty)
       Inspector.vue     # right panel (tags / links / preview)
     NoteSidebar.vue     # tree (Files drawer peek)
     StructureView.vue   # hierarchy workflow (main / home)
@@ -60,19 +64,20 @@ flowchart LR
 ```
 
 1. On boot, `hydrateFromOpfs()` loads markdown + folders into `vaultStore`.
-2. Edits update `Doc.body` and persist via `saveDoc` → OPFS.
-3. `buildIndex(docs, folders)` recomputes wikilink edges; Structure uses folders/docs hierarchy only.
-4. Index is written to `index.yaml` alongside notes.
-5. Structure, Links, and sidebar derive from store computeds — no second source of truth.
-6. Default surface when ready with no note: **Structure**.
+2. Ready vault → `ViewMode.Structure` (home). Last note id may be restored for highlight / Note mode only.
+3. Edits update `Doc.body` and persist via `saveDoc` → OPFS.
+4. `buildIndex(docs, folders)` recomputes **wikilink** edges for Links; Structure uses folders/docs hierarchy only.
+5. Index is written to `index.yaml` alongside notes.
+6. Structure, Links, and Files tree derive from store data — no second source of truth.
 
 ## State ownership
 
 | Concern | Owner |
 | --- | --- |
 | Docs, folders, active note, view mode | `vaultStore.state` |
+| Session (last note / last view) | `session.ts` → localStorage |
 | Wikilink index | `computed` from docs (`buildIndex`) |
-| Structure graph | local to `StructureView` via `structureGraph.ts` |
+| Structure graph | `structureGraph.ts` inside `StructureView` |
 | Sidebar tree | `computed` (`buildNoteTree`) |
 | Editor document | React island; synced through Vue props/events |
 | Links layout | local to `GraphView.vue` (D3); selection emits upward |
@@ -80,7 +85,8 @@ flowchart LR
 ## Boundaries
 
 - **OPFS vs import**: OPFS is the working vault. “Import vault” copies a user-picked directory into OPFS (skipping `.obsidian`, `.git`, etc.).
-- **Vue vs React**: only the editor is React. The rest of the app stays Vue to keep the shell cohesive.
+- **Structure vs Links**: folder parent edges vs wikilink edges — separate modules and canvases.
+- **Vue vs React**: only the editor is React. The rest of the app stays Vue.
 - **Markdown as interchange**: BlockNote is the editing surface; disk format remains Obsidian-friendly markdown.
 
 ## Error model

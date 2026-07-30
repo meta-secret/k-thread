@@ -2,15 +2,37 @@
 
 Local-first Obsidian-style notes in the browser.
 
-- **Vue 3 + TypeScript + Bun + Vite**
-- **shadcn-vue** UI shell
-- **[BlockNote](https://www.blocknotejs.org/)** editor with Obsidian dialect support
-- **`[[wikilinks]]` / `![[embeds]]`**, `#tags`, `==highlights==`
-- **Callouts** (`> [!note]`), **YAML frontmatter**, **`%%comments%%`**
-- **Dataview / plugin fences** preserved (not executed)
-- Type `[[` for notes, `#` for tags, `/` for Callout / Frontmatter / Dataview…
-- **Hierarchical folders** in **OPFS**
-- Graph via `index.yaml`
+Live: https://meta-secret.github.io/k-thread/
+
+## What it is
+
+- **Vue 3 + TypeScript + Bun + Vite** SPA on GitHub Pages
+- Notes as real markdown files in **OPFS** (nested folders, not a flat fake store)
+- **[BlockNote](https://www.blocknotejs.org/)** editor with Obsidian dialect: `[[wikilinks]]`, `![[embeds]]`, `#tags`, `==highlights==`, callouts, YAML frontmatter, `%%comments%%`
+- Dataview / plugin fences preserved (not executed)
+- **Two separate graphs** (never mixed on one canvas):
+  - **Structure** — project hierarchy (folders + notes); the **main page / home**
+  - **Links** — wikilink dependency graph from `index.yaml`
+- Light **kube** shell only — no dark / neon HUD
+
+## Two graphs
+
+```
+Structure (home)          Links (separate mode)
+─────────────────         ─────────────────────
+Vault → folders → notes   Focus → Hop n
+parent-path edges only    [[wikilink]] edges only
+workflow step widgets     pastel pills + arrows
+```
+
+| Surface | Role |
+| --- | --- |
+| **Structure** | Default after vault hydrate. Browse hierarchy. Click a note → editor. Click a folder → focus subtree. Brand mark returns here. |
+| **Note** | Writing surface (BlockNote + optional Preview / Inspector). Enter by clicking a note from Structure or Links. |
+| **Links** | Wikilink graph (Global / Local). Open from the rail; not the folder tree. |
+| **Files** | ⌘B drawer peek — secondary; not required to browse. |
+
+Refresh lands on **Structure**. Last active note is remembered for highlight / Note mode, but is **not** auto-opened into the editor.
 
 ## Develop
 
@@ -27,7 +49,7 @@ Install locally (gitignored — not committed):
 npx impeccable install --providers=cursor --scope=project
 ```
 
-If `.cursor/skills/impeccable/` is missing, agents should run that command before UI design work. See [`.cortext/impeccable.md`](./.cortext/impeccable.md).
+If `.cursor/skills/impeccable/` is missing, agents should run that command before UI design work. See [`.cortext/impeccable.md`](./.cortext/impeccable.md), [`PRODUCT.md`](./PRODUCT.md), [`DESIGN.md`](./DESIGN.md).
 
 ## E2E / visual UX (Playwright)
 
@@ -44,14 +66,16 @@ See [`e2e/README.md`](./e2e/README.md) and [`.cortext/e2e.md`](./.cortext/e2e.md
 
 ## Usage
 
-1. **Create a note** (⌘N) or **Named…** / **Folder…**
-2. Right-click a folder for “New note here”
-3. Notes live in OPFS as nested markdown files; folders are real OPFS directories
-4. BlockNote edits blocks; content is saved back to markdown for Obsidian interop
-5. Optional **Preview** for wikilink click-through
-6. **Import vault** to load an existing Obsidian folder
+1. Empty vault → landing → **Create a note** / **Named…** / **Import vault**
+2. Ready vault → **Structure** home (directory workflow)
+3. Click a note widget → editor; brand / path jump → Structure
+4. Rail **Links** → wikilink graph; **Files** (⌘B) → tree peek
+5. Create: ⌘N untitled, ⌘⇧N named; folders via Create / right-click in Files
+6. Optional **Preview** for wikilink click-through in Note mode
 
 ## `index.yaml`
+
+Wikilink inventory (Links graph), not folder structure:
 
 ```yaml
 version: 1
@@ -65,14 +89,12 @@ edges:
     to: Projects/Alpha
 ```
 
+Structure graph is derived live from `docs` + `folders` in memory (parent paths only).
+
 ## Deploy
 
 Pushes to `main` → https://meta-secret.github.io/k-thread/
 
 ## Cortex
 
-Design notes (vision, architecture, stack, type safety, e2e, deploy): [`.cortext/`](./.cortext/README.md)
-
-## Taste Skill
-
-Anti-slop frontend skill for agents: [`design-taste-frontend`](./.cursor/skills/design-taste-frontend/SKILL.md) ([tasteskill.dev](https://www.tasteskill.dev/)). See [`.cortext/taste.md`](./.cortext/taste.md).
+Design notes (vision, architecture, two graphs, type safety, e2e, deploy): [`.cortext/`](./.cortext/README.md)

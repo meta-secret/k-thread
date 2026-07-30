@@ -7,6 +7,8 @@ alwaysApply: true
 
 k-thread stays on the **light kube** shell. Do **not** ship dark backgrounds, black HUD canvases, or neon-on-black graph themes.
 
-- Graph, landing, rails, dialogs: light washes (`--kube-*` / light `--hud-*` aliases)
+- Structure, Links, landing, rails, dialogs: light washes (`--kube-*` / light `--hud-*` aliases)
 - Accent red is fine as a **signal** on light surfaces
-- Graph language: GTD-style flowchart — pastel pills, thin charcoal arrows, white field — not cyberpunk black
+- **Structure:** white step widgets, soft dotted field, charcoal arrows
+- **Links:** GTD pastel pills, thin charcoal arrows, white field — not cyberpunk black
+- Never mix folder edges and wikilink edges on one canvas

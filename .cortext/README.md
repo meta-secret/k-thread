@@ -14,15 +14,15 @@ Root companions for Impeccable: [`PRODUCT.md`](../PRODUCT.md), [`DESIGN.md`](../
 | --- | --- |
 | [vision.md](./vision.md) | Product idea, goals, non-goals |
 | [architecture.md](./architecture.md) | Layers, modules, data flow |
-| [design.md](./design.md) | Light kube shell (note + graph); no dark UI |
+| [design.md](./design.md) | Light kube shell; Structure home + Links; no dark UI |
 | [stack.md](./stack.md) | Frameworks, TypeScript tooling, motivations |
-| [type-safety.md](./type-safety.md) | ≤500 LOC/file (semantic splits); no `null`/`undefined`; `Option` / `Result` / const unions |
-| [storage.md](./storage.md) | OPFS vault, folders, `index.yaml` |
+| [type-safety.md](./type-safety.md) | ≤500 LOC/file; no `null`/`undefined`; `Option` / `Result` / const unions |
+| [storage.md](./storage.md) | OPFS vault, folders, `index.yaml`, session restore |
 | [editor.md](./editor.md) | BlockNote island + Obsidian dialect |
-| [graph.md](./graph.md) | Light graph pills, rounded wires, local/global nav |
+| [graph.md](./graph.md) | **Two graphs**: Structure (home) vs Links (wikilinks) |
 | [deployment.md](./deployment.md) | Bun build, GitHub Actions, Pages |
-| [e2e.md](./e2e.md) | Playwright under `e2e/`; active UI/UX browser review |
-| [impeccable.md](./impeccable.md) | Impeccable design skill — **global** install only |
+| [e2e.md](./e2e.md) | Playwright under `e2e/`; Structure / Note / Links surfaces |
+| [impeccable.md](./impeccable.md) | Impeccable design skill — project install, gitignored payload |
 | [taste.md](./taste.md) | Legacy Taste Skill (project-local); prefer Impeccable |
 
 ## Quick orientation
@@ -30,11 +30,15 @@ Root companions for Impeccable: [`PRODUCT.md`](../PRODUCT.md), [`DESIGN.md`](../
 ```
 Browser (static SPA on GitHub Pages)
   └─ Vue 3 shell
-       ├─ kube rails   → ToolRail + EditorStage + Inspector
-       ├─ vaultStore   → reactive app state + backlinks
-       ├─ OPFS         → local markdown vault
-       ├─ BlockNote    → React editor island
-       └─ D3 graph → pills + rounded wires (light)
+       ├─ Structure (home)  → hierarchy workflow widgets
+       ├─ Note              → EditorStage + Inspector
+       ├─ Links             → wikilink flowchart (D3)
+       ├─ Files (⌘B)        → drawer peek only
+       ├─ vaultStore        → reactive state + session
+       ├─ OPFS              → local markdown vault
+       └─ BlockNote         → React editor island
 ```
 
-Start with **vision**, then **architecture** and **type-safety**. Use the rest as deep dives.
+**Locked:** Structure and Links stay on **separate** canvases. Never mix folder edges and wikilink edges in one view.
+
+Start with **vision**, then **graph** and **architecture**. Use the rest as deep dives.

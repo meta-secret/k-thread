@@ -33,14 +33,15 @@ Vite loads `@vitejs/plugin-vue` and `@vitejs/plugin-react` together. Only `src/e
 
 **Motivation:** A plain CodeMirror markdown textarea was not enough for callouts, slash menus, and structured Obsidian constructs. BlockNote gives structure; we own the markdown dialect bridge (`obsidian.ts` + custom schema).
 
-## Graph
+## Graphs (Structure + Links)
 
 | Piece | Choice | Why |
 | --- | --- | --- |
-| Layout | **d3-force** | Proven force-directed layout |
+| Structure layout | Deterministic tidy tree (`structureGraph.ts`) | Parent-aligned hierarchy; clear vault funnel |
+| Links layout | Deterministic top-down BFS (`graphView.ts`) | Focus → hops; readable flowchart |
 | DOM/SVG | **d3-selection**, **d3-zoom**, **d3-drag**, **d3-transition** | Zoom/pan/drag without a heavy graph framework |
 
-**Motivation:** Obsidian’s graph is force-based with local/global modes. D3 modules are small, composable, and avoid pulling Cytoscape/Sigma unless we need WebGL scale later.
+**Motivation:** Two jobs, two canvases. Structure answers “where in the vault?”; Links answers “what links to what?”. D3 modules stay small and composable; we avoid force chaos for hierarchy and prefer flowchart placement for both.
 
 ## Data & markdown
 

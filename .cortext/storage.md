@@ -32,7 +32,7 @@ type Doc = {
 
 ## index.yaml
 
-Graph + folder inventory, versioned:
+**Links** graph inventory (wikilinks + folders list), versioned — not the Structure tree:
 
 ```yaml
 version: 1
@@ -47,19 +47,29 @@ edges:
 ```
 
 - Built by `buildIndex(docs, folders)` from wikilink extraction.
-- Nodes include unresolved link targets (for graph “missing” nodes).
+- Nodes include unresolved link targets (for Links “missing” chips).
 - Serialized with the `yaml` package; parse failures are `AppError` `parse`.
+- **Structure** does not read edges from this file; it builds parent-path edges from `docs` + `folders` in memory.
 
 ## Import
 
 “Open local vault” uses the **File System Access API** (`showDirectoryPicker`), walks `.md` files, skips `.obsidian` / `.git` / `.trash` / `node_modules` / dot-dirs, then copies into OPFS.
 
+## Session (`session.ts`)
+
+| Key | Purpose |
+| --- | --- |
+| `k-thread:lastActiveId` | Last opened note (for highlight / Note mode) |
+| `k-thread:lastView` | Last view mode; legacy `'graph'` → `Links` |
+
 ## Lifecycle
 
 | Event | Behavior |
 | --- | --- |
-| First visit | Empty / idle until user creates a note or imports |
-| Create / edit | Write `.md` + refresh index |
+| First visit | Landing until user creates a note or imports |
+| Create note | Write `.md`, open Note mode for writing |
+| Edit | Persist body + refresh wikilink index |
 | Rename | Rewrite file path + rewrite `[[wikilinks]]` across vault |
-| Delete | Confirm → remove path → update active selection |
-| Reload | `hydrateFromOpfs()` restores docs + folders |
+| Delete | Confirm → remove path → clear active if needed → Structure if no note |
+| Reload | `hydrateFromOpfs()` restores docs + folders → **Structure** home (remembered note not auto-opened) |
+| Import | Copy vault into OPFS → Structure home |

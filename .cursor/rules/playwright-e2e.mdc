@@ -6,6 +6,6 @@ alwaysApply: true
 # Playwright E2E
 
 - All Playwright config/tests live under **`e2e/`** — never mix with `src/`.
-- When changing shell, graph, editor, or landing UX/UI, **run Playwright** (`bun run test:e2e`, `:headed`, or `:ui`) and inspect the real browser, not only code.
-- Prefer walking note ↔ graph ↔ files drawer and capturing/updating screenshots in `e2e/design.spec.ts` when visuals change.
+- When changing shell, Structure, Links, editor, or landing UX/UI, **run Playwright** (`bun run test:e2e`, `:headed`, or `:ui`) and inspect the real browser, not only code.
+- Prefer walking Structure (brand home) ↔ Note ↔ Links ↔ Files and capturing/updating screenshots in `e2e/design.spec.ts` when visuals change.
 - Docs: `.cortext/e2e.md`, `e2e/README.md`.

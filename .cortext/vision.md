@@ -11,18 +11,21 @@ The name sits under the [meta-secret](https://github.com/meta-secret) org: a pla
 1. **Local-first** — create, edit, rename, delete notes without a backend.
 2. **Obsidian dialect** — `[[wikilinks]]`, embeds, tags, highlights, callouts, frontmatter, comments; plugin fences preserved for interop.
 3. **Hierarchy** — folders are real OPFS directories (`Projects/Alpha.md`), not flat fake paths.
-4. **Two graphs** — Structure (folder hierarchy, main home) and Links (wikilinks via `index.yaml` + D3); never mixed on one canvas.
+4. **Two graphs** — Structure (folder hierarchy as the **main home**) and Links (wikilinks via `index.yaml` + D3); never mixed on one canvas.
 5. **Import** — load an existing Obsidian vault via the File System Access API into OPFS.
 6. **Minimal surface** — prefer a few strong libraries over bespoke frameworks; keep app code lean.
 7. **Type clarity** — prohibit `null`/`undefined` in app domain types; prefer tagged unions and const “enums”.
+8. **Light UI** — kube shell + workflow / flowchart canvases; no dark neon HUD.
 
 ## Non-goals (for now)
 
 - Multi-user sync, accounts, or cloud storage as the source of truth
 - Executing Obsidian plugins (Dataview, Templater, etc.) — fences are preserved, not run
 - Mobile-native apps or offline service-worker packaging beyond a normal SPA
-- Full pixel-perfect Obsidian clone (we aim for familiar navigation and dialect, not parity)
+- Full pixel-perfect Obsidian clone (familiar navigation and dialect, not parity)
+- A single “kitchen sink” graph that mixes folders and wikilinks
 
 ## Success looks like
 
-- Open the Pages URL → notes restore from OPFS → edit in a modern block editor → links update the graph → import/export stays markdown-compatible with Obsidian.
+- Open the Pages URL → vault restores → land on **Structure** → click into a note → edit in BlockNote → Links graph updates from wikilinks → markdown stays Obsidian-compatible.
+- Refresh never surprise-opens a random note; Structure stays the orientation surface.

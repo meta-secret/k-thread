@@ -10,13 +10,13 @@ web
 
 People who think in linked notes (Obsidian habits, researchers, builders) and want a **local-first** vault in the browser without accounts or a server.
 
-Primary job: capture notes as real files, navigate via wikilinks, and see relationships in a graph — then leave with markdown that still opens in Obsidian.
+Primary job: capture notes as real files, orient in the vault via **Structure**, navigate relationships via **Links** (wikilinks), and leave with markdown that still opens in Obsidian.
 
 ## Product Purpose
 
 **k-thread** is a local-first, Obsidian-like notes app that runs entirely in the browser. Notes live in the Origin Private File System (OPFS) as nested markdown files and folders. The UI is a static SPA on GitHub Pages.
 
-Success: open the site → vault restores → edit in a modern block editor → links update the graph → import stays Obsidian-compatible.
+Success: open the site → vault restores on **Structure** → click into a note → edit in BlockNote → Links updates from wikilinks → import stays Obsidian-compatible.
 
 ## Positioning
 
@@ -26,12 +26,12 @@ Browser-native OPFS vault with hierarchical folders and Obsidian dialect round-t
 
 - Desktop browser (Chromium-class OPFS)
 - Keyboard create: ⌘N / ⌘⇧N; Files drawer: ⌘B
-- Note shell for writing; graph for link navigation
+- Structure home for vault orientation; Note shell for writing; Links for wikilink navigation
 - Import vault via File System Access API
 
 ## Capabilities and Constraints
 
-**Can:** create / rename / delete notes & folders; BlockNote editor with `[[wikilinks]]`, `#tags`, callouts, frontmatter; preview; global/local graph from `index.yaml`; import Obsidian folders.
+**Can:** create / rename / delete notes & folders; Structure hierarchy home; BlockNote with `[[wikilinks]]`, `#tags`, callouts, frontmatter; preview; global/local Links graph from `index.yaml`; import Obsidian folders.
 
 **Cannot (v0):** multi-user sync, accounts, cloud as source of truth, executing Obsidian plugins, mobile-native apps.
 
@@ -40,7 +40,7 @@ Browser-native OPFS vault with hierarchical folders and Obsidian dialect round-t
 ## Brand Commitments
 
 - Name: **k-thread** (meta-secret org)
-- Light kube shell; graph = GTD-style pastel flowchart (not cyberpunk black)
+- Light kube shell; Structure = workflow widgets; Links = GTD pastel flowchart (not cyberpunk black)
 - Signal red (`#c02323`) for accent only
 - Brand-first landing: mark + wordmark + one line + CTAs
 

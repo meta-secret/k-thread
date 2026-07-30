@@ -8,10 +8,11 @@ All Playwright config and tests live under **`e2e/`**. Do not put tests inside `
 
 Playwright is not only CI smoke — agents and humans should use it **actively** to inspect design, UX, and UI:
 
-1. Run `bun run test:e2e:headed` or `bun run test:e2e:ui` while iterating on shell / graph / editor.
-2. Walk note view → graph → files drawer; check first viewport, hierarchy, and clutter.
-3. Prefer screenshot assertions in `e2e/design.spec.ts` when changing layout or chrome.
+1. Run `bun run test:e2e:headed` or `bun run test:e2e:ui` while iterating on shell / Structure / Links / editor.
+2. Walk Structure (home via brand) → Note → Links → Files drawer; check first viewport and clutter.
+3. Prefer screenshot assertions in `e2e/design.spec.ts` (`structure-shell`, `links-shell`, note, landing, files).
 4. Update baselines with `bun run test:e2e:update` only after intentional visual changes.
+5. Helpers in `e2e/helpers/app.ts`: brand → Structure; rail → Note / Links.
 
 ## Commands
 

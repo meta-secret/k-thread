@@ -1,6 +1,6 @@
 ---
 name: k-thread
-description: Light kube notes shell + GTD-style pastel graph
+description: Light kube notes shell + Structure home + Links pastel graph
 colors:
   kube-ink: "#121214"
   kube-mute: "#6b6b73"
@@ -65,9 +65,9 @@ components:
 
 ## Overview
 
-Light **kube** product shell for writing; **GTD-style flowchart** for the graph. One visual family — cool gray washes, black active blocks, soft pastel note pills, charcoal arrows. Never a dark / neon HUD.
+Light **kube** product shell; **Structure** as the main-page workflow; **Links** as a GTD-style wikilink flowchart. One visual family — cool gray washes, black active blocks, white step widgets / pastel pills, charcoal arrows. Never a dark / neon HUD.
 
-Visitor modes: landing = Persuade (brand-first); note + graph = Operate.
+Visitor modes: landing = Persuade (brand-first); Structure / Note / Links = Operate.
 
 ## Colors
 
@@ -115,7 +115,8 @@ Tight radii on chrome (`~4px`). Graph notes are full pills. Icon buttons are squ
 
 **Do**
 
-- Keep light shell; Structure as home when no note; restore last note when remembered
+- Keep light shell; Structure as default main page after hydrate/import
+- Remember last note for highlight / Note mode — do not auto-open it on refresh
 - Keep Structure edges (folders) separate from Links edges (wikilinks)
 - Prefer Impeccable commands for visual passes
 
@@ -123,5 +124,6 @@ Tight radii on chrome (`~4px`). Graph notes are full pills. Icon buttons are squ
 
 - Dark / black graph canvases or neon-on-black wires
 - Mix folder hierarchy and wikilinks on one canvas
+- Require a “Structure” toggle to show the directory tree (it is home)
 - Surprise-open a random vault note on refresh
 - Purple AI gradients, Inter-on-slate defaults, card grids as structure

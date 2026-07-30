@@ -4,31 +4,31 @@
 
 | Mode | Look | Role |
 | --- | --- | --- |
-| **Structure** | Light workflow widgets — vault → folders → notes | Main nav / home |
-| **Note** | Kube / END IS UI — cool gray wash, black active blocks, stage + rails | Writing surface |
+| **Structure** | Light workflow widgets — vault → folders → notes | **Main page / home** |
+| **Note** | Kube — cool gray wash, black active blocks, stage + rails | Writing surface |
 | **Links** | GTD-style flowchart — pastel pills, charcoal arrows | Wikilink navigation |
 
-Do **not** ship dark / black HUD canvases. Graph follows a light flowchart language (pastel pills + thin arrows), not neon HUD chrome.
+Do **not** ship dark / black HUD canvases. Both canvases stay light: Structure = white step cards on a soft dotted field; Links = pastel pills on white — not neon HUD chrome.
 
-**Taste pass (design-taste-frontend):** IBM Plex Sans/Mono locked; no purple/teal AI defaults; one red accent as signal; landing is brand-first (mark + wordmark + one line + CTAs); shared tokens in `src/style.css` (`--kube-*`, light `--hud-*`).
+**Taste pass:** IBM Plex Sans/Mono locked; no purple/teal AI defaults; signal red for accent only; landing is brand-first (mark + wordmark + one line + CTAs); tokens in `src/style.css` (`--kube-*`).
 
 ## Product feel
 
 Obsidian strengths we chase:
 
 - Notes as files (hierarchy + import)
-- Wikilinks as navigation
-- Graph as a second-brain view
+- Structure as the place you orient (“where am I?”)
+- Wikilinks as navigation + Links graph as second-brain view
 - Keyboard create — ⌘N / ⌘⇧N; Files drawer — ⌘B
 
 We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v0.
 
-## Note shell (kube map)
+## Shell map
 
 ```
-┌─ header (brand · status · [Structure jump]) ────────┐
+┌─ header (brand→home · status · path jump) ──────────┐
 │ ToolRail │ Structure | Note+Inspector | Links       │
-│ View →   │ (home)    │ BlockNote      │ wikilinks   │
+│ View →   │ (default) │ BlockNote      │ wikilinks   │
 │ Create → │           │                │             │
 │ Manage   │           │                │             │
 └─ footer ────────────── Files drawer (⌘B peek) ──────┘
@@ -36,15 +36,15 @@ We do **not** chase plugin marketplace, pane mosaic, or settings deep-dives in v
 
 | Rail | Role |
 | --- | --- |
-| **View** | Note / Links / Files / Preview (Structure is home — brand returns) |
+| **View** | Note / Links / Files / Preview — Structure is home (brand returns; no Structure toggle required) |
 | **Create** | New note, Named, Folder — secondary |
 | **Manage** | Import, Rename, Delete — tertiary, bottom |
 
-On refresh: land on **Structure** (remembered note is highlighted, not auto-opened). Never pick a random vault entry into the editor.
-
-Files tree is a **drawer peek**, not the primary browser. Structure and Links are separate full canvases.
+On refresh / import: land on **Structure**. Remembered note may be highlighted; do not auto-open it into the editor.
 
 ## Structure UX (main)
+
+White step cards (icon tile + title + one meta line + step index), parent-aligned tidy tree, charcoal arrows, soft dotted field.
 
 | Action | Behavior |
 | --- | --- |
@@ -53,6 +53,7 @@ Files tree is a **drawer peek**, not the primary browser. Structure and Links ar
 | Click vault root | Clear folder focus |
 | Hover | Brighten arrows; dim rest |
 | Drag / pan / zoom | Reposition and navigate |
+| Brand | Return to Structure home |
 
 ## Links UX (separate)
 
@@ -60,7 +61,7 @@ Files tree is a **drawer peek**, not the primary browser. Structure and Links ar
 | --- | --- |
 | Click chip | Focus note; stay on Links |
 | Double-click | Open note in editor |
-| Hover | Brighten wire bundles; dim rest |
+| Hover | Brighten wires; dim rest |
 | Global / Local | Full vault vs N-hop neighborhood |
 
 Missing wikilink targets = hollow chips + dashed strands.
@@ -70,9 +71,10 @@ Missing wikilink targets = hollow chips + dashed strands.
 - BlockNote + Obsidian dialect round-trip
 - Suggestions: `[[`, `#`, `/`
 - Optional Preview split inside the stage
+- Empty stage: point people at Structure or create a note
 
 ## UI system
 
 - shadcn-vue / Reka for dialogs and the Files tree primitives
 - Shell chrome (ToolRail, Inspector, stage) is bespoke CSS matching kube
-- Graph chrome is bespoke SVG/CSS on the light kube palette
+- Structure + Links chrome is bespoke SVG/CSS on the light palette

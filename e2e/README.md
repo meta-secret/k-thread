@@ -22,4 +22,4 @@ Artifacts (gitignored): `../test-results/`, `../playwright-report/`.
 
 ## Agent / design use
 
-Use Playwright actively when changing shell, graph, or editor UX — open headed/UI mode, walk note ↔ graph ↔ files, and capture screenshots before calling a UI change done. See [`.cortext/e2e.md`](../.cortext/e2e.md).
+Use Playwright actively when changing shell, Structure, Links, or editor UX — open headed/UI mode, walk Structure (brand home) ↔ Note ↔ Links ↔ Files, and capture screenshots before calling a UI change done. See [`.cortext/e2e.md`](../.cortext/e2e.md) and [`.cortext/graph.md`](../.cortext/graph.md).
