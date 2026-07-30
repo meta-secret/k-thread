@@ -1,6 +1,6 @@
 import { err, ok, type AppError, type Doc, type Result } from '../types'
 import { buildIndex, INDEX_PATH, parseIndex, serializeIndex } from './graph'
-import { clearVault, ensureDir, listVault, readText, writeText } from './opfs'
+import { clearVault, ensureDir, listVault, readText, removePath, writeText } from './opfs'
 import { idFromPath, pathFromId, titleFromPath } from './wikilink'
 
 const SKIP_DIRS = new Set(['.obsidian', '.git', '.trash', 'node_modules'])
@@ -113,3 +113,17 @@ export const persistIndex = async (
 
 export const createFolderInOpfs = async (path: string): Promise<Result<true, AppError>> =>
   ensureDir(path)
+
+export const deleteDocFromOpfs = async (id: string): Promise<Result<true, AppError>> =>
+  removePath(pathFromId(id), false)
+
+export const renameDocInOpfs = async (
+  fromId: string,
+  toId: string,
+  body: string,
+): Promise<Result<true, AppError>> => {
+  const written = await writeText(pathFromId(toId), body)
+  if (written.tag === 'err') return written
+  if (fromId === toId) return ok(true)
+  return removePath(pathFromId(fromId), false)
+}

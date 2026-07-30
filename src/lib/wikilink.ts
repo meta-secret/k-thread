@@ -62,3 +62,14 @@ export const idFromPath = (path: string): DocId =>
   path.endsWith('.md') ? path.slice(0, -3) : path
 
 export const pathFromId = (id: DocId): string => `${id}.md`
+
+export const rewriteWikilinks = (body: string, from: DocId, to: DocId): string => {
+  if (from === to) return body
+  const escaped = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`\\[\\[${escaped}(#[^\\]|]*)?(\\|[^\\]]*)?\\]\\]`, 'g')
+  return body.replace(re, (_full, hash, alias) => {
+    const heading = typeof hash === 'string' ? hash : ''
+    const label = typeof alias === 'string' ? alias : ''
+    return `[[${to}${heading}${label}]]`
+  })
+}

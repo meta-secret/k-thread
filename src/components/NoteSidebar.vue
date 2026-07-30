@@ -27,6 +27,8 @@ const emit = defineEmits<{
   createUntitled: [folder: string]
   createNamed: [folder: string]
   createFolder: [folder: string]
+  rename: [id: DocId]
+  delete: [id: DocId]
 }>()
 
 const openFolders = reactive<Record<string, boolean>>({})
@@ -85,6 +87,8 @@ const onToggle = (folder: TreeFolder, open: boolean) => {
           @create-untitled="emit('createUntitled', $event)"
           @create-named="emit('createNamed', $event)"
           @create-folder="emit('createFolder', $event)"
+          @rename="emit('rename', $event)"
+          @delete="emit('delete', $event)"
         />
         <p v-if="nodes.length === 0" class="px-2.5 py-6 text-center text-sm text-muted-foreground">
           No notes yet

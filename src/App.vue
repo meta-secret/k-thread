@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Eye, FilePlus2, FolderOpen, Network, StickyNote } from '@lucide/vue'
+import { Eye, FilePlus2, FolderOpen, Network, Pencil, StickyNote, Trash2 } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import BlockNoteEditor from '@/components/BlockNoteEditor.vue'
+import DeleteNoteDialog from '@/components/DeleteNoteDialog.vue'
 import GraphView from '@/components/GraphView.vue'
 import MarkdownPreview from '@/components/MarkdownPreview.vue'
 import NewNoteDialog from '@/components/NewNoteDialog.vue'
 import NoteSidebar from '@/components/NoteSidebar.vue'
+import RenameNoteDialog from '@/components/RenameNoteDialog.vue'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -15,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { vaultStore } from '@/lib/vaultStore'
-import { VaultStatus, ViewMode } from '@/types'
+import { VaultStatus, ViewMode, type DocId } from '@/types'
 
 const CreateKind = {
   Note: 'note',
@@ -27,6 +29,12 @@ const dialogOpen = ref(false)
 const dialogKind = ref<CreateKind>(CreateKind.Note)
 const dialogFolder = ref('')
 const showPreview = ref(false)
+
+const renameOpen = ref(false)
+const renameId = ref<DocId>('')
+const deleteOpen = ref(false)
+const deleteId = ref<DocId>('')
+const deleteTitle = ref('')
 
 onMounted(() => {
   void vaultStore.hydrateFromOpfs()
@@ -60,6 +68,18 @@ const openFolderDialog = (folder: string) => {
   dialogFolder.value = folder
   dialogKind.value = CreateKind.Folder
   dialogOpen.value = true
+}
+
+const openRename = (id: DocId) => {
+  renameId.value = id
+  renameOpen.value = true
+}
+
+const openDelete = (id: DocId) => {
+  const doc = vaultStore.state.docs.find((d) => d.id === id)
+  deleteId.value = id
+  deleteTitle.value = doc ? doc.title : id
+  deleteOpen.value = true
 }
 
 const status = computed(() => vaultStore.state.status)
@@ -114,6 +134,25 @@ const ready = computed(() => status.value === VaultStatus.Ready)
             Folder…
           </Button>
 
+          <Button
+            size="sm"
+            variant="outline"
+            :disabled="active.tag !== 'some'"
+            @click="active.tag === 'some' && openRename(active.value.id)"
+          >
+            <Pencil class="size-4" />
+            Rename
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            :disabled="active.tag !== 'some'"
+            @click="active.tag === 'some' && openDelete(active.value.id)"
+          >
+            <Trash2 class="size-4" />
+            Delete
+          </Button>
+
           <Separator orientation="vertical" class="mx-1 hidden h-6 sm:block" />
 
           <Button size="sm" variant="outline" @click="vaultStore.openLocalVault">
@@ -161,6 +200,8 @@ const ready = computed(() => status.value === VaultStatus.Ready)
           @create-untitled="vaultStore.createUntitled"
           @create-named="openNamed"
           @create-folder="openFolderDialog"
+          @rename="openRename"
+          @delete="openDelete"
         />
 
         <section
@@ -221,6 +262,17 @@ const ready = computed(() => status.value === VaultStatus.Ready)
       </main>
 
       <NewNoteDialog v-model:open="dialogOpen" :kind="dialogKind" :folder="dialogFolder" />
+      <RenameNoteDialog
+        v-if="renameId.length > 0"
+        v-model:open="renameOpen"
+        :note-id="renameId"
+      />
+      <DeleteNoteDialog
+        v-if="deleteId.length > 0"
+        v-model:open="deleteOpen"
+        :note-id="deleteId"
+        :note-title="deleteTitle"
+      />
     </div>
   </TooltipProvider>
 </template>

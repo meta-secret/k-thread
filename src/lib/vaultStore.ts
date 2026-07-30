@@ -19,13 +19,15 @@ import { buildIndex } from './graph'
 import { buildNoteTree, joinPath } from './tree'
 import {
   createFolderInOpfs,
+  deleteDocFromOpfs,
   importVaultToOpfs,
   loadVaultFromOpfs,
   persistIndex,
   pickLocalVault,
+  renameDocInOpfs,
   saveDoc,
 } from './vault'
-import { normalizeNoteId, pathFromId, titleFromPath } from './wikilink'
+import { normalizeNoteId, pathFromId, rewriteWikilinks, titleFromPath } from './wikilink'
 
 type State = {
   status: VaultStatusT
@@ -163,6 +165,80 @@ const createFolder = async (rawName: string, parent: string = state.activeFolder
   return ok(normalized.value)
 }
 
+const deleteNote = async (id: DocId): Promise<Result<true, AppError>> => {
+  const indexOf = state.docs.findIndex((d) => d.id === id)
+  if (indexOf < 0) {
+    return err({ kind: 'io', detail: 'Note not found' })
+  }
+  const removed = await deleteDocFromOpfs(id)
+  if (removed.tag === 'err') return removed
+
+  state.docs.splice(indexOf, 1)
+
+  const active = state.activeId
+  if (active.tag === 'some' && active.value === id) {
+    const [next] = state.docs
+    state.activeId = next ? some(next.id) : none
+    if (next) {
+      const parts = next.id.split('/')
+      state.activeFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : ''
+    }
+  }
+
+  if (state.docs.length === 0) {
+    state.status = VaultStatus.Idle
+    state.message = 'Create a note to begin'
+  } else {
+    markReady(`${state.docs.length} notes`)
+  }
+  persist()
+  return ok(true)
+}
+
+const renameNote = async (fromId: DocId, rawName: string): Promise<Result<Doc, AppError>> => {
+  const doc = state.docs.find((d) => d.id === fromId)
+  if (!doc) {
+    return err({ kind: 'io', detail: 'Note not found' })
+  }
+
+  const parent = fromId.includes('/') ? fromId.split('/').slice(0, -1).join('/') : ''
+  const prefixed = rawName.includes('/') || parent.length === 0 ? rawName : joinPath(parent, rawName)
+  const normalized = normalizeNoteId(prefixed)
+  if (normalized.tag === 'err') return normalized
+  const toId = normalized.value
+
+  if (toId !== fromId && knownIds.value.has(toId)) {
+    return err({ kind: 'parse', detail: 'A note with this name already exists' })
+  }
+
+  const written = await renameDocInOpfs(fromId, toId, doc.body)
+  if (written.tag === 'err') return written
+
+  doc.id = toId
+  doc.path = pathFromId(toId)
+  doc.title = titleFromPath(doc.path)
+  rememberFolder(toId.includes('/') ? toId.split('/').slice(0, -1).join('/') : '')
+
+  if (toId !== fromId) {
+    for (const other of state.docs) {
+      if (other.id === toId) continue
+      const nextBody = rewriteWikilinks(other.body, fromId, toId)
+      if (nextBody === other.body) continue
+      other.body = nextBody
+      void saveDoc(other)
+    }
+  }
+
+  const active = state.activeId
+  if (active.tag === 'some' && active.value === fromId) {
+    setActive(toId)
+  }
+
+  markReady(`${state.docs.length} notes`)
+  persist()
+  return ok(doc)
+}
+
 let saveTimer = 0
 
 const updateBody = (body: string) => {
@@ -240,6 +316,8 @@ export const vaultStore = {
   createUntitled,
   createNote,
   createFolder,
+  deleteNote,
+  renameNote,
   updateBody,
   openLocalVault,
   hydrateFromOpfs,

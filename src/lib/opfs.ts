@@ -122,6 +122,22 @@ export const listVault = async (): Promise<Result<VaultListing, AppError>> => {
   })
 }
 
+export const removePath = async (
+  path: string,
+  recursive: boolean = false,
+): Promise<Result<true, AppError>> => {
+  const root = await getRoot()
+  if (root.tag === 'err') return root
+  const parent = await resolvePath(root.value, path, false)
+  if (parent.tag === 'err') return parent
+  try {
+    await parent.value.dir.removeEntry(parent.value.name, { recursive })
+    return ok(true)
+  } catch (e) {
+    return err({ kind: 'io', detail: e instanceof Error ? e.message : 'Remove failed' })
+  }
+}
+
 export const clearVault = async (): Promise<Result<true, AppError>> => {
   if (!('storage' in navigator) || !('getDirectory' in navigator.storage)) {
     return err({ kind: 'unsupported', detail: 'OPFS is not available in this browser' })

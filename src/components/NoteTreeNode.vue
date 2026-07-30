@@ -5,6 +5,8 @@ import {
   FileText,
   Folder,
   FolderPlus,
+  Pencil,
+  Trash2,
 } from '@lucide/vue'
 import { computed } from 'vue'
 import {
@@ -37,6 +39,8 @@ const emit = defineEmits<{
   createUntitled: [folder: string]
   createNamed: [folder: string]
   createFolder: [folder: string]
+  rename: [id: DocId]
+  delete: [id: DocId]
 }>()
 
 const padStyle = computed(() => ({ paddingLeft: `${0.5 + props.depth * 0.75}rem` }))
@@ -74,7 +78,18 @@ const folderOpen = computed(() => {
       </button>
     </ContextMenuTrigger>
     <ContextMenuContent>
-      <ContextMenuItem @click="emit('select', node.id)">Open</ContextMenuItem>
+      <ContextMenuItem @click="emit('select', node.id)">
+        <FileText class="size-4" />
+        Open
+      </ContextMenuItem>
+      <ContextMenuItem @click="emit('rename', node.id)">
+        <Pencil class="size-4" />
+        Rename…
+      </ContextMenuItem>
+      <ContextMenuItem variant="destructive" @click="emit('delete', node.id)">
+        <Trash2 class="size-4" />
+        Delete…
+      </ContextMenuItem>
     </ContextMenuContent>
   </ContextMenu>
 
@@ -120,6 +135,8 @@ const folderOpen = computed(() => {
             @create-untitled="emit('createUntitled', $event)"
             @create-named="emit('createNamed', $event)"
             @create-folder="emit('createFolder', $event)"
+            @rename="emit('rename', $event)"
+            @delete="emit('delete', $event)"
           />
         </CollapsibleContent>
       </Collapsible>
