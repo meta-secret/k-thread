@@ -19,6 +19,16 @@ bun install
 bun dev
 ```
 
+## Design skill (Impeccable)
+
+Install locally (gitignored — not committed):
+
+```bash
+npx impeccable install --providers=cursor --scope=project
+```
+
+If `.cursor/skills/impeccable/` is missing, agents should run that command before UI design work. See [`.cortext/impeccable.md`](./.cortext/impeccable.md).
+
 ## E2E / visual UX (Playwright)
 
 Tests live in **`e2e/`** (not under `src/`).

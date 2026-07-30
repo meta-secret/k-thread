@@ -2,30 +2,34 @@
 
 Design skill from [impeccable.style](https://impeccable.style/) — shared vocabulary for agents (`/polish`, `/distill`, `/critique`, …).
 
-## Install (global only — do not vendor in this repo)
+## Strategy: local skills, gitignored
+
+Install Impeccable **into the project** so Cursor discovers it under `.cursor/skills/`, but **do not commit the skill payload** (large, upstream-owned, updated via npm).
+
+| Path | In git? | Role |
+| --- | --- | --- |
+| `.cursor/skills/impeccable/` | **No** (gitignored) | Skill + scripts for agents |
+| `.cursor/hooks.json` | Yes | Pre-write detector → local skill |
+| `.cursor/rules/impeccable.mdc` | Yes | Tells agents to download if missing |
+| `PRODUCT.md` / `DESIGN.md` | Yes | Product + visual authority |
+| `.impeccable/config.json` | Yes | Hook / detector config |
+| `.impeccable/config.local.json` | **No** | Machine consent |
+
+## Agent rule — if the skill is not present
+
+**If `.cursor/skills/impeccable/SKILL.md` is missing, the agent must download it before doing design work:**
 
 ```bash
-npx impeccable install --providers=cursor --scope=global
+npx impeccable install --providers=cursor --scope=project
+```
+
+Requires Node 22.12+. Then read `.cursor/skills/impeccable/SKILL.md` and follow Impeccable (context → playbook → craft floor). Do not skip install and improvise “from memory.”
+
+Update later:
+
+```bash
 npx impeccable update
 ```
-
-Skill path on this machine:
-
-```
-~/.cursor/skills/impeccable/
-```
-
-**Never** copy the skill into `.cursor/skills/impeccable` or `.agents/skills/impeccable` in this project.
-
-Project wiring that *is* allowed:
-
-| Path | Role |
-| --- | --- |
-| `PRODUCT.md` | Product truth (`/impeccable init`) |
-| `DESIGN.md` | Incumbent visual system (`/impeccable document`) |
-| `.impeccable/config.json` | Hook / detector config (shared) |
-| `.impeccable/config.local.json` | Machine consent — **gitignored** |
-| `.cursor/hooks.json` | Cursor pre-write gate → `$HOME/.cursor/skills/impeccable/...` |
 
 ## Commands (use in chat)
 
@@ -53,22 +57,21 @@ Project wiring that *is* allowed:
 | `/impeccable hooks on\|off\|status` | Design detector hook |
 | `/impeccable doctor` | Repair drift |
 
-Manual detector (when hooks quiet):
+Manual detector:
 
 ```bash
-node ~/.cursor/skills/impeccable/scripts/detect.mjs --json src/components src/App.vue src/style.css
+node .cursor/skills/impeccable/scripts/detect.mjs --json src/components src/App.vue src/style.css
 ```
 
 ## k-thread defaults
 
 - Mode: **Operate** (shell/graph), **Persuade** (landing)
-- Light shell only — see [design.md](./design.md) / root `DESIGN.md`
+- Light shell only — root `DESIGN.md` + [design.md](./design.md)
 - Prefer Impeccable over the legacy Taste Skill ([taste.md](./taste.md))
 
 ## First-session checklist
 
-1. Skill installed globally (`npx impeccable install --scope=global`)
+1. `npx impeccable install --providers=cursor --scope=project` (if `.cursor/skills/impeccable` missing)
 2. Cursor Agent Skills enabled
-3. `PRODUCT.md` + `DESIGN.md` present (done)
-4. Hooks on + `.cursor/hooks.json` points at `$HOME/.cursor/skills/impeccable`
-5. For UI work: `/impeccable polish` / `/critique` / `/layout` as needed
+3. `PRODUCT.md` + `DESIGN.md` present
+4. For UI work: `/impeccable polish` / `/critique` / `/layout` as needed

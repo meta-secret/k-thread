@@ -1,0 +1,28 @@
+---
+description: Impeccable design skill — local project install, gitignored; download if missing
+alwaysApply: true
+---
+
+# Impeccable
+
+Design work uses **Impeccable** ([impeccable.style](https://impeccable.style/)).
+
+## Location
+
+Expected path (gitignored — not in the repo):
+
+```
+.cursor/skills/impeccable/
+```
+
+## If missing — download before designing
+
+If `.cursor/skills/impeccable/SKILL.md` is absent, **install it immediately** (do not invent a substitute skill):
+
+```bash
+npx impeccable install --providers=cursor --scope=project
+```
+
+Then read `.cursor/skills/impeccable/SKILL.md` and follow it. Product/visual authority: root `PRODUCT.md`, `DESIGN.md`, and `.cortext/`.
+
+See `.cortext/impeccable.md` for the full command map.

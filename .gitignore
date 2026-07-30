@@ -12,7 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Impeccable (skill stays global; local consent is machine-private)
+# Impeccable — skill lives under .cursor/skills but is not committed.
+# Agents: if missing, run `npx impeccable install --providers=cursor --scope=project`
+.cursor/skills/impeccable/
+.agents/skills/impeccable/
+.github/skills/impeccable/
 .impeccable/config.local.json
 .impeccable/cache/
 
